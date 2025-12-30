@@ -199,9 +199,14 @@ For issues or questions:
 ### v1.5.0 (Latest)
 - ✅ **Zone Formatting Fix**: Zone values now display as whole numbers (5, 8) instead of decimals (5.0, 8.0)
 - ✅ **Date Filtering Fix**: Incidents outside cycle date range are now correctly excluded
+  - Fixed in both `prepare_briefing_csv.py` and `scrpa_7day_restructure.py`
+  - `scrpa_7day_restructure.py` now uses cycle calendar CSV to determine correct cycle dates
+  - Filters incidents based on cycle calendar lookup (not min/max from data)
+  - Excludes incidents from previous cycles (e.g., 12/22 incidents excluded when cycle is 12/23-12/29)
 - ✅ **Data Dictionary Optimization**: Dictionary now stored once in reference location and reused for all reports
 - ✅ **Enhanced Narrative Extraction**: Improved ChatGPT prompt with explicit narrative extraction instructions
 - ✅ **Documentation Cleanup Guide**: Created guide explaining which documentation files are needed vs historical
+- ✅ **Documentation File Limiting**: `organize_report_files.py` now only copies essential documentation files, excluding historical development notes
 
 ### v1.3.0
 - ✅ **ChatGPT Prompt Enhancements**: Added Reporting Parameters section, Loss And Monetary Rules, Cycle And Date Rules, Summary Table Rules

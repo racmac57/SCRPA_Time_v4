@@ -16,10 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Updated `prepare_briefing_csv.py` to format Zone as whole number during CSV transformation
   - Added instructions to ChatGPT prompt to format Zone as whole number
 
-- **Date Filtering Issue**
+- **Date Filtering Issue (Multiple Scripts)**
   - Fixed incidents with Report Date outside cycle range being included in reports
   - Added filtering logic in `prepare_briefing_csv.py` to exclude incidents with Report Date before cycle start or after cycle end
-  - Script now correctly filters to only include incidents within the 7-day cycle date range
+  - **Fixed `scrpa_7day_restructure.py` date filtering**: Script now uses cycle calendar CSV to determine correct cycle dates instead of min/max Report Date from data
+  - Script looks up cycle from calendar using `REPORT_DATE` environment variable
+  - Filters incidents to only include those with Report Date within the cycle range (e.g., 12/23 to 12/29 for report date 12/30)
+  - Excludes incidents from previous cycles (e.g., 12/22 incidents excluded when cycle is 12/23-12/29)
   - Reports how many records were excluded if any fall outside the cycle range
 
 ### Changed
@@ -44,6 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created `DOCUMENTATION_FILES_EXPLAINED.md` explaining which files are needed vs historical notes
   - Clarified that only `CHATGPT_BRIEFING_PROMPT.md` is needed for ChatGPT usage
   - Documented which historical development files can be removed from Documentation/ folder
+
+- **Documentation File Limiting**
+  - Updated `organize_report_files.py` to only copy essential documentation files
+  - Excludes historical development notes (e.g., `CHATGPT_PROMPT_UPDATE_REVIEW.md`, `CYCLE_FIX_PROMPT.md`, `FIX_PROMPT_AND_REPORTS_FOLDER.md`, `CSV_RETENTION_AND_PROMPT_FIX.md`)
+  - Only copies essential guides like `CHATGPT_PROMPT_GUIDE.md` and `SCRPA_WORKFLOW_USER_GUIDE.md` (if they exist)
+  - Reduces clutter in Documentation/ folder by excluding development history files
 
 ---
 

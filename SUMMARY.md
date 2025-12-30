@@ -252,9 +252,13 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 #### v1.5.0 (Latest)
 - ✅ Zone formatting fixed - displays as whole numbers instead of decimals
 - ✅ Date filtering fixed - correctly excludes incidents outside cycle range
+  - Fixed in both `prepare_briefing_csv.py` and `scrpa_7day_restructure.py`
+  - `scrpa_7day_restructure.py` now uses cycle calendar CSV lookup instead of min/max Report Date
+  - Properly excludes incidents from previous cycles based on cycle calendar dates
 - ✅ Data Dictionary optimization - stored once in reference location, reused for all reports
 - ✅ Enhanced narrative extraction - improved ChatGPT prompt with explicit extraction instructions
 - ✅ Documentation cleanup guide - explains which files are needed vs historical notes
+- ✅ Documentation file limiting - only essential files copied, historical development notes excluded
 
 #### v1.3.0
 - ✅ ChatGPT prompt enhanced with Reporting Parameters section
