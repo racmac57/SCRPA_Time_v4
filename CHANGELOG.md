@@ -23,6 +23,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Reports how many records were excluded if any fall outside the cycle range
 
 ### Changed
+- **Version Standardization**
+  - Updated version format from `1.5` to `1.5.0` (standardized to semantic versioning)
+  - All output files (HTML reports, ChatGPT prompts) now display version 1.5.0
+
 - **Data Dictionary Storage**
   - Data Dictionary now stored once in reference location: `09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md`
   - Script checks for existing reference dictionary and copies from there instead of regenerating
