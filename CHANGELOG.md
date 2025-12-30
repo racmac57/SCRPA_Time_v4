@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [1.4.0] - 2025-12-29
+## [1.5.0] - 2025-12-29
 
 ### Fixed
 - **Zone Formatting Issue**
@@ -287,6 +287,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 **Last Updated**: 2025-12-29  
-**Current Version**: 1.4.0  
+**Current Version**: 1.5.0  
 **Maintained By**: R. A. Carucci
 

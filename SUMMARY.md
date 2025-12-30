@@ -249,7 +249,7 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ### Recent Improvements
 
-#### v1.4.0 (Latest)
+#### v1.5.0 (Latest)
 - ✅ Zone formatting fixed - displays as whole numbers instead of decimals
 - ✅ Date filtering fixed - correctly excludes incidents outside cycle range
 - ✅ Data Dictionary optimization - stored once in reference location, reused for all reports
@@ -300,7 +300,7 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ---
 
-**Version**: 1.4.0  
+**Version**: 1.5.0  
 **Status**: Production  
 **License**: Internal Use Only
 

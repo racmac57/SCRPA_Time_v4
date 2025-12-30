@@ -196,7 +196,7 @@ For issues or questions:
 
 ## Recent Updates
 
-### v1.4.0 (Latest)
+### v1.5.0 (Latest)
 - ✅ **Zone Formatting Fix**: Zone values now display as whole numbers (5, 8) instead of decimals (5.0, 8.0)
 - ✅ **Date Filtering Fix**: Incidents outside cycle date range are now correctly excluded
 - ✅ **Data Dictionary Optimization**: Dictionary now stored once in reference location and reused for all reports
@@ -240,7 +240,7 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.4.0  
+**Current Version**: 1.5.0  
 **Last Updated**: December 29, 2025  
 **Maintained By**: R. A. Carucci
 
