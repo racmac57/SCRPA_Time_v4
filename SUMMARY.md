@@ -249,7 +249,18 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ### Recent Improvements
 
-#### v1.5.0 (Latest)
+#### v1.6.0 (Latest)
+- ✅ Cycle calendar extended with 2026 entries (all 52 weeks)
+- ✅ 7-day CSV filtering now uses cycle calendar for accurate date ranges
+  - Fixed to use actual cycle boundaries instead of simple "today - 7 days" calculation
+  - Reads REPORT_DATE environment variable and looks up correct cycle dates
+  - 7-day filtered CSV files now match cycle calendar dates exactly
+- ✅ Excel conversion script enhanced with cycle calendar integration
+  - Added cycle calendar lookup function
+  - Supports both openpyxl and calamine engines
+  - Falls back to simple calculation if cycle calendar lookup fails
+
+#### v1.5.0
 - ✅ Zone formatting fixed - displays as whole numbers instead of decimals
 - ✅ Date filtering fixed - correctly excludes incidents outside cycle range
   - Fixed in both `prepare_briefing_csv.py` and `scrpa_7day_restructure.py`
@@ -300,11 +311,11 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 **System Owner**: R. A. Carucci  
 **Department**: City of Hackensack Police Department  
-**Last Updated**: December 29, 2025
+**Last Updated**: January 6, 2026
 
 ---
 
-**Version**: 1.5.0  
+**Version**: 1.6.0  
 **Status**: Production  
 **License**: Internal Use Only
 

@@ -196,7 +196,15 @@ For issues or questions:
 
 ## Recent Updates
 
-### v1.5.0 (Latest)
+### v1.6.0 (Latest)
+- ✅ **Cycle Calendar 2026 Support**: Added all 2026 cycle entries to cycle calendar CSV
+- ✅ **7-Day CSV Date Range Fix**: Excel conversion now uses cycle calendar for accurate 7-day filtering
+  - Fixed date range calculation to use actual cycle boundaries instead of "today - 7 days"
+  - Script reads REPORT_DATE environment variable and looks up correct cycle dates
+  - 7-day filtered CSV files now match cycle calendar dates exactly
+  - Works with both openpyxl and calamine engines
+
+### v1.5.0
 - ✅ **Zone Formatting Fix**: Zone values now display as whole numbers (5, 8) instead of decimals (5.0, 8.0)
 - ✅ **Date Filtering Fix**: Incidents outside cycle date range are now correctly excluded
   - Fixed in both `prepare_briefing_csv.py` and `scrpa_7day_restructure.py`
@@ -245,8 +253,8 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.5.0  
-**Last Updated**: December 29, 2025  
+**Current Version**: 1.6.0  
+**Last Updated**: January 6, 2026  
 **Maintained By**: R. A. Carucci
 
 ---

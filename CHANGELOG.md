@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Planned
+- Enhanced error handling
+- Improved logging
+- Config file support
+
+---
+
+## [1.6.0] - 2026-01-06
+
+### Fixed
+- **7-Day CSV Date Range Calculation**
+  - Fixed `export_excel_sheets_to_csv.py` to use cycle calendar for 7-day filtering instead of simple "today - 7 days" calculation
+  - Script now reads `REPORT_DATE` environment variable and looks up correct cycle dates from cycle calendar CSV
+  - 7-day filtered CSV files now use actual cycle boundaries (e.g., 12/30/2025 to 01/05/2026 for cycle 26C01W01)
+  - Falls back to simple calculation only if cycle calendar lookup fails
+  - Works with both openpyxl and calamine engines
+
+### Changed
+- **Cycle Calendar Extended**
+  - Updated cycle calendar CSV (`7Day_28Day_Cycle_20250414.csv`) with 2026 entries
+  - Added all 52 weeks for 2026 (01/06/2026 through 12/29/2026)
+  - Cycle names follow pattern: `26C01W01` through `26C13W52`
+  - Dates formatted as MM/DD/YYYY for consistency
+
+### Added
+- **Cycle Calendar Integration in Excel Conversion**
+  - Added `_get_cycle_dates_from_calendar()` function to `export_excel_sheets_to_csv.py`
+  - Function reads cycle calendar CSV and looks up 7-day start/end dates based on REPORT_DATE
+  - Supports exact match on Report_Due_Date, fallback to date range matching, and most recent cycle lookup
+  - Logs cycle information when successfully found
+
+---
+
 ## [1.5.0] - 2025-12-29
 
 ### Fixed
@@ -299,7 +334,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Last Updated**: 2025-12-29  
-**Current Version**: 1.5.0  
+**Last Updated**: 2026-01-06  
+**Current Version**: 1.6.0  
 **Maintained By**: R. A. Carucci
 
