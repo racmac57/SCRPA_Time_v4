@@ -1,0 +1,44 @@
+{
+  "tags": [
+    "API",
+    "ai",
+    "code",
+    "config",
+    "data",
+    "docs",
+    "excel",
+    "function",
+    "input/output",
+    "json",
+    "loop",
+    "markdown",
+    "police",
+    "python",
+    "regex",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "args",
+        "csv",
+        "2026",
+        "2025",
+        "path",
+        "file"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# SCRPA workflow automation output review\n_Exported on 1/6/2026 at 00:56:10 EST from Cursor (2.3.21)_\n\n---\n\n**User**\n\nI ran the C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\02_ETL_Scripts\\Run_SCRPA_Report_Folder.bat and got below mes...",
+      "first_line": "# SCRPA workflow automation output review"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-06T00:56:42.817841",
+  "department": "admin"
+}

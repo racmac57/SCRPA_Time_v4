@@ -1,0 +1,626 @@
+# SCRPA workflow automation output review
+_Exported on 1/6/2026 at 00:56:10 EST from Cursor (2.3.21)_
+
+---
+
+**User**
+
+I ran the C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat and got below message: Does the output look correct? C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W01_26_01_06
+
+
+01/06/2026  0:35:48.56 - Starting SCRPA workflow automation...
+01/06/2026  0:35:48.90 - Checking Python availability...
+01/06/2026  0:35:49.55 - Python cmd : py -3
+01/06/2026  0:35:49.56 - Python path: C:\Users\carucci_r\AppData\Local\Microsoft\WindowsApps\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\python.exe
+01/06/2026  0:35:49.57 - Python ver : Python 3.13.9
+
+Enter REPORT DATE [MM/DD/YYYY] (default 01/06/2026): 01/06/2026
+01/06/2026  0:35:57.42 - REPORT_DATE = 01/06/2026 (normalized)
+01/06/2026  0:35:57.44 - Year folder exists: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026
+01/06/2026  0:35:57.65 - STEP 0 - Sanity checks
+01/06/2026  0:35:57.67 - Listing C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA:
+01/06/2026  0:35:57.68 - Listing C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output:
+01/06/2026  0:35:57.70 - [OK] Required scripts found
+01/06/2026  0:35:57.71 - STEP 0.5: CONVERT EXCEL FILES TO CSV
+01/06/2026  0:35:57.73 - Changing to directory: C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa
+01/06/2026  0:35:57.75 - Current directory: C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa
+01/06/2026  0:35:57.76 - Running Excel to CSV conversion (auto): C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\convert_all_xlsx_auto.bat
+01/06/2026  0:36:00.96 - [OK] Excel conversion completed
+01/06/2026  0:36:00.97 - STEP 1: CREATE/SEED WEEKLY INPUTS
+01/06/2026  0:36:00.99 - Changing to directory: C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA
+01/06/2026  0:36:01.00 - Current directory: C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA
+01/06/2026  0:36:01.01 - Running weekly script with REPORT_DATE=01/06/2026
+--- SCRPA Report Generator ---
+[WARNING] No cycle found for Report_Due_Date: 01/06/2026
+[WARNING] Using fallback calculation method - cycle calendar lookup failed
+
+Processing for Year: 2026
+Target Path:         C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W01_26_01_06
+New File Name:       26C01W01_26_01_06.pbix
+[SUCCESS] Verified/Created folder structure. [SUCCESS] Created subfolders: Data/, Reports/, Documentation/
+[SUCCESS] Template copied and renamed: 26C01W01_26_01_06.pbix
+
+Done. 01/06/2026  0:36:02.20 - [OK] Weekly script completed
+01/06/2026  0:36:02.21 - STEP 2: RUN FULL REPORT GENERATION
+01/06/2026  0:36:02.22 - Changing to directory: C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output
+01/06/2026  0:36:02.23 - Current directory: C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output
+01/06/2026  0:36:02.24 - Running child batch (env REPORT_DATE=01/06/2026): C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_all_reports.bat
+01/06/2026  0:36:06.98 - [OK] STEP 2 completed
+01/06/2026  0:36:06.99 - STEP 3: ORGANIZE FILES INTO REPORT FOLDER
+01/06/2026  0:36:07.01 - Changing to directory: C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA
+01/06/2026  0:36:07.02 - Current directory: C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA
+01/06/2026  0:36:07.06 - Running: py -3 "C:\Users\carucci_r\OneDrive
+============================================================
+SCRPA REPORT FILE ORGANIZATION
+============================================================
+
+✅ Found latest report folder: 26C01W01_26_01_06
+
+📁 Organizing files into: 26C01W01_26_01_06
+
+📅 Report date detected: 2026-01-06 (from folder name)
+📊 Copying CSV files to Data/ folder...
+⚠️  No CSV files found matching date 2026-01-06
+   Found 0 total CSV file(s), but none match the report date
+   Note: Excel files must be converted to CSV first using convert_all_xlsx.bat
+
+📊 Copying Excel files to Data/ folder...
+📊 Found 2 Excel file(s) matching report date 2026-01-06
+  ✓ Copied: 2026_01_06_00_33_09_SCRPA_RMS.xlsx
+  ✓ Copied: 2026_01_06_00_33_09_SCRPA_RMS_20260106_003600.xlsx
+⚠️  No briefing CSV found matching date 2026-01-06, using latest available
+✅ Found briefing CSV: SCRPA_Briefing_Ready_2025_12_30_00_34_17.csv
+
+📋 Copying briefing CSV...
+  ✓ Copied: SCRPA_Briefing_Ready_2025_12_30_00_34_17.csv
+
+🧹 Removing 1 old briefing CSV file(s) that don't match report date...
+  ✓ Removed: SCRPA_Briefing_Ready_2025_12_30_00_34_17.csv
+
+🧹 Cleaning up old report files...
+
+📄 Copying HTML and PDF reports...
+📄 Found 2 report file(s) to copy (latest versions only)
+  ✓ Copied: 2026_01_06_00_36_06_rms_summary.html
+  ✓ Copied: SCRPA_Combined_Executive_Summary_20251230_003415.html
+⚠️  Found ChatGPT prompt: CHATGPT_BRIEFING_PROMPT.md (may be from different date)
+   Report date: 2026-01-06
+   Prompt file may need to be regenerated for this report date
+
+📝 Copying ChatGPT prompt...
+  ✓ Copied: CHATGPT_BRIEFING_PROMPT.md
+
+📚 Copying essential documentation files...
+   ℹ️  Guide files (CHATGPT_PROMPT_GUIDE.md, SCRPA_WORKFLOW_USER_GUIDE.md) are not copied
+      These are optional reference guides, not needed for report generation
+      Only CHATGPT_BRIEFING_PROMPT.md and SCRPA_Report_Summary.md are essential in Documentation/
+
+📝 Creating consolidated markdown file...
+✅ Created consolidated MD file: SCRPA_Report_Summary.md
+
+✅ File organization complete! 7 file(s) copied/organized. ============================================================
+✅ FILE ORGANIZATION COMPLETE
+============================================================
+
+📂 Report Folder: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W01_26_01_06
+
+📁 Folder Structure:
+   ├── Data/          (CSV files)
+   ├── Reports/      (HTML and PDF files)
+   └── Documentation/ (MD files and prompts)
+
+============================================================
+
+Press Enter to exit...
+
+---
+
+**Cursor**
+
+
+Reviewing the output folder to verify the generated files and identify any issues. Checking the cycle calendar and file organization script:
+
+
+
+Checking the file organization script and searching for the cycle calendar:
+
+
+
+Checking the cycle calendar file and locating the file organization script:
+
+
+
+Reviewing the file organization script and checking generated files:
+
+
+
+Checking for CSV files and reviewing the generated report:
+
+
+
+## Summary
+
+The workflow completed, but there are issues to address:
+
+### What worked
+1. Folder structure created: `26C01W01_26_01_06`
+2. Excel files copied: Both Excel files for 2026-01-06 are in `Data/`
+3. Tactical report generated: `2026_01_06_00_36_06_rms_summary.html` is correct
+4. File organization completed: 7 files copied
+
+### Issues found
+
+1. Cycle calendar missing 2026 entries
+   - Warning: `[WARNING] No cycle found for Report_Due_Date: 01/06/2026`
+   - Cause: The cycle calendar CSV (`7Day_28Day_Cycle_20250414.csv`) only goes through 12/30/2025
+   - Impact: Script falls back to calculated cycle name (which worked: `26C01W01`)
+   - Action needed: Add 2026 entries to the cycle calendar CSV
+
+2. Briefing CSV from wrong date
+   - Found: `SCRPA_Briefing_Ready_2025_12_30_00_34_17.csv` (from 12/30/2025)
+   - Expected: A briefing CSV for 2026-01-06
+   - Cause: No briefing CSV was generated for this report date
+   - Action needed: Run `prepare_briefing_csv.py` for 2026-01-06
+
+3. Strategic HTML report from wrong date
+   - Found: `SCRPA_Combined_Executive_Summary_20251230_003415.html` (from 12/30/2025)
+   - Expected: A strategic report for 2026-01-06
+   - Cause: Strategic report generation didn't run or failed for this date
+   - Action needed: Verify strategic report generation step
+
+4. No CSV files found
+   - Warning: `No CSV files found matching date 2026-01-06`
+   - Cause: Excel files were converted but CSVs may have been archived or not created
+   - Note: Excel files are present, so this may be acceptable
+
+### Recommendations
+
+1. Update the cycle calendar: Add 2026 entries to `09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv`
+2. Generate briefing CSV: Run the briefing preparation step for 2026-01-06
+3. Verify strategic report generation: Check why the strategic report wasn't generated for 2026-01-06
+
+The output is mostly correct, but the cycle calendar needs updating and the briefing/strategic reports need to be generated for the new year. Should I help update the cycle calendar or investigate why the briefing/strategic reports weren't generated? ---
+
+**User**
+
+The date range is off there is no filtered 7-day csv. do you have the logic to contine the pattern for the cycle. actually we made it already C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\26_scrpa_cycle.txt
+
+---
+
+**Cursor**
+
+
+Reading the 2026 cycle file and updating the cycle calendar CSV with 2026 entries. Checking why the 7-day filtered CSV wasn't created. Converting the 2026 cycle data to the CSV format and appending it. Checking how the Excel conversion script uses the cycle calendar to understand why the 7-day CSV wasn't created. Updating the cycle calendar CSV with 2026 entries. Checking the Excel conversion script to see how it uses the cycle calendar:
+
+
+
+Updating the cycle calendar CSV with 2026 entries. Converting dates from 2-digit to 4-digit years and adding the "26" prefix to Report_Name. ```csv
+Report_Due_Date,7_Day_Start,7_Day_End,28_Day_Start,28_Day_End,Report_Name
+01/07/2025,12/31/2024,01/06/2025,12/10/2024,01/06/2025,25C01W01
+01/14/2025,01/07/2025,01/13/2025,12/17/2024,01/13/2025,25C01W02
+01/21/2025,01/14/2025,01/20/2025,12/24/2024,01/20/2025,25C01W03
+01/28/2025,01/21/2025,01/27/2025,12/31/2024,01/27/2025,25C01W04
+02/04/2025,01/28/2025,02/03/2025,01/07/2025,02/03/2025,25C02W05
+02/11/2025,02/04/2025,02/10/2025,01/14/2025,02/10/2025,25C02W06
+02/18/2025,02/11/2025,02/17/2025,01/21/2025,02/17/2025,25C02W07
+02/25/2025,02/18/2025,02/24/2025,01/28/2025,02/24/2025,25C02W08
+03/04/2025,02/25/2025,03/03/2025,02/04/2025,03/03/2025,25C03W09
+03/11/2025,03/04/2025,03/10/2025,02/11/2025,03/10/2025,25C03W10
+03/18/2025,03/11/2025,03/17/2025,02/18/2025,03/17/2025,25C03W11
+03/25/2025,03/18/2025,03/24/2025,02/25/2025,03/24/2025,25C03W12
+04/01/2025,03/25/2025,03/31/2025,03/04/2025,03/31/2025,25C04W13
+04/08/2025,04/01/2025,04/07/2025,03/11/2025,04/07/2025,25C04W14
+04/15/2025,04/08/2025,04/14/2025,03/18/2025,04/14/2025,25C04W15
+04/22/2025,04/15/2025,04/21/2025,03/25/2025,04/21/2025,25C04W16
+04/29/2025,04/22/2025,04/28/2025,04/01/2025,04/28/2025,25C05W17
+05/06/2025,04/29/2025,05/05/2025,04/08/2025,05/05/2025,25C05W18
+05/13/2025,05/06/2025,05/12/2025,04/15/2025,05/12/2025,25C05W19
+05/20/2025,05/13/2025,05/19/2025,04/22/2025,05/19/2025,25C05W20
+05/27/2025,05/20/2025,05/26/2025,04/29/2025,05/26/2025,25C06W21
+06/03/2025,05/27/2025,06/02/2025,05/06/2025,06/02/2025,25C06W23
+06/10/2025,06/03/2025,06/09/2025,05/13/2025,06/09/2025,25C06W23
+06/17/2025,06/10/2025,06/16/2025,05/20/2025,06/16/2025,25C06W24
+06/24/2025,06/17/2025,06/23/2025,05/27/2025,06/23/2025,25C07W25
+07/01/2025,06/24/2025,06/30/2025,06/03/2025,06/30/2025,25C07W26
+07/08/2025,07/01/2025,07/07/2025,06/10/2025,07/07/2025,25C07W27
+07/15/2025,07/08/2025,07/14/2025,06/17/2025,07/14/2025,25C07W28
+07/22/2025,07/15/2025,07/21/2025,06/24/2025,07/21/2025,25C08W29
+07/29/2025,07/22/2025,07/28/2025,07/01/2025,07/28/2025,25C08W30
+08/05/2025,07/29/2025,08/04/2025,07/08/2025,08/04/2025,25C08W31
+08/12/2025,08/05/2025,08/11/2025,07/15/2025,08/11/2025,25C08W32
+08/19/2025,08/12/2025,08/18/2025,07/22/2025,08/18/2025,25C09W33
+08/26/2025,08/19/2025,08/25/2025,07/29/2025,08/25/2025,25C09W34
+09/02/2025,08/26/2025,09/01/2025,08/05/2025,09/01/2025,25C09W35
+09/09/2025,09/02/2025,09/08/2025,08/12/2025,09/08/2025,25C09W36
+09/16/2025,09/09/2025,09/15/2025,08/19/2025,09/15/2025,25C10W37
+09/23/2025,09/16/2025,09/22/2025,08/26/2025,09/22/2025,25C10W38
+09/30/2025,09/23/2025,09/29/2025,09/02/2025,09/29/2025,25C10W39
+10/07/2025,09/30/2025,10/06/2025,09/09/2025,10/06/2025,25C10W40
+10/14/2025,10/07/2025,10/13/2025,09/16/2025,10/13/2025,25C11W41
+10/21/2025,10/14/2025,10/20/2025,09/23/2025,10/20/2025,25C11W42
+10/28/2025,10/21/2025,10/27/2025,09/30/2025,10/27/2025,25C11W43
+11/04/2025,10/28/2025,11/03/2025,10/07/2025,11/03/2025,25C11W44
+11/11/2025,11/04/2025,11/10/2025,10/14/2025,11/10/2025,25C12W45
+11/18/2025,11/11/2025,11/17/2025,10/21/2025,11/17/2025,25C12W46
+11/25/2025,11/18/2025,11/24/2025,10/28/2025,11/24/2025,25C12W47
+12/02/2025,11/25/2025,12/01/2025,11/04/2025,12/01/2025,25C12W48
+12/09/2025,12/02/2025,12/08/2025,11/11/2025,12/08/2025,25C13W49
+12/16/2025,12/09/2025,12/15/2025,11/18/2025,12/15/2025,25C13W50
+12/23/2025,12/16/2025,12/22/2025,11/25/2025,12/22/2025,25C13W51
+12/30/2025,12/23/2025,12/29/2025,12/02/2025,12/29/2025,25C13W52
+01/06/2026,12/30/2025,01/05/2026,12/09/2025,01/05/2026,26C01W01
+01/13/2026,01/06/2026,01/12/2026,12/16/2025,01/12/2026,26C01W02
+01/20/2026,01/13/2026,01/19/2026,12/23/2025,01/19/2026,26C01W03
+01/27/2026,01/20/2026,01/26/2026,12/30/2025,01/26/2026,26C01W04
+02/03/2026,01/27/2026,02/02/2026,01/06/2026,02/02/2026,26C02W05
+02/10/2026,02/03/2026,02/09/2026,01/13/2026,02/09/2026,26C02W06
+02/17/2026,02/10/2026,02/16/2026,01/20/2026,02/16/2026,26C02W07
+02/24/2026,02/17/2026,02/23/2026,01/27/2026,02/23/2026,26C02W08
+03/03/2026,02/24/2026,03/02/2026,02/03/2026,03/02/2026,26C03W09
+03/10/2026,03/03/2026,03/09/2026,02/10/2026,03/09/2026,26C03W10
+03/17/2026,03/10/2026,03/16/2026,02/17/2026,03/16/2026,26C03W11
+03/24/2026,03/17/2026,03/23/2026,02/24/2026,03/23/2026,26C03W12
+03/31/2026,03/24/2026,03/30/2026,03/03/2026,03/30/2026,26C04W13
+04/07/2026,03/31/2026,04/06/2026,03/10/2026,04/06/2026,26C04W14
+04/14/2026,04/07/2026,04/13/2026,03/17/2026,04/13/2026,26C04W15
+04/21/2026,04/14/2026,04/20/2026,03/24/2026,04/20/2026,26C04W16
+04/28/2026,04/21/2026,04/27/2026,03/31/2026,04/27/2026,26C05W17
+05/05/2026,04/28/2026,05/04/2026,04/07/2026,05/04/2026,26C05W18
+05/12/2026,05/05/2026,05/11/2026,04/14/2026,05/11/2026,26C05W19
+05/19/2026,05/12/2026,05/18/2026,04/21/2026,05/18/2026,26C05W20
+05/26/2026,05/19/2026,05/25/2026,04/28/2026,05/25/2026,26C06W21
+06/02/2026,05/26/2026,06/01/2026,05/05/2026,06/01/2026,26C06W22
+06/09/2026,06/02/2026,06/08/2026,05/12/2026,06/08/2026,26C06W23
+06/16/2026,06/09/2026,06/15/2026,05/19/2026,06/15/2026,26C06W24
+06/23/2026,06/16/2026,06/22/2026,05/26/2026,06/22/2026,26C07W25
+06/30/2026,06/23/2026,06/29/2026,06/02/2026,06/29/2026,26C07W26
+07/07/2026,06/30/2026,07/06/2026,06/09/2026,07/06/2026,26C07W27
+07/14/2026,07/07/2026,07/13/2026,06/16/2026,07/13/2026,26C07W28
+07/21/2026,07/14/2026,07/20/2026,06/23/2026,07/20/2026,26C08W29
+07/28/2026,07/21/2026,07/27/2026,06/30/2026,07/27/2026,26C08W30
+08/04/2026,07/28/2026,08/03/2026,07/07/2026,08/03/2026,26C08W31
+08/11/2026,08/04/2026,08/10/2026,07/14/2026,08/10/2026,26C08W32
+08/18/2026,08/11/2026,08/17/2026,07/21/2026,08/17/2026,26C09W33
+08/25/2026,08/18/2026,08/24/2026,07/28/2026,08/24/2026,26C09W34
+09/01/2026,08/25/2026,08/31/2026,08/04/2026,08/31/2026,26C09W35
+09/08/2026,09/01/2026,09/07/2026,08/11/2026,09/07/2026,26C09W36
+09/15/2026,09/08/2026,09/14/2026,08/18/2026,09/14/2026,26C10W37
+09/22/2026,09/15/2026,09/21/2026,08/25/2026,09/21/2026,26C10W38
+09/29/2026,09/22/2026,09/28/2026,09/01/2026,09/28/2026,26C10W39
+10/06/2026,09/29/2026,10/05/2026,09/08/2026,10/05/2026,26C10W40
+10/13/2026,10/06/2026,10/12/2026,09/15/2026,10/12/2026,26C11W41
+10/20/2026,10/13/2026,10/19/2026,09/22/2026,10/19/2026,26C11W42
+10/27/2026,10/20/2026,10/26/2026,09/29/2026,10/26/2026,26C11W43
+11/03/2026,10/27/2026,11/02/2026,10/06/2026,11/02/2026,26C11W44
+11/10/2026,11/03/2026,11/09/2026,10/13/2026,11/09/2026,26C12W45
+11/17/2026,11/10/2026,11/16/2026,10/20/2026,11/16/2026,26C12W46
+11/24/2026,11/17/2026,11/23/2026,10/27/2026,11/23/2026,26C12W47
+12/01/2026,11/24/2026,11/30/2026,11/03/2026,11/30/2026,26C12W48
+12/08/2026,12/01/2026,12/07/2026,11/10/2026,12/07/2026,26C13W49
+12/15/2026,12/08/2026,12/14/2026,11/17/2026,12/14/2026,26C13W50
+12/22/2026,12/15/2026,12/21/2026,11/24/2026,12/21/2026,26C13W51
+12/29/2026,12/22/2026,12/28/2026,12/01/2026,12/28/2026,26C13W52
+
+```
+
+
+Appending 2026 entries to the cycle calendar CSV:
+
+
+
+The cycle calendar CSV already includes 2026 entries (lines 54-105). The dates are in MM/DD/YYYY format and Report_Name includes the "26" prefix. Since the cycle calendar is updated, the missing 7-day filtered CSV is likely because:
+1. The Excel conversion ran before the calendar was updated, so it couldn't find the cycle for 01/06/2026. 2. The conversion script needs the cycle calendar to determine the date range for the 7-day filter. **Next steps:**
+1. Re-run the Excel conversion step now that the cycle calendar has 2026 entries. This should create the `*_ReportDate_Last7.csv` file. 2. Re-run the full workflow to regenerate the briefing CSV and strategic report for 2026-01-06. The cycle calendar is correct. For 01/06/2026:
+- **Report_Due_Date**: 01/06/2026
+- **7-Day Range**: 12/30/2025 to 01/05/2026
+- **28-Day Range**: 12/09/2025 to 01/05/2026
+- **Cycle Name**: 26C01W01
+
+Should I check the Excel conversion script to see how it uses the cycle calendar, or do you want to re-run the conversion step first? ---
+
+**User**
+
+check before we run
+
+---
+
+**Cursor**
+
+
+Checking how the Excel conversion script uses the cycle calendar to understand why the 7-day filtered CSV wasn't created. Locating and reading the Excel conversion script to see how it uses the cycle calendar:
+
+
+
+Reading the relevant sections of the Excel conversion script:
+
+
+
+Searching for where the script filters the last 7 days:
+
+
+
+Found the issue. The `_write_last7_by_reportdate_csv` function (lines 608-639) uses a simple "last 7 days from today" calculation instead of the cycle calendar:
+
+```python
+today = datetime.now().date()
+start_date = today - timedelta(days=7)
+```
+
+This doesn't use the cycle calendar, so it filters the last 7 days from today rather than the cycle's 7-day range. Checking if the script can access the cycle calendar or if we need to modify it:
+
+
+```python
+today = datetime.now().date()
+start_date = today - timedelta(days=7)
+```
+
+
+## Issue found
+
+The `export_excel_sheets_to_csv.py` script does not use the cycle calendar. The `_write_last7_by_reportdate_csv` function (lines 608-639) uses a simple "last 7 days from today" calculation:
+
+```python
+today = datetime.now().date()
+start_date = today - timedelta(days=7)  # ❌ Not using cycle calendar! ```
+
+This means:
+- It filters the last 7 days from today, not the cycle's 7-day range
+- It ignores the cycle calendar, even though 2026 entries are present
+- For 01/06/2026, it would filter 12/30/2025-01/06/2026 (today - 7 days) instead of the cycle range 12/30/2025-01/05/2026
+
+## What needs to be fixed
+
+The script should:
+1. Check for a `REPORT_DATE` environment variable (already set by the batch file)
+2. Use the cycle calendar to look up the correct 7-day range for that date
+3. Filter using the cycle's `7_Day_Start` and `7_Day_End` dates instead of "today - 7 days"
+
+## Current status
+
+- Cycle calendar: updated with 2026 entries
+- Export script: needs modification to use the cycle calendar
+
+Should I update `export_excel_sheets_to_csv.py` to use the cycle calendar for the 7-day filter? This will ensure it uses the correct cycle boundaries instead of a simple "today - 7 days" calculation. ```python
+today = datetime.now().date()
+start_date = today - timedelta(days=7)  # ❌ Not using cycle calendar! ```
+
+---
+
+**User**
+
+yes update and then  run it
+
+---
+
+**Cursor**
+
+
+Updating the script to use the cycle calendar, then running it. Updating the export script to use the cycle calendar:
+
+
+```python
+# export_excel_sheets_to_csv.py
+# Changes: Added --all-sheets flag, timeouts, custom exceptions, JSON logging, tqdm progress, streaming writer
+
+import argparse
+import os
+import re
+import json
+import hashlib
+import time
+import psutil
+import shutil
+from pathlib import Path
+from datetime import datetime, time as dtime, date, timedelta as dtdelta
+import fnmatch
+import csv
+import logging
+import signal
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
+warnings.filterwarnings("ignore", category=UserWarning, module="dateutil.parser")
+
+from openpyxl import load_workbook
+from openpyxl.utils.cell import range_boundaries, get_column_letter
+from openpyxl.utils import column_index_from_string
+import pandas as pd
+
+# Custom Exceptions
+class ExportTimeoutError(Exception):
+    pass
+
+class ExportError(Exception):
+    pass
+
+# Logging Setup
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+handler = logging.FileHandler('export_log.json')
+handler.setFormatter(logging.Formatter('{"time": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}'))
+logger.addHandler(handler)
+
+# Timeout Handler (Windows compatible)
+import threading
+import time
+
+def timeout_handler(timeout_seconds):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            result = [None]
+            exception = [None]
+            
+            def target():
+                try:
+                    result[0] = func(*args, **kwargs)
+                except Exception as e:
+                    exception[0] = e
+            
+            thread = threading.Thread(target=target)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout_seconds)
+            
+            if thread.is_alive():
+                raise ExportTimeoutError(f"Export timed out after {timeout_seconds} seconds")
+            
+            if exception[0]:
+                raise exception[0]
+            
+            return result[0]
+        return wrapper
+    return decorator
+
+BASE_DEFAULT = r"C:\Users\carucci_r\OneDrive - City of Hackensack"
+OUT_SUBFOLDER_DEFAULT = r"C:\Users\carucci_r\OneDrive - City of Hackensack\14_Excel\xlsx_to_csv"
+
+# Archive configuration
+ARCHIVE_BASE = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS")
+RMS_ARCHIVE = ARCHIVE_BASE / "_RMS" / "SCRPA" / "archive"
+CAD_ARCHIVE = ARCHIVE_BASE / "_CAD" / "SCRPA" / "archive"
+
+_TIME_RE = re.compile(r"^\s*\d{1,2}:\d{2}(:\d{2})?\s*$")
+
+def get_archive_folder(filepath: Path) -> Path:
+    """Determine archive folder based on file path (CAD or RMS)"""
+    folder = CAD_ARCHIVE if "_CAD" in str(filepath) else RMS_ARCHIVE
+    folder.mkdir(parents=True, exist_ok=True)
+    
+    # Extract date from filename if present, else use today
+    date_match = re.search(r"(\d{4}[-_]\d{2}[-_]\d{2})|(\d{8})", filepath.name)
+    if date_match:
+        date_str = date_match.group(0).replace("_", "-")
+        # Normalize to YYYY-MM-DD format
+        if len(date_str) == 8:  # YYYYMMDD
+            date_str = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+    else:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+    
+    dated_folder = folder / date_str
+    dated_folder.mkdir(exist_ok=True)
+    return dated_folder
+
+def archive_old_files(folder: Path, dry_run: bool = False, exclude_file: str = None):
+    """Archive old .xlsx and .csv files from the working directory
+    
+    Args:
+        folder: Directory to archive files from
+        dry_run: If True, only show what would be archived
+        exclude_file: Path to file to exclude from archiving (e.g., file being processed)
+    """
+    if not folder.exists():
+        logger.info(f"Archive folder does not exist: {folder}")
+        return 0
+    
+    script_name = Path(__file__).name
+    archive_count = 0
+    files_to_archive = []
+    
+    # Normalize exclude_file path for comparison
+    exclude_path = None
+    if exclude_file:
+        exclude_path = Path(exclude_file).resolve()
+    
+    # Build set of Excel file timestamp prefixes to keep matching CSV files
+    excel_timestamps = set()
+    try:
+        for item in folder.iterdir():
+            try:
+                if item.is_file() and item.suffix.lower() == ".xlsx" and item.name != script_name:
+                    if "archive" not in str(item.parent):
+                        # Extract timestamp prefix (format: YYYY_MM_DD_HH_MM_SS_SCRPA_RMS)
+                        # CSV files will have same prefix: {timestamp}_SCRPA_RMS.csv or {timestamp}_SCRPA_RMS_ReportDate_Last7.csv
+                        stem = item.stem  # e.g., "2025_12_02_01_14_15_SCRPA_RMS"
+                        excel_timestamps.add(stem)
+            except (OSError, PermissionError) as e:
+                logger.warning(f"Could not access file {item.name}: {e}")
+                continue
+    except Exception as e:
+        logger.error(f"Error building Excel timestamp set: {e}")
+        # Continue anyway - worst case we archive everything
+    
+    for item in folder.iterdir():
+        try:
+            if not item.is_file() or item.suffix.lower() not in {".xlsx", ".csv"} or item.name == script_name:
+                continue
+            
+            # Skip files that are already in archive subdirectories
+            if "archive" in str(item.parent):
+                continue
+            
+            # Skip the file being processed
+            try:
+                if exclude_path and item.resolve() == exclude_path:
+                    logger.debug(f"Skipping current file from archive: {item.name}")
+                    continue
+            except (OSError, PermissionError):
+                # If we can't resolve the path, skip it
+                continue
+            
+            # For CSV files: keep if they match an existing Excel file timestamp
+            if item.suffix.lower() == ".csv":
+                try:
+                    csv_stem = item.stem
+                    # Check if this CSV matches any Excel file timestamp
+                    # CSV names: {timestamp}_SCRPA_RMS.csv or {timestamp}_SCRPA_RMS_ReportDate_Last7.csv
+                    # Excel names: {timestamp}_SCRPA_RMS.xlsx
+                    matches_excel = False
+                    for excel_stem in excel_timestamps:
+                        # Check if CSV stem starts with Excel stem (handles both full CSV and Last7 CSV)
+                        if csv_stem.startswith(excel_stem):
+                            matches_excel = True
+                            break
+                    if matches_excel:
+                        logger.debug(f"Keeping CSV file (matches Excel): {item.name}")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Error checking CSV file {item.name}: {e}")
+                    # If we can't check, err on the side of caution and archive it
+                    pass
+            
+            files_to_archive.append(item)
+        except (OSError, PermissionError) as e:
+            logger.warning(f"Could not process file {item.name}: {e}")
+            continue
+        except Exception as e:
+            logger.warning(f"Unexpected error processing {item.name}: {e}")
+            continue
+    
+    if not files_to_archive:
+        logger.info("No files to archive")
+        return 0
+    
+    if dry_run:
+        print(f"\n[DRY-RUN] Would archive {len(files_to_archive)} file(s):")
+        for item in files_to_archive:
+            dest = get_archive_folder(item)
+            print(f"  {item.name} -> {dest / item.name}")
+        return len(files_to_archive)
+    
+    for item in files_to_archive:
+        try:
+            dest = get_archive_folder(item)
+            dest_file = dest / item.name
+            
+            # Handle duplicates by adding timestamp
+            if dest_file.exists():
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                stem = dest_file.stem
+                suffix = dest_file.suffix
+                dest_file = dest / f"{stem}_{timestamp}{suffix}"
+            
+            shutil.move(str(item), str(dest_file))
+            archive_count += 1
+            logger.info(f"Archived: {item.name} -> {dest_file}")
+        except Exception as e:
+            logger.warning(f"Failed to archive {item.name}: {e}")
+    
+    if archive_count > 0:
+        logger.info(f"Archived {archive_count} file(s)")
+    
+    return archive_count
+
+def sanitize_filename(name: str, used: set) -> str:
+    fn = re.sub(r'[<>:"/\\|? *\x00-\x1F]', '_', name).strip().strip('.')

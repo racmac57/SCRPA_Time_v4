@@ -1,0 +1,198 @@
+// 2025-12-29-19-35-00
+# SCRPA_Time_v3/m_code_period_fix.txt
+# Author: R. A. Carucci
+# Purpose: Corrected M Code for cycle-based Period classification using Incident Date (not Report Date)
+
+/*
+=================================================================================================
+CRITICAL FIX: PERIOD CLASSIFICATION BASED ON INCIDENT DATE VS CYCLE BOUNDARIES
+=================================================================================================
+
+PROBLEM:
+--------
+Current M Code calculates "Period" (7-Day, 28-Day, YTD) based on Report_Date proximity to "Today":
+    - Result: BACKFILL cases (incident before cycle, reported during cycle) are incorrectly 
+      included in 7-Day charts
+    - Example: Case 25-113076 - Incident 12/20/25, Report 12/28/25
+      * Should appear ONLY in lagday table
+      * Currently appears in 7-Day chart (WRONG)
+
+SOLUTION:
+---------
+Period must be based on whether INCIDENT DATE falls within cycle boundaries, NOT report date.
+This ensures:
+    ✅ 7-Day charts show only incidents that OCCURRED during the cycle
+    ✅ Backfill cases appear ONLY in lagday tables
+    ✅ Charts accurately reflect tactical crime patterns (not reporting delays)
+
+=================================================================================================
+*/
+
+
+// ===========================================
+// STEP 1: LOAD CYCLE CALENDAR (IF NOT ALREADY LOADED)
+// ===========================================
+
+// Only include this if you haven't already loaded CycleCalendarTable earlier in your query
+CycleCalendar = Csv.Document(File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv")),
+CycleCalendarTable = Table.PromoteHeaders(CycleCalendar),
+
+
+// ===========================================
+// STEP 2: REPLACE YOUR CURRENT "Period" CALCULATION
+// ===========================================
+
+// DELETE your current Period_Added step and REPLACE with this:
+
+Period_Added = Table.AddColumn(
+    Report_Date_Added,  // Or whatever your previous step is named
+    "Period",
+    each 
+        let
+            IncidentDate = [Incident_Date_Date],  // MUST be a date type, not text
+            
+            // ===== GET CURRENT CYCLE FROM CALENDAR =====
+            Today = Date.From(DateTime.LocalNow()),
+            CurrentCycle = Table.SelectRows(
+                CycleCalendarTable,
+                each 
+                    let
+                        StartDate = Date.FromText([7_Day_Start]),
+                        EndDate = Date.FromText([7_Day_End])
+                    in Today >= StartDate and Today <= EndDate
+            ),
+            
+            // ===== EXTRACT CURRENT CYCLE BOUNDARIES =====
+            HasCurrentCycle = not Table.IsEmpty(CurrentCycle),
+            Cycle7DayStart = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[7_Day_Start]) else null,
+            Cycle7DayEnd = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[7_Day_End]) else null,
+            
+            // Get 28-Day boundaries (if needed for your reporting)
+            Cycle28DayStart = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[28_Day_Start]) else null,
+            Cycle28DayEnd = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[28_Day_End]) else null,
+            
+            // ===== PERIOD CLASSIFICATION BASED ON INCIDENT DATE =====
+            Period = 
+                if IncidentDate = null then "Historical"
+                else if HasCurrentCycle then
+                    // Check if incident occurred within current 7-day cycle
+                    if IncidentDate >= Cycle7DayStart and IncidentDate <= Cycle7DayEnd then "7-Day"
+                    // Check if incident occurred within current 28-day cycle
+                    else if IncidentDate >= Cycle28DayStart and IncidentDate <= Cycle28DayEnd then "28-Day"
+                    // Check if incident occurred in current year
+                    else if Date.Year(IncidentDate) = Date.Year(DateTime.LocalNow()) then "YTD"
+                    else "Historical"
+                else 
+                    // Fallback if no current cycle found
+                    if Date.Year(IncidentDate) = Date.Year(DateTime.LocalNow()) then "YTD"
+                    else "Historical"
+        in Period,
+    type text
+),
+
+
+// ===========================================
+// STEP 3: ENSURE BACKFILL FLAG IS CORRECTLY IMPLEMENTED
+// ===========================================
+
+// Your Backfill_7Day flag should remain UNCHANGED (it's already correct):
+
+Backfill_Flag_Added = Table.AddColumn(
+    Period_Added,  // Note: now uses the FIXED Period_Added step
+    "Backfill_7Day",
+    each 
+        let
+            IncidentDate = [Incident_Date_Date],
+            ReportDate = [Report_Date],
+            
+            // Find current cycle
+            Today = Date.From(DateTime.LocalNow()),
+            CurrentCycle = Table.SelectRows(
+                CycleCalendarTable,
+                each 
+                    let
+                        StartDate = Date.FromText([7_Day_Start]),
+                        EndDate = Date.FromText([7_Day_End])
+                    in Today >= StartDate and Today <= EndDate
+            ),
+            
+            // Extract boundaries
+            HasCurrentCycle = not Table.IsEmpty(CurrentCycle),
+            CycleStartDate = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[7_Day_Start]) else null,
+            CycleEndDate = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[7_Day_End]) else null,
+            
+            // Backfill logic: Incident BEFORE cycle, Report DURING cycle
+            IsBackfill = 
+                if HasCurrentCycle and IncidentDate <> null and ReportDate <> null then
+                    (IncidentDate < CycleStartDate) and 
+                    (ReportDate >= CycleStartDate and ReportDate <= CycleEndDate)
+                else false
+        in IsBackfill,
+    type logical
+),
+
+
+// ===========================================
+// VALIDATION LOGIC (OPTIONAL BUT RECOMMENDED)
+// ===========================================
+
+// Add a validation column to help identify potential issues:
+
+Validation_Added = Table.AddColumn(
+    Backfill_Flag_Added,
+    "Period_Validation",
+    each 
+        if [Period] = "7-Day" and [Backfill_7Day] = true then 
+            "⚠️ ERROR: 7-Day incident should NOT be backfill"
+        else if [Period] <> "7-Day" and [Backfill_7Day] = true then 
+            "✅ CORRECT: Backfill flagged, not in 7-Day period"
+        else if [Period] = "7-Day" and [Backfill_7Day] = false then 
+            "✅ CORRECT: True 7-Day incident"
+        else 
+            "✅ OK",
+    type text
+),
+
+
+/*
+=================================================================================================
+USAGE NOTES:
+=================================================================================================
+
+1. REPLACE your existing Period_Added step with the corrected version above
+
+2. VERIFY your [Incident_Date_Date] column exists and is type DATE (not text)
+   - If it's text, add conversion step BEFORE Period_Added:
+   
+   Incident_Date_Converted = Table.TransformColumns(
+       PreviousStep,
+       {{"Incident_Date_Date", each Date.From(_), type date}}
+   ),
+
+3. POWER BI VISUALIZATION FILTERS:
+   
+   For 7-Day Charts:
+   - Filter: [Period] = "7-Day"
+   - Additional filter (optional): [Backfill_7Day] = false (extra safety)
+   
+   For Lagday Table:
+   - Filter: [Backfill_7Day] = true
+
+4. VERIFICATION STEPS:
+   a) Check Period_Validation column for any "⚠️ ERROR" entries
+   b) Count incidents where Period = "7-Day" → should match IN_CYCLE count from validation script
+   c) Count incidents where Backfill_7Day = true → should match BACKFILL count from validation script
+
+=================================================================================================
+EXPECTED RESULTS FOR C13W51 (12/23/25 - 12/29/25):
+=================================================================================================
+
+Burglary - Commercial | Residence:
+    7-Day chart:         0 incidents (both cases are backfill)
+    Lagday table:        2 incidents (Case 25-111319, Case 25-113076)
+
+ALL CRIMES:
+    Run validation script to get accurate counts for each crime category
+
+=================================================================================================
+*/

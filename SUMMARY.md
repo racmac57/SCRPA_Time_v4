@@ -249,7 +249,45 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ### Recent Improvements
 
-#### v1.5.0 (Latest)
+#### v1.7.0 (Latest)
+- ✅ **Project Structure Reorganization**
+  - Organized M code into `m_code/` directory with `archive/` subdirectory
+  - Created `preview_tables/` directory for Power BI CSV previews
+  - Moved documentation files to `doc/` directory
+  - Improved project organization and maintainability
+- ✅ **Period Classification Fix**
+  - Fixed Period calculation logic to correctly identify 7-Day vs 28-Day periods
+  - Improved cycle detection when Today is after cycle end date
+  - Added explicit null checks and clearer logic flow
+  - Added diagnostic column for troubleshooting Period assignments
+- ✅ **Period Label Improvements**
+  - Changed "2025 Historical" to "Prior Year" for cleaner, shorter labels
+  - Automatically applies to prior year (dynamic, not hardcoded)
+- ✅ **Visual Color Scheme Update**
+  - Prior Year: `#7F92A2` (gray-blue)
+  - YTD: `#118DFF` (blue)
+  - 28-Day: `#77C99A` (green)
+  - 7-Day: (existing color)
+- ✅ **Cycle Calendar Maintenance**
+  - Updated filename: `7Day_28Day_Cycle_20260106.csv` (reflecting 2026 data)
+  - Updated all M code references to new filename
+- ✅ **M Code Quality Improvements**
+  - Fixed broken file paths (single continuous strings)
+  - Configured VS Code to prevent auto-formatting of M files
+  - Improved code organization and maintainability
+
+#### v1.6.0
+- ✅ Cycle calendar extended with 2026 entries (all 52 weeks)
+- ✅ 7-day CSV filtering now uses cycle calendar for accurate date ranges
+  - Fixed to use actual cycle boundaries instead of simple "today - 7 days" calculation
+  - Reads REPORT_DATE environment variable and looks up correct cycle dates
+  - 7-day filtered CSV files now match cycle calendar dates exactly
+- ✅ Excel conversion script enhanced with cycle calendar integration
+  - Added cycle calendar lookup function
+  - Supports both openpyxl and calamine engines
+  - Falls back to simple calculation if cycle calendar lookup fails
+
+#### v1.5.0
 - ✅ Zone formatting fixed - displays as whole numbers instead of decimals
 - ✅ Date filtering fixed - correctly excludes incidents outside cycle range
   - Fixed in both `prepare_briefing_csv.py` and `scrpa_7day_restructure.py`
@@ -300,11 +338,11 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 **System Owner**: R. A. Carucci  
 **Department**: City of Hackensack Police Department  
-**Last Updated**: December 29, 2025
+**Last Updated**: January 6, 2026
 
 ---
 
-**Version**: 1.5.0  
+**Version**: 1.7.0  
 **Status**: Production  
 **License**: Internal Use Only
 

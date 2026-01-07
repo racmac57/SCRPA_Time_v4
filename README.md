@@ -10,6 +10,16 @@ The SCRPA Reporting System automates the generation of weekly crime analysis rep
 
 ---
 
+## Project Structure
+
+### Directory Organization
+
+- **`m_code/`** - Active Power BI M code queries (staging and main queries)
+  - **`m_code/archive/`** - Archived or deprecated M code queries
+- **`preview_tables/`** - CSV preview exports from Power BI queries for validation
+- **`time_based/`** - Organized report folders by cycle (YYYY/CCWWW_YY_MM_DD/)
+- **`doc/`** - Documentation and analysis files
+
 ## Quick Start
 
 ### Running a Complete Report
@@ -39,17 +49,30 @@ The SCRPA Reporting System automates the generation of weekly crime analysis rep
 
 ```
 16_Reports\SCRPA\
-├── Time_Based\
-│   └── 2025\
-│       └── 25C12W49_25_12_09\          # Report folder (date-based)
-│           ├── 25C12W49_25_12_09.pbix  # Power BI template
-│           ├── Data\                    # CSV files
-│           ├── Reports\                 # HTML and PDF files
-│           └── Documentation\           # Markdown files and prompts
-├── doc\                                  # System documentation
+├── m_code\                               # Power BI M Code Queries
+│   ├── all_crimes.m                     # Main transformation query
+│   ├── q_RMS_Source.m                   # Staging: Loads Excel file
+│   ├── q_CycleCalendar.m                # Staging: Loads cycle calendar
+│   ├── q_CallTypeCategories.m           # Staging: Loads category mapping
+│   ├── archive\                         # Archived/deprecated M code
+│   └── README.md                        # M code documentation
+├── preview_tables\                       # Power BI CSV Preview Exports
+│   └── README.md                        # Preview tables documentation
+├── time_based\                           # Organized Report Folders
+│   ├── 2025\
+│   │   └── 25C12W49_25_12_09\          # Report folder (date-based)
+│   │       ├── 25C12W49_25_12_09.pbix  # Power BI template
+│   │       ├── Data\                    # CSV files
+│   │       ├── Reports\                 # HTML and PDF files
+│   │       └── Documentation\           # Markdown files and prompts
+│   └── 2026\
+├── doc\                                  # System documentation & analysis
+│   ├── raw\                             # Raw documentation files
+│   └── chunked\                         # Chunked documentation
 ├── README.md                             # This file
 ├── CHANGELOG.md                          # Version history
-└── SUMMARY.md                            # System summary
+├── SUMMARY.md                            # System summary
+└── PROJECT_STRUCTURE.md                  # Detailed structure guide
 ```
 
 ---
@@ -196,7 +219,42 @@ For issues or questions:
 
 ## Recent Updates
 
-### v1.5.0 (Latest)
+### v1.7.0 (Latest)
+- ✅ **Project Structure Reorganization**: Organized M code and preview tables into dedicated directories
+  - `m_code/` - Active Power BI M code queries
+  - `m_code/archive/` - Archived/deprecated M code
+  - `preview_tables/` - CSV preview exports from Power BI
+  - `doc/` - Documentation and analysis files
+- ✅ **Period Classification Fix**: Fixed Period calculation logic for accurate 7-Day/28-Day/YTD classification
+  - Improved cycle detection when Today is after cycle end
+  - Added explicit null checks for cycle boundaries
+  - Fixed 7-Day period check to prevent incorrect 28-Day classification
+  - Added diagnostic column (`_Period_Debug`) for troubleshooting
+- ✅ **Period Label Update**: Changed "2025 Historical" to "Prior Year" for cleaner, shorter labels
+  - Automatically applies to prior year (currently 2025, will be 2026 next year)
+  - More intuitive and consistent naming
+- ✅ **Color Scheme Update**: Updated visual color assignments
+  - Prior Year: `#7F92A2` (gray-blue)
+  - YTD: `#118DFF` (blue)
+  - 28-Day: `#77C99A` (green - unchanged)
+  - 7-Day: (existing color - unchanged)
+- ✅ **Cycle Calendar Update**: Updated filename timestamp to reflect 2026 data
+  - Renamed: `7Day_28Day_Cycle_20250414.csv` → `7Day_28Day_Cycle_20260106.csv`
+  - Updated all M code references to new filename
+- ✅ **M Code File Path Fixes**: Fixed broken file paths in M code queries
+  - All file paths now single continuous strings (no line breaks)
+  - Prevents syntax errors and incorrect path construction
+  - Updated VS Code settings to prevent auto-formatting of M files
+
+### v1.6.0
+- ✅ **Cycle Calendar 2026 Support**: Added all 2026 cycle entries to cycle calendar CSV
+- ✅ **7-Day CSV Date Range Fix**: Excel conversion now uses cycle calendar for accurate 7-day filtering
+  - Fixed date range calculation to use actual cycle boundaries instead of "today - 7 days"
+  - Script reads REPORT_DATE environment variable and looks up correct cycle dates
+  - 7-day filtered CSV files now match cycle calendar dates exactly
+  - Works with both openpyxl and calamine engines
+
+### v1.5.0
 - ✅ **Zone Formatting Fix**: Zone values now display as whole numbers (5, 8) instead of decimals (5.0, 8.0)
 - ✅ **Date Filtering Fix**: Incidents outside cycle date range are now correctly excluded
   - Fixed in both `prepare_briefing_csv.py` and `scrpa_7day_restructure.py`
@@ -245,8 +303,8 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.5.0  
-**Last Updated**: December 29, 2025  
+**Current Version**: 1.7.0  
+**Last Updated**: January 6, 2026  
 **Maintained By**: R. A. Carucci
 
 ---
