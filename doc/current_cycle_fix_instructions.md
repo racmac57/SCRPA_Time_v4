@@ -1,0 +1,226 @@
+// 2025-12-30-15-05-00
+# SCRPA_Time_v3/current_cycle_fix_instructions.md
+# Author: R. A. Carucci
+# Purpose: Step-by-step instructions to fix the CurrentCycleTbl lookup issue
+
+# Current Cycle Lookup Fix - Implementation Guide
+
+## 🔴 **The Problem**
+
+**Your data shows:**
+- 2 incidents occurred on 12/23-12/29 (current cycle)
+- Both show Period = "YTD" (WRONG - should be "7-Day")
+- Cycle_name correctly shows "25C13W51"
+
+**Root cause:**
+- You're refreshing on 12/30 (report due date)
+- Current cycle ended 12/29 (yesterday)
+- Lookup: `Today >= [7_Day_Start] and Today <= [7_Day_End]` returns EMPTY
+- Result: HasCurrentCycle = FALSE → all incidents classified as YTD
+
+---
+
+## ✅ **The Solution**
+
+Modify the CurrentCycleTbl lookup to find the **reporting cycle** (most recent cycle), not just cycles where Today is within the date range.
+
+---
+
+## 📋 **Step-by-Step Fix**
+
+### **Step 1: Open Power BI Power Query Editor**
+1. Open your SCRPA Power BI file
+2. Click **Home → Transform Data** (or Edit Queries)
+3. Find the **all_crimes** query in the left panel
+4. Click **Advanced Editor** button
+
+### **Step 2: Locate the Current Code**
+
+Find this section (around line 168):
+
+```m
+// ===========================================
+// CYCLE CALENDAR (from staged query) - MOVED EARLIER FOR PERIOD CALCULATION
+// ===========================================
+CurrentCycleTbl = Table.SelectRows(CycleCalendar_Staged, each Today >= [7_Day_Start] and Today <= [7_Day_End]),
+HasCurrentCycle = not Table.IsEmpty(CurrentCycleTbl),
+CurrentCycleStart = if HasCurrentCycle then CurrentCycleTbl{0}[7_Day_Start] else null,
+CurrentCycleEnd = if HasCurrentCycle then CurrentCycleTbl{0}[7_Day_End] else null,
+CurrentCycle28DayStart = if HasCurrentCycle then CurrentCycleTbl{0}[28_Day_Start] else null,
+CurrentCycle28DayEnd = if HasCurrentCycle then CurrentCycleTbl{0}[28_Day_End] else null,
+CurrentCycleName = if HasCurrentCycle then CurrentCycleTbl{0}[Report_Name] else null,
+```
+
+### **Step 3: Replace with Corrected Code**
+
+**DELETE the old CurrentCycleTbl line (line 168)**
+
+**REPLACE with this:**
+
+```m
+// ===========================================
+// CYCLE CALENDAR - FIND REPORTING CYCLE
+// ===========================================
+CurrentCycleTbl = 
+    let
+        // First try: Today within a cycle (for mid-cycle refreshes)
+        InCycle = Table.SelectRows(
+            CycleCalendar_Staged, 
+            each Today >= [7_Day_Start] and Today <= [7_Day_End]
+        ),
+        
+        // Second try: Find most recent cycle (for report day refreshes)
+        // This gets the cycle where 7_Day_End is closest to (but not after) Today
+        MostRecent = 
+            if Table.IsEmpty(InCycle) then
+                Table.FirstN(
+                    Table.Sort(
+                        Table.SelectRows(CycleCalendar_Staged, each [7_Day_End] <= Today),
+                        {{"7_Day_End", Order.Descending}}
+                    ),
+                    1
+                )
+            else InCycle
+    in
+        MostRecent,
+
+HasCurrentCycle = not Table.IsEmpty(CurrentCycleTbl),
+CurrentCycleStart = if HasCurrentCycle then CurrentCycleTbl{0}[7_Day_Start] else null,
+CurrentCycleEnd = if HasCurrentCycle then CurrentCycleTbl{0}[7_Day_End] else null,
+CurrentCycle28DayStart = if HasCurrentCycle then CurrentCycleTbl{0}[28_Day_Start] else null,
+CurrentCycle28DayEnd = if HasCurrentCycle then CurrentCycleTbl{0}[28_Day_End] else null,
+CurrentCycleName = if HasCurrentCycle then CurrentCycleTbl{0}[Report_Name] else null,
+```
+
+### **Step 4: Save and Apply**
+1. Click **Done** in Advanced Editor
+2. Click **Close & Apply** in Power Query Editor
+3. Wait for data refresh to complete
+
+---
+
+## 🎯 **Expected Results After Fix**
+
+### **Period Filter Should Show:**
+
+**Before Fix:**
+- ☑ Select all
+- ☑ YTD (231 records)
+- ☑ Historical (3 records)
+
+**After Fix:**
+- ☑ Select all
+- ☑ 7-Day (X records)
+- ☑ 28-Day (X records)
+- ☑ YTD (X records)
+- ☑ Historical (3 records)
+
+### **Specific Test Cases:**
+
+Your data has **2 incidents during 12/23-12/29:**
+
+**Before Fix:**
+```
+Period = "YTD"  ❌ WRONG
+```
+
+**After Fix:**
+```
+Period = "7-Day"  ✅ CORRECT
+```
+
+---
+
+## 🔍 **How It Works**
+
+The new logic handles two scenarios:
+
+### **Scenario 1: Mid-Cycle Refresh**
+- Today = 12/27 (within 12/23-12/29)
+- InCycle lookup finds the current cycle
+- Uses InCycle result
+
+### **Scenario 2: Report Day Refresh**
+- Today = 12/30 (after cycle ends on 12/29)
+- InCycle lookup returns empty
+- MostRecent finds the cycle where 7_Day_End <= Today (12/29 <= 12/30)
+- Sorts by 7_Day_End descending (most recent first)
+- Takes the first row (the cycle you're reporting on)
+
+Both scenarios correctly identify the **reporting cycle** (12/23-12/29).
+
+---
+
+## ✅ **Verification Steps**
+
+After applying the fix:
+
+1. **Check Period Filter:**
+   - Click on any chart
+   - Look at Filters pane → Period
+   - Should show 7-Day, 28-Day, YTD, Historical
+
+2. **Check Specific Incidents:**
+   - Filter for December 2025
+   - Check incidents from 12/23-12/29
+   - Verify Period = "7-Day"
+
+3. **Run Validation (Optional):**
+   ```bash
+   python validate_7day_backfill.py all_crimes.csv 2025-12-23 2025-12-29
+   ```
+
+---
+
+## 📊 **What This Fixes**
+
+### **Charts Will Now Show:**
+
+**Burglary - Commercial | Residence:**
+- 7-Day: Correct count (incidents during 12/23-12/29)
+- 28-Day: Correct count (incidents during 12/02-12/29, excluding 7-Day)
+- YTD: Correct count (rest of 2025)
+
+**All Crime Categories:**
+- Proper period distribution
+- Accurate tactical analysis (when crimes occurred)
+- Separate backfill tracking (delayed reports)
+
+---
+
+## ⚠️ **Important Notes**
+
+1. **This fix is CRITICAL** - without it, all incidents show as YTD regardless of when they occurred
+
+2. **Timing matters:**
+   - Always refresh during or after the reporting cycle
+   - Don't refresh weeks/months in advance (cycle won't exist yet)
+
+3. **Future cycles:**
+   - This fix works for ALL cycles, not just current one
+   - Will automatically find the correct reporting cycle each week
+
+---
+
+## 🆘 **Troubleshooting**
+
+**If Period still shows only YTD after fix:**
+
+1. **Check cycle calendar file:**
+   - Verify `7Day_28Day_Cycle_20250414.csv` exists
+   - Verify it has rows for C13W51 (12/23-12/29)
+   - Verify date format matches M Code expectations
+
+2. **Check date types in q_CycleCalendar:**
+   - 7_Day_Start should be type date
+   - 7_Day_End should be type date
+   - (Already fixed in your q_CycleCalendar.m)
+
+3. **Check Today calculation:**
+   - Should be: `Today = Date.From(DateTime.LocalNow())`
+   - Should be calculated BEFORE CurrentCycleTbl
+
+---
+
+**Last Updated:** 2025-12-30 15:05:00 EST  
+**Status:** Ready for implementation

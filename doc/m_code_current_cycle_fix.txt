@@ -1,0 +1,105 @@
+// 2025-12-30-15-00-00
+# SCRPA_Time_v3/m_code_current_cycle_fix.txt
+# Author: R. A. Carucci
+# Purpose: Fix CurrentCycleTbl lookup to handle when Today is after cycle end date
+
+/*
+=================================================================================================
+CRITICAL FIX: CURRENT CYCLE LOOKUP
+=================================================================================================
+
+PROBLEM:
+--------
+When you refresh Power BI on 12/30 (report due date), Today = 12/30/25
+But the cycle being reported is 12/23-12/29 (ended yesterday)
+The lookup: Today >= [7_Day_Start] and Today <= [7_Day_End] returns EMPTY
+Result: HasCurrentCycle = FALSE, all incidents show as YTD
+
+SOLUTION:
+---------
+Change the lookup to find the most recent 7-day cycle (the one we're reporting on)
+This handles both:
+- Mid-cycle refreshes (Today within cycle)
+- Report day refreshes (Today = day after cycle ends)
+
+=================================================================================================
+*/
+
+// REPLACE THIS SECTION IN YOUR all_crimes.m:
+// Lines 168-174 (the CurrentCycleTbl calculation)
+
+// ===========================================
+// CYCLE CALENDAR - FIND REPORTING CYCLE
+// ===========================================
+
+// OLD CODE (REMOVE):
+// CurrentCycleTbl = Table.SelectRows(CycleCalendar_Staged, each Today >= [7_Day_Start] and Today <= [7_Day_End]),
+
+// NEW CODE (USE THIS):
+CurrentCycleTbl = 
+    let
+        // First try: Today within a cycle (for mid-cycle refreshes)
+        InCycle = Table.SelectRows(
+            CycleCalendar_Staged, 
+            each Today >= [7_Day_Start] and Today <= [7_Day_End]
+        ),
+        
+        // Second try: Find most recent cycle (for report day refreshes)
+        // This gets the cycle where 7_Day_End is closest to (but not after) Today
+        MostRecent = 
+            if Table.IsEmpty(InCycle) then
+                Table.FirstN(
+                    Table.Sort(
+                        Table.SelectRows(CycleCalendar_Staged, each [7_Day_End] <= Today),
+                        {{"7_Day_End", Order.Descending}}
+                    ),
+                    1
+                )
+            else InCycle
+    in
+        MostRecent,
+
+HasCurrentCycle = not Table.IsEmpty(CurrentCycleTbl),
+CurrentCycleStart = if HasCurrentCycle then CurrentCycleTbl{0}[7_Day_Start] else null,
+CurrentCycleEnd = if HasCurrentCycle then CurrentCycleTbl{0}[7_Day_End] else null,
+CurrentCycle28DayStart = if HasCurrentCycle then CurrentCycleTbl{0}[28_Day_Start] else null,
+CurrentCycle28DayEnd = if HasCurrentCycle then CurrentCycleTbl{0}[28_Day_End] else null,
+CurrentCycleName = if HasCurrentCycle then CurrentCycleTbl{0}[Report_Name] else null,
+
+/*
+=================================================================================================
+EXPLANATION:
+=================================================================================================
+
+1. FIRST TRY: Find cycle where Today is within 7_Day_Start to 7_Day_End
+   - Works when refreshing mid-cycle (e.g., Today = 12/27)
+   
+2. SECOND TRY: If first returns empty, find the most recent completed cycle
+   - Filters for cycles where 7_Day_End <= Today (completed cycles)
+   - Sorts descending by 7_Day_End (most recent first)
+   - Takes the first (most recent) row
+   - Works when refreshing on report day (e.g., Today = 12/30, last cycle ended 12/29)
+
+3. RESULT: Always finds the cycle you're reporting on, whether:
+   - Refreshing during the cycle (12/23-12/29)
+   - Refreshing on report due date (12/30)
+   - Refreshing days after (12/31, 01/01, etc.)
+
+=================================================================================================
+VERIFICATION:
+=================================================================================================
+
+After applying this fix:
+
+1. Refresh Power BI
+2. Check Period filter - should now show:
+   - 7-Day: X incidents (for crimes during 12/23-12/29)
+   - 28-Day: X incidents (for crimes during 12/02-12/29)
+   - YTD: X incidents (rest of 2025)
+
+3. Specific test case from your data:
+   - 2 incidents occurred during 12/23-12/29
+   - Should now show Period = "7-Day" (currently shows "YTD")
+
+=================================================================================================
+*/

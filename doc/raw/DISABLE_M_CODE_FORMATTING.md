@@ -1,0 +1,167 @@
+# How to Disable Auto-Formatting for M Code Files
+
+## Current Settings
+
+Your workspace already has `.vscode/settings.json` configured, but here's how to verify and strengthen the settings:
+
+## Method 1: Workspace Settings (Already Configured)
+
+**Location**: `.vscode/settings.json` in your workspace root
+
+**Current Settings**:
+```json
+{
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
+    "editor.formatOnType": false,
+    "[m]": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false,
+        "editor.wordWrap": "off",
+        "editor.defaultFormatter": null,
+        "prettier.enable": false
+    },
+    "prettier.enable": false,
+    "prettier.disableLanguages": ["m"]
+}
+```
+
+## Method 2: User Settings (Global)
+
+If workspace settings aren't enough, add to your **User Settings**:
+
+1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
+2. Type: `Preferences: Open User Settings (JSON)`
+3. Add these settings:
+
+```json
+{
+    "[m]": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false,
+        "editor.defaultFormatter": null,
+        "editor.wordWrap": "off"
+    },
+    "prettier.disableLanguages": ["m"],
+    "editor.formatOnSave": false
+}
+```
+
+## Method 3: Disable Specific Extensions
+
+### Check for Formatting Extensions
+
+1. Press `Ctrl+Shift+X` to open Extensions
+2. Search for and **disable** these if installed:
+   - **Prettier** (or set it to ignore M files)
+   - **Beautify**
+   - **Format Document**
+   - Any M/Power Query formatter extensions
+
+### Prettier-Specific Settings
+
+If you use Prettier, add to `.vscode/settings.json`:
+
+```json
+{
+    "prettier.enable": false,
+    "prettier.disableLanguages": ["m"],
+    "[m]": {
+        "prettier.enable": false
+    }
+}
+```
+
+## Method 4: File Association
+
+Ensure M files are recognized correctly:
+
+1. Open an `.m` file
+2. Check bottom-right corner of VS Code
+3. If it says "Plain Text" or something else, click it
+4. Select "Power Query M" or "M" as the language
+
+## Method 5: Per-File Override
+
+For individual files, add this comment at the top:
+
+```m
+// @ts-nocheck
+// prettier-ignore
+```
+
+(Note: These may not work for M files, but worth trying)
+
+## Troubleshooting
+
+### If Formatting Still Happens:
+
+1. **Reload Window**: `Ctrl+Shift+P` → `Developer: Reload Window`
+2. **Check Extension Conflicts**: Disable all formatter extensions temporarily
+3. **Check File Association**: Ensure `.m` files are associated with "M" language
+4. **Check Workspace Trust**: Ensure workspace is trusted (bottom-right corner)
+
+### Verify Settings Are Applied:
+
+1. Open an `.m` file
+2. Make a change (add a space)
+3. Press `Ctrl+S` to save
+4. If it auto-formats, settings aren't working
+
+### Nuclear Option:
+
+1. Close VS Code
+2. Delete `.vscode/settings.json`
+3. Recreate it with the settings above
+4. Restart VS Code
+
+## Quick Fix for Broken File Paths
+
+If your file paths are already broken (split across lines), you can:
+
+1. **Manual Fix**: Join the lines back into a single string
+2. **Find & Replace**: Use regex to find and fix broken paths
+3. **Use Search**: `Ctrl+Shift+F` → Search for broken patterns
+
+### Example Fix Pattern:
+
+**Before** (broken):
+```m
+"C:\Users\carucci_r\OneDrive - City of "
+"Hackensack\09_Reference\..."
+```
+
+**After** (fixed):
+```m
+"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\..."
+```
+
+## Recommended Workflow
+
+1. ✅ Keep `.vscode/settings.json` with formatting disabled
+2. ✅ Disable Prettier for M files
+3. ✅ Manually fix any broken file paths
+4. ✅ Save files carefully (avoid auto-save)
+5. ✅ Use `Ctrl+K, Ctrl+S` to format only when you want to
+
+## Additional Protection
+
+Add to `.vscode/settings.json`:
+
+```json
+{
+    "files.associations": {
+        "*.m": "m"
+    },
+    "[m]": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false,
+        "editor.defaultFormatter": null,
+        "editor.wordWrap": "off",
+        "editor.rulers": []
+    }
+}
+```

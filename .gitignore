@@ -1,0 +1,72 @@
+# SCRPA Repository .gitignore
+
+# Report folders (generated weekly, too large for git)
+Time_Based/
+
+# Preview tables (generated from Power BI)
+preview_tables/*.csv
+
+# Image files (screenshots, etc.)
+image/
+
+# VS Code workspace settings (user-specific)
+.vscode/
+*.code-workspace
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporary files
+*.tmp
+*.log
+*.bak
+*.swp
+
+# Archive files (if large)
+*.zip
+*.7z
+*.rar
+
+# Documentation archives (keep structure, ignore large archives)
+doc/archive/
+doc/chunked/*/files*.zip
+
+# Power BI files (too large, user-specific)
+*.pbix
+
+# Excel files (generated, too large)
+*.xlsx
+*.xls
+
+# Large CSV files (keep small ones, ignore large exports)
+# Keep: preview tables, small configs
+# Ignore: large data exports
+*_SCRPA_RMS*.csv
+*_ReportDate_Last7.csv
+
+# OneDrive sync files
+~$*
+
+# Temporary documentation
+GITHUB_REPO_SETUP.md
+ROOT_DIRECTORY_CLEANUP.md

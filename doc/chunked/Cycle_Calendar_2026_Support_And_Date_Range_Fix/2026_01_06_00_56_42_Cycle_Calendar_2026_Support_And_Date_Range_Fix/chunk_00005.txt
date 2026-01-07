@@ -1,0 +1,634 @@
+ap.add_argument("--xlsx", required=False, help="Path to the source .xlsx (required unless --archive-only)")
+    ap.add_argument("--base", default=BASE_DEFAULT)
+    ap.add_argument("--out-subfolder", default=OUT_SUBFOLDER_DEFAULT)
+    ap.add_argument("--encoding", default="utf-8")
+    ap.add_argument("--no-bom", dest="bom", action="store_false")
+    ap.add_argument("--visible-only", action="store_true", help="Export only visible rows and columns")
+    ap.add_argument("--all-sheets", action="store_true", help="Export all sheets, ignoring include/exclude")
+    ap.set_defaults(bom=True)
+    ap.add_argument("--report-last7", action="store_true", help="Also write a *_ReportDate_Last7.csv filtered to last 7 days of Report Date (calamine engine only)")
+    ap.add_argument("--include-empty", action="store_true")
+    ap.add_argument("--na-rep", default="")
+    ap.add_argument("--include", default=[], nargs="*", help="Include sheet patterns (substring match)")
+    ap.add_argument("--exclude", default=[], nargs="*", help="Exclude sheet patterns (substring match)")
+    ap.add_argument("--date-format", default="%Y-%m-%d", help="Date format string")
+    ap.add_argument("--datetime-format", default="%Y-%m-%d %H:%M:%S", help="DateTime format string")
+    ap.add_argument("--time-format", default="%H:%M:%S", help="Time format string")
+    ap.add_argument("--af-columns", default="A,B,C",
+                    help="Comma-separated list or Excel span (e.g., 'A-F') of columns to check for density gate.") ap.add_argument("--min-af-nonempty", type=int, default=2,
+                    help="Minimum number of non-empty cells among --af-columns required to export a row.") ap.add_argument("--af-gate-visible-only", action="store_true",
+                    help="If set, only visible cells among --af-columns count toward the threshold.") ap.add_argument("--disable-af-gate", action="store_true",
+                    help="Disable A-F gate filtering (export all rows).") ap.add_argument("--engine", default="auto", choices=["auto", "calamine", "openpyxl"], 
+                    help="Engine for reading Excel files (auto selects based on file size)")
+    ap.add_argument("--chunksize", type=int, default=None, 
+                    help="Read file in chunks of this size for large files (auto-enabled for 50MB+ files)")
+    ap.add_argument("--benchmark", action="store_true", 
+                    help="Enable performance benchmarking and include results in manifest")
+    ap.add_argument("--parallel", action="store_true", 
+                    help="Enable parallel sheet processing for better performance")
+    ap.add_argument("--max-parallel-sheets", type=int, default=4, 
+                    help="Maximum number of sheets to process in parallel (default: 4)")
+    ap.add_argument("--archive-only", action="store_true",
+                    help="Only archive old files and exit (no conversion)")
+    ap.add_argument("--dry-run", action="store_true",
+                    help="Preview what would be archived without actually moving files")
+    args = ap.parse_args()
+
+    # Validate arguments
+    if not args.archive_only and not args.xlsx:
+        ap.error("--xlsx is required unless --archive-only is specified")
+
+    # Handle archive-only mode
+    if args.archive_only:
+        working_dir = Path.cwd()
+        exclude_file = None
+        if args.xlsx:
+            # If xlsx provided, use its parent directory and exclude this file
+            xlsx_path = Path(args.xlsx).resolve()
+            working_dir = xlsx_path.parent
+            exclude_file = str(xlsx_path)
+        count = archive_old_files(working_dir, dry_run=args.dry_run, exclude_file=exclude_file)
+        if args.dry_run:
+            print(f"\n[DRY-RUN] Would archive {count} file(s). Run without --dry-run to archive.") else:
+            print(f"\nArchived {count} file(s).") return
+
+    # Handle disable-af-gate option
+    if args.disable_af_gate:
+        args.min_af_nonempty = 0
+        logger.info("A-F gate disabled - exporting all rows")
+
+    xlsx_path = os.path.abspath(args.xlsx)
+    
+    # Auto-select engine and chunksize based on file size
+    file_size = os.path.getsize(xlsx_path)
+    available_memory = psutil.virtual_memory().available / (1024 * 1024)  # MB
+    
+    if args.engine == "auto":
+        # Use calamine for better performance on most files
+        args.engine = "calamine"
+    
+    if args.chunksize is None:
+        args.chunksize = get_adaptive_chunksize(file_size, available_memory)
+        if file_size > 50 * 1024 * 1024:  # 50MB+
+            logger.info(f"Large file detected ({file_size / (1024*1024):.1f}MB), enabling adaptive chunking with size {args.chunksize}")
+    
+    logger.info(f"Using engine: {args.engine}, chunksize: {args.chunksize}, available memory: {available_memory:.1f}MB")
+    if not os.path.isfile(xlsx_path):
+        logger.error(f"File not found: {xlsx_path}")
+        raise FileNotFoundError(f"File not found: {xlsx_path}")
+
+    out_parent = resolve_output_parent(args.base, args.out_subfolder)
+    os.makedirs(out_parent, exist_ok=True)
+
+    # Archive old files from the working directory (where xlsx files are)
+    # EXCLUDE the current file being processed to prevent archiving it before conversion
+    working_dir = Path(xlsx_path).parent
+    if not args.dry_run:
+        archive_old_files(working_dir, dry_run=False, exclude_file=xlsx_path)
+
+    if args.out_subfolder != OUT_SUBFOLDER_DEFAULT:
+        out_dir = out_parent
+    else:
+        wb_stem = os.path.splitext(os.path.basename(xlsx_path))[0]
+        stamp = datetime.now().strftime("%Y-%m-%d_%H%M")
+        out_dir = os.path.join(out_parent, f"{wb_stem}_{stamp}")
+        os.makedirs(out_dir, exist_ok=True)
+
+    # Initialize workbook based on engine
+    wb = None
+    if args.engine == "openpyxl":
+        wb = load_workbook(xlsx_path, read_only=True, data_only=True)
+        sheet_names = wb.sheetnames
+    else:  # calamine
+        excel_file = pd.ExcelFile(xlsx_path, engine='calamine')
+        sheet_names = excel_file.sheet_names
+    
+    used_names = set()
+    exported = 0
+    skipped = 0
+    stats = {"rows_skipped_af_gate": 0}
+    benchmark_results = []
+    
+    manifest = {
+        "workbook": xlsx_path,
+        "timestamp": datetime.now().isoformat(),
+        "output_dir": out_dir,
+        "workbook_sha256": get_file_hash(xlsx_path),
+        "engine": args.engine,
+        "chunksize": args.chunksize,
+        "benchmark_enabled": bool(args.benchmark),
+        "parallel_enabled": bool(args.parallel),
+        "max_parallel_sheets": args.max_parallel_sheets,
+        "file_size_mb": round(file_size / (1024 * 1024), 2),
+        "available_memory_mb": round(available_memory, 2),
+        "rows_skipped_af_gate": stats.get("rows_skipped_af_gate", 0),
+        "af_gate": {
+            "columns": args.af_columns,
+            "min_nonempty": args.min_af_nonempty,
+            "visible_only": bool(args.af_gate_visible_only),
+            "disabled": bool(args.disable_af_gate)
+        },
+        "sheets": [],
+        "benchmark_results": []
+    }
+
+    # Filter sheets based on include/exclude
+    filtered_sheets = []
+    for sheet_name in sheet_names:
+        if not args.all_sheets:
+            if args.exclude and any(pat.lower() in sheet_name.lower() for pat in args.exclude):
+                continue
+            if args.include and not any(pat.lower() in sheet_name.lower() for pat in args.include):
+                continue
+        filtered_sheets.append(sheet_name)
+    
+    if args.parallel and len(filtered_sheets) > 1:
+        # Parallel processing
+        logger.info(f"Processing {len(filtered_sheets)} sheets in parallel (max {args.max_parallel_sheets} workers)")
+        with ThreadPoolExecutor(max_workers=args.max_parallel_sheets) as executor:
+            # Submit all tasks
+            future_to_sheet = {
+                executor.submit(process_sheet_parallel, sheet_name, xlsx_path, out_dir, args, args.engine, used_names, benchmark_results, None if len(filtered_sheets) != 1 else os.path.splitext(os.path.basename(xlsx_path))[0]): sheet_name 
+                for sheet_name in filtered_sheets
+            }
+            
+            # Process completed tasks
+            for future in tqdm(as_completed(future_to_sheet), total=len(filtered_sheets), desc="Processing sheets"):
+                sheet_name = future_to_sheet[future]
+                try:
+                    result = future.result()
+                    if result["status"] == "success":
+                        exported += 1
+                        manifest["sheets"].append(result)
+                    elif result["status"] == "skipped":
+                        skipped += 1
+                    else:
+                        logger.error(f"Error processing {sheet_name}: {result.get('error', 'Unknown error')}")
+                except Exception as e:
+                    logger.error(f"Exception processing {sheet_name}: {str(e)}")
+    else:
+        # Sequential processing (original logic)
+        for sheet_name in tqdm(filtered_sheets, desc="Exporting sheets"):
+            # Benchmarking
+            if args.benchmark:
+                benchmark_results = {}
+                for eng in ['calamine', 'openpyxl']:
+                    duration = benchmark_engine_performance(xlsx_path, sheet_name, eng, is_detailed=True)
+                    benchmark_results[eng] = duration
+                    logger.info(f"Benchmark: {sheet_name} with {eng} - {json.dumps(duration)}")
+                manifest["benchmark_results"].append({"sheet_name": sheet_name, "results": benchmark_results})
+            
+            # Load sheet data based on engine
+            if args.engine == "openpyxl":
+                ws = wb[sheet_name]
+                max_r, max_c = _get_used_range(ws)
+                is_df = False
+            else:  # calamine
+                df = pd.read_excel(xlsx_path, sheet_name=sheet_name, engine='calamine', keep_default_na=False)
+                setattr(df, "_include_headers", True)
+                max_r, max_c = _get_used_range(df)
+                is_df = True
+            
+            if not args.include_empty and (max_r == 0 or max_c == 0):
+                skipped += 1
+                continue
+
+            safe = sanitize_filename(sheet_name, used_names)
+            # If only one sheet is being exported, use the workbook base name
+            if len(filtered_sheets) == 1:
+                csv_name = os.path.splitext(os.path.basename(xlsx_path))[0] + ".csv"
+            else:
+                csv_name = f"{safe}.csv"
+            csv_path = os.path.join(out_dir, csv_name)
+            try:
+                @timeout_handler(300)  # 5 min timeout
+                def export_with_timeout():
+                    if args.engine == "openpyxl":
+                        return _stream_write_csv(csv_path, _iter_rows(ws, args.visible_only, args.date_format, args.datetime_format, args.time_format, args.af_columns, args.min_af_nonempty, args.af_gate_visible_only), args.encoding, args.bom)
+                    else:  # calamine
+                        return _stream_write_csv(csv_path, _iter_rows_pandas(df, args.visible_only, args.date_format, args.datetime_format, args.time_format, args.af_columns, args.min_af_nonempty, args.af_gate_visible_only), args.encoding, args.bom)
+                
+                row_count, col_count = export_with_timeout()
+                if row_count == 0:
+                    skipped += 1
+                    continue
+                exported += 1
+                # Optional last-7 CSV (works with both engines now)
+                last7_path = None
+                if args.report_last7:
+                    # Load the CSV we just created to filter it
+                    try:
+                        df_for_filter = pd.read_csv(csv_path, encoding=args.encoding)
+                        last7_path = _write_last7_by_reportdate_csv(df_for_filter, csv_path, args.encoding, args.bom)
+                    except Exception as e:
+                        logger.warning(f"Could not create 7-day filtered CSV: {e}")
+                        last7_path = None
+                manifest["sheets"].append({
+                    "sheet_name": sheet_name,
+                    "sanitized_name": safe,
+                    "file": csv_path,
+                    "file_sha256": get_file_hash(csv_path),
+                    "rows": row_count,
+                    "cols": col_count,
+                    "last7_file": last7_path
+                })
+            except ExportTimeoutError:
+                logger.error(f"Timeout during export of {safe}")
+                raise ExportError(f"Timeout exporting {safe}")
+            except Exception as e:
+                logger.error(f"Error exporting {safe}: {str(e)}")
+                raise ExportError(f"Error exporting {safe}: {str(e)}")
+
+    # Add benchmark results to manifest
+    if args.benchmark and manifest["benchmark_results"]:
+        # Calculate summary from benchmark results
+        total_duration = 0
+        total_rows = 0
+        for benchmark in manifest["benchmark_results"]:
+            for engine, results in benchmark["results"].items():
+                total_duration += results.get("total_duration", 0)
+                # Estimate rows from throughput
+                if results.get("throughput_rows_sec", 0) > 0:
+                    total_rows += results.get("throughput_rows_sec", 0) * results.get("total_duration", 0)
+        
+        manifest["benchmark_summary"] = {
+            "total_duration_seconds": round(total_duration, 3),
+            "total_rows_processed": round(total_rows, 0),
+            "average_rows_per_second": round(total_rows / total_duration, 1) if total_duration > 0 else 0,
+            "sheets_benchmarked": len(manifest["benchmark_results"])
+        }
+
+    with open(os.path.join(out_dir, "manifest.json"), "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+    print(f"Source workbook : {xlsx_path}")
+    print(f"Output folder   : {out_dir}")
+    print(f"Sheets exported : {exported}")
+    print(f"Sheets skipped  : {skipped} (empty or no columns)")
+    print(f"Manifest        : {os.path.join(out_dir, 'manifest.json')}")
+
+if __name__ == "__main__":
+    main()
+```
+
+```python
+# export_excel_sheets_to_csv.py
+# Changes: Added --all-sheets flag, timeouts, custom exceptions, JSON logging, tqdm progress, streaming writer
+
+import argparse
+import os
+import re
+import json
+import hashlib
+import time
+import psutil
+import shutil
+from pathlib import Path
+from datetime import datetime, time as dtime, date, timedelta as dtdelta
+import fnmatch
+import csv
+import logging
+import signal
+from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
+warnings.filterwarnings("ignore", category=UserWarning, module="dateutil.parser")
+
+from openpyxl import load_workbook
+from openpyxl.utils.cell import range_boundaries, get_column_letter
+from openpyxl.utils import column_index_from_string
+import pandas as pd
+
+# Custom Exceptions
+class ExportTimeoutError(Exception):
+    pass
+
+class ExportError(Exception):
+    pass
+
+# Logging Setup
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+handler = logging.FileHandler('export_log.json')
+handler.setFormatter(logging.Formatter('{"time": "%(asctime)s", "level": "%(levelname)s", "message": "%(message)s"}'))
+logger.addHandler(handler)
+
+# Timeout Handler (Windows compatible)
+import threading
+import time
+
+def timeout_handler(timeout_seconds):
+    def decorator(func):
+        def wrapper(*args, **kwargs):
+            result = [None]
+            exception = [None]
+            
+            def target():
+                try:
+                    result[0] = func(*args, **kwargs)
+                except Exception as e:
+                    exception[0] = e
+            
+            thread = threading.Thread(target=target)
+            thread.daemon = True
+            thread.start()
+            thread.join(timeout_seconds)
+            
+            if thread.is_alive():
+                raise ExportTimeoutError(f"Export timed out after {timeout_seconds} seconds")
+            
+            if exception[0]:
+                raise exception[0]
+            
+            return result[0]
+        return wrapper
+    return decorator
+
+BASE_DEFAULT = r"C:\Users\carucci_r\OneDrive - City of Hackensack"
+OUT_SUBFOLDER_DEFAULT = r"C:\Users\carucci_r\OneDrive - City of Hackensack\14_Excel\xlsx_to_csv"
+
+# Archive configuration
+ARCHIVE_BASE = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS")
+RMS_ARCHIVE = ARCHIVE_BASE / "_RMS" / "SCRPA" / "archive"
+CAD_ARCHIVE = ARCHIVE_BASE / "_CAD" / "SCRPA" / "archive"
+
+_TIME_RE = re.compile(r"^\s*\d{1,2}:\d{2}(:\d{2})?\s*$")
+
+def get_archive_folder(filepath: Path) -> Path:
+    """Determine archive folder based on file path (CAD or RMS)"""
+    folder = CAD_ARCHIVE if "_CAD" in str(filepath) else RMS_ARCHIVE
+    folder.mkdir(parents=True, exist_ok=True)
+    
+    # Extract date from filename if present, else use today
+    date_match = re.search(r"(\d{4}[-_]\d{2}[-_]\d{2})|(\d{8})", filepath.name)
+    if date_match:
+        date_str = date_match.group(0).replace("_", "-")
+        # Normalize to YYYY-MM-DD format
+        if len(date_str) == 8:  # YYYYMMDD
+            date_str = f"{date_str[:4]}-{date_str[4:6]}-{date_str[6:8]}"
+    else:
+        date_str = datetime.now().strftime("%Y-%m-%d")
+    
+    dated_folder = folder / date_str
+    dated_folder.mkdir(exist_ok=True)
+    return dated_folder
+
+def archive_old_files(folder: Path, dry_run: bool = False, exclude_file: str = None):
+    """Archive old .xlsx and .csv files from the working directory
+    
+    Args:
+        folder: Directory to archive files from
+        dry_run: If True, only show what would be archived
+        exclude_file: Path to file to exclude from archiving (e.g., file being processed)
+    """
+    if not folder.exists():
+        logger.info(f"Archive folder does not exist: {folder}")
+        return 0
+    
+    script_name = Path(__file__).name
+    archive_count = 0
+    files_to_archive = []
+    
+    # Normalize exclude_file path for comparison
+    exclude_path = None
+    if exclude_file:
+        exclude_path = Path(exclude_file).resolve()
+    
+    # Build set of Excel file timestamp prefixes to keep matching CSV files
+    excel_timestamps = set()
+    try:
+        for item in folder.iterdir():
+            try:
+                if item.is_file() and item.suffix.lower() == ".xlsx" and item.name != script_name:
+                    if "archive" not in str(item.parent):
+                        # Extract timestamp prefix (format: YYYY_MM_DD_HH_MM_SS_SCRPA_RMS)
+                        # CSV files will have same prefix: {timestamp}_SCRPA_RMS.csv or {timestamp}_SCRPA_RMS_ReportDate_Last7.csv
+                        stem = item.stem  # e.g., "2025_12_02_01_14_15_SCRPA_RMS"
+                        excel_timestamps.add(stem)
+            except (OSError, PermissionError) as e:
+                logger.warning(f"Could not access file {item.name}: {e}")
+                continue
+    except Exception as e:
+        logger.error(f"Error building Excel timestamp set: {e}")
+        # Continue anyway - worst case we archive everything
+    
+    for item in folder.iterdir():
+        try:
+            if not item.is_file() or item.suffix.lower() not in {".xlsx", ".csv"} or item.name == script_name:
+                continue
+            
+            # Skip files that are already in archive subdirectories
+            if "archive" in str(item.parent):
+                continue
+            
+            # Skip the file being processed
+            try:
+                if exclude_path and item.resolve() == exclude_path:
+                    logger.debug(f"Skipping current file from archive: {item.name}")
+                    continue
+            except (OSError, PermissionError):
+                # If we can't resolve the path, skip it
+                continue
+            
+            # For CSV files: keep if they match an existing Excel file timestamp
+            if item.suffix.lower() == ".csv":
+                try:
+                    csv_stem = item.stem
+                    # Check if this CSV matches any Excel file timestamp
+                    # CSV names: {timestamp}_SCRPA_RMS.csv or {timestamp}_SCRPA_RMS_ReportDate_Last7.csv
+                    # Excel names: {timestamp}_SCRPA_RMS.xlsx
+                    matches_excel = False
+                    for excel_stem in excel_timestamps:
+                        # Check if CSV stem starts with Excel stem (handles both full CSV and Last7 CSV)
+                        if csv_stem.startswith(excel_stem):
+                            matches_excel = True
+                            break
+                    if matches_excel:
+                        logger.debug(f"Keeping CSV file (matches Excel): {item.name}")
+                        continue
+                except Exception as e:
+                    logger.warning(f"Error checking CSV file {item.name}: {e}")
+                    # If we can't check, err on the side of caution and archive it
+                    pass
+            
+            files_to_archive.append(item)
+        except (OSError, PermissionError) as e:
+            logger.warning(f"Could not process file {item.name}: {e}")
+            continue
+        except Exception as e:
+            logger.warning(f"Unexpected error processing {item.name}: {e}")
+            continue
+    
+    if not files_to_archive:
+        logger.info("No files to archive")
+        return 0
+    
+    if dry_run:
+        print(f"\n[DRY-RUN] Would archive {len(files_to_archive)} file(s):")
+        for item in files_to_archive:
+            dest = get_archive_folder(item)
+            print(f"  {item.name} -> {dest / item.name}")
+        return len(files_to_archive)
+    
+    for item in files_to_archive:
+        try:
+            dest = get_archive_folder(item)
+            dest_file = dest / item.name
+            
+            # Handle duplicates by adding timestamp
+            if dest_file.exists():
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                stem = dest_file.stem
+                suffix = dest_file.suffix
+                dest_file = dest / f"{stem}_{timestamp}{suffix}"
+            
+            shutil.move(str(item), str(dest_file))
+            archive_count += 1
+            logger.info(f"Archived: {item.name} -> {dest_file}")
+        except Exception as e:
+            logger.warning(f"Failed to archive {item.name}: {e}")
+    
+    if archive_count > 0:
+        logger.info(f"Archived {archive_count} file(s)")
+    
+    return archive_count
+
+def sanitize_filename(name: str, used: set) -> str:
+    fn = re.sub(r'[<>:"/\\|? *\x00-\x1F]', '_', name).strip().strip('.') fn = re.sub(r'[\s_]+', '_', fn)[:150] or "Sheet"
+    original = fn
+    i = 2
+    while fn.lower() in used:
+        fn = f"{original}_{i}"
+        i += 1
+    used.add(fn.lower())
+    return fn
+
+def resolve_output_parent(base: str, out_subfolder: str) -> str:
+    base_abs = os.path.abspath(base)
+    parent = out_subfolder
+    if not os.path.isabs(parent):
+        parent = os.path.join(base_abs, parent)
+    parent = os.path.abspath(parent)
+    norm_parent = os.path.normcase(parent)
+    norm_base = os.path.normcase(base_abs)
+    if not norm_parent.startswith(norm_base):
+        raise ValueError(f"Output path must be inside the OneDrive base.\nBase: {base_abs}\nOutput: {parent}")
+    return parent
+
+def get_used(ws):
+    try:
+        dim = ws.calculate_dimension()
+    except ValueError:
+        # Handle unsized worksheets
+        dim = ws.calculate_dimension(force=True)
+    
+    if dim in ("A1:A1", None):
+        return 0, 0
+    min_c, min_r, max_c, max_r = range_boundaries(dim)
+    return max_r, max_c
+
+def get_file_hash(path):
+    if not os.path.exists(path):
+        return None
+    hasher = hashlib.sha256()
+    with open(path, 'rb') as f:
+        for chunk in iter(lambda: f.read(4096), b""):
+            hasher.update(chunk)
+    return hasher.hexdigest()
+
+def get_adaptive_chunksize(file_size, available_memory):
+    memory_threshold = available_memory * 0.5  # Use 50% of available memory
+    if file_size > 100 * 1024 * 1024:
+        return 1000
+    elif file_size > 50 * 1024 * 1024:
+        return 2000
+    elif file_size > 10 * 1024 * 1024:
+        return 5000
+    return 10000
+
+def benchmark_engine_performance(file_path, sheet_name, engine, is_detailed=False):
+    process = psutil.Process(os.getpid())
+    start_time = time.time()
+    start_mem = process.memory_info().rss / (1024 * 1024)  # MB
+    start_cpu = process.cpu_percent(interval=0.1)
+
+    load_start = time.time()
+    if engine == 'calamine':
+        df = pd.read_excel(file_path, sheet_name=sheet_name, engine='calamine', keep_default_na=False)
+    else:
+        wb = load_workbook(file_path, read_only=True, data_only=True)
+        ws = wb[sheet_name]
+    load_end = time.time()
+    load_duration = load_end - load_start
+
+    process_start = time.time()
+    if engine == 'calamine':
+        for _, row in df.iterrows():
+            pass
+    else:
+        for row in ws.iter_rows():
+            pass
+    process_end = time.time()
+    process_duration = process_end - process_start
+
+    write_start = time.time()
+    with open(os.devnull, 'w') as f:
+        writer = csv.writer(f)
+        if engine == 'calamine':
+            for _, row in df.iterrows():
+                writer.writerow(row)
+        else:
+            for row in ws.iter_rows(values_only=True):
+                writer.writerow(row)
+    write_end = time.time()
+    write_duration = write_end - write_start
+
+    end_time = time.time()
+    end_mem = process.memory_info().rss / (1024 * 1024)
+    end_cpu = process.cpu_percent(interval=0.1)
+
+    total_duration = end_time - start_time
+    rows, _ = _get_used_range(df if engine == 'calamine' else ws)
+    throughput = rows / total_duration if total_duration > 0 else 0
+    mem_peak = max(start_mem, end_mem)
+    cpu_avg = (start_cpu + end_cpu) / 2
+
+    results = {
+        "total_duration": total_duration,
+        "throughput_rows_sec": throughput,
+        "memory_peak_mb": mem_peak,
+        "cpu_avg_percent": cpu_avg
+    }
+    if is_detailed:
+        results.update({
+            "load_duration": load_duration,
+            "process_duration": process_duration,
+            "write_duration": write_duration,
+            "file_size_mb": os.path.getsize(file_path) / (1024 * 1024)
+        })
+    return results
+
+def _parse_af_columns(spec: str):
+    """
+    Accept 'A,B,C,D,E,F' or 'A-F' (case-insensitive). Return sorted 1-based column indexes.
+    """ spec = spec.strip().upper().replace(" ", "")
+    cols = []
+    if "-" in spec and "," not in spec:
+        start, end = spec.split("-", 1)
+        s = column_index_from_string(start)
+        e = column_index_from_string(end)
+        if s > e: s, e = e, s
+        cols = list(range(s, e + 1))
+    else:
+        parts = [p for p in spec.split(",") if p]
+        for p in parts:
+            cols.append(column_index_from_string(p))
+    return sorted(set(cols))
+
+def _cell_value_as_text(ws, rr, cc, as_formulas: bool, date_fmt, dt_fmt, t_fmt, force_text=False):
+    """
+    Shared converter used by the gate: when as_formulas=True, emit '=...' for formula cells,
+    else use normal _to_text() logic. 'force_text' only matters in formulas exporter.
+    """

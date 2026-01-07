@@ -1,0 +1,22 @@
+# Archive Notes
+
+**Location**: `m_code/archive/`
+
+## Archived Files
+
+### 2026_01_06_All_Crimes.m
+- **Date Archived**: 2026-01-06
+- **Reason**: Dated version of all_crimes.m (snapshot from 2026-01-06)
+- **Current Version**: See `m_code/all_crimes.m`
+
+### Export_Formatting.m
+- **Date Archived**: 2026-01-06
+- **Reason**: Legacy export formatting query, replaced by Python scripts
+- **Status**: No longer used in Power BI workflow
+
+## Archive Guidelines
+
+When archiving files:
+1. Add date prefix if not present: `YYYY_MM_DD_Filename.m`
+2. Update this file with archive date and reason
+3. Note the current replacement file location
