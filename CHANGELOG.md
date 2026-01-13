@@ -53,6 +53,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Enhanced date parsing to handle multiple date formats
   - Improved error handling for missing cycle calendar data
 
+- **Power BI Template Updated**
+  - Updated `Base_Report.pbix` template with new M code versions
+  - All queries updated: `all_crimes`, `q_CallTypeCategories`, `q_CycleCalendar`, `q_RMS_Source`
+  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+  - New template includes: LagDays calculation fix, standardized headers, and all recent improvements
+  - Future reports generated from this template will automatically include all fixes
+
 ---
 
 ## [1.7.0] - 2026-01-06
