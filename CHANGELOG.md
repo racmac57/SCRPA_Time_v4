@@ -16,6 +16,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.8.0] - 2026-01-13
+
+### Fixed
+- **LagDays Calculation Bug (Critical Fix)**
+  - Fixed incorrect LagDays calculation that was showing values 2 days off
+  - Changed from simple cycle lookup to three-tier approach matching CurrentCycleTbl logic
+  - Now uses: (1) Report_Due_Date match, (2) Report Date within cycle range, (3) Most recent cycle fallback
+  - Fixes cases where LagDays showed 4 instead of 2, and 2 instead of 0
+  - Updated both `all_crimes.m` and `ALL_QUERY_M_CODE.m` with consistent logic
+  - Ensures correct cycle start date is used for lagday calculations
+
+### Added
+- **Standardized Code Headers**
+  - Added standardized headers to all M code files with timestamp, project path, author, and purpose
+  - Headers follow format: timestamp (EST), project path, author (R. A. Carucci), purpose description
+  - Applied to: `all_crimes.m`, `q_CallTypeCategories.m`, `q_CycleCalendar.m`, `q_RMS_Source.m`
+  - Headers use M code comment syntax (`//`) and include emoji timestamp indicator
+
+- **Email Template Generation Enhancement**
+  - Enhanced email template format with bullet points (•) for better readability
+  - Updated date formatting to MM/DD/YYYY format for Date Generated field
+  - Email template now automatically generated during report workflow
+  - Template includes: Subject line with cycle name and date range, formatted body with all report sections
+
+- **Automated Email Template Generation in Workflow**
+  - Added Step 4 to `Run_SCRPA_Report_Folder.bat` to automatically generate email template
+  - Script runs after file organization step
+  - Gracefully handles cases where All_Crime CSV hasn't been exported from Power BI yet
+  - Email template saved to `Documentation/EMAIL_TEMPLATE.txt` in report folder
+
+### Changed
+- **Email Template Script Updates**
+  - Updated `export_enriched_data_and_email.py` with improved email template format
+  - Added standardized header to Python script
+  - Enhanced date parsing to handle multiple date formats
+  - Improved error handling for missing cycle calendar data
+
+---
+
 ## [1.7.0] - 2026-01-06
 
 ### Added

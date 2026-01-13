@@ -1,3 +1,8 @@
+// 🕒 2026_01_13_11_11_31
+// Project: m_code/q_RMS_Source.m
+// Author: R. A. Carucci
+// Purpose: Staging query to automatically load the most recent RMS Excel export file from the designated folder for processing
+
 // ===========================================
 // STAGING QUERY: RMS Source Data
 // Purpose: Load latest Excel file from folder

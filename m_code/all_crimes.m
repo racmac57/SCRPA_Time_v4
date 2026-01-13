@@ -1,3 +1,8 @@
+// 🕒 2026_01_13_11_11_31
+// Project: m_code/all_crimes.m
+// Author: R. A. Carucci
+// Purpose: Main Power Query that processes RMS source data, calculates derived columns (Period, LagDays, TimeOfDay, Crime_Category), and enriches incident data with cycle calendar and call type mappings
+
 let
     // -----------------------------
     // Helpers
@@ -347,7 +352,31 @@ let
                 if dI = null or dR = null then false
                 else
                     let
-                        ReportCycle = Table.SelectRows(CycleCalendar_Staged, each dR >= [7_Day_Start] and dR <= [7_Day_End]),
+                        // Use same three-tier approach as CurrentCycleTbl but for each row's Report Date
+                        // First try: Match Report_Due_Date (most accurate - report day lookup)
+                        MatchReportDate = Table.SelectRows(
+                            CycleCalendar_Staged,
+                            each [Report_Due_Date] = dR
+                        ),
+                        // Second try: Report Date within a cycle (for mid-cycle reports)
+                        InCycle = Table.SelectRows(
+                            CycleCalendar_Staged, 
+                            each dR >= [7_Day_Start] and dR <= [7_Day_End]
+                        ),
+                        // Third try: Find most recent cycle that ended on/before Report Date
+                        MostRecent = 
+                            if not Table.IsEmpty(MatchReportDate) then
+                                MatchReportDate
+                            else if not Table.IsEmpty(InCycle) then
+                                InCycle
+                            else
+                                let
+                                    EligibleCycles = Table.SelectRows(CycleCalendar_Staged, each [7_Day_End] <= dR),
+                                    Sorted = Table.Sort(EligibleCycles, {{"7_Day_End", Order.Descending}}),
+                                    Result = Table.FirstN(Sorted, 1)
+                                in
+                                    Result,
+                        ReportCycle = MostRecent,
                         CycleStartForReport = if Table.IsEmpty(ReportCycle) then null else ReportCycle{0}[7_Day_Start]
                     in
                         CycleStartForReport <> null and dI < CycleStartForReport,
@@ -364,7 +393,31 @@ let
                 else if not [IsLagDay] then 0
                 else
                     let
-                        ReportCycle = Table.SelectRows(CycleCalendar_Staged, each dR >= [7_Day_Start] and dR <= [7_Day_End]),
+                        // Use same three-tier approach as CurrentCycleTbl but for each row's Report Date
+                        // First try: Match Report_Due_Date (most accurate - report day lookup)
+                        MatchReportDate = Table.SelectRows(
+                            CycleCalendar_Staged,
+                            each [Report_Due_Date] = dR
+                        ),
+                        // Second try: Report Date within a cycle (for mid-cycle reports)
+                        InCycle = Table.SelectRows(
+                            CycleCalendar_Staged, 
+                            each dR >= [7_Day_Start] and dR <= [7_Day_End]
+                        ),
+                        // Third try: Find most recent cycle that ended on/before Report Date
+                        MostRecent = 
+                            if not Table.IsEmpty(MatchReportDate) then
+                                MatchReportDate
+                            else if not Table.IsEmpty(InCycle) then
+                                InCycle
+                            else
+                                let
+                                    EligibleCycles = Table.SelectRows(CycleCalendar_Staged, each [7_Day_End] <= dR),
+                                    Sorted = Table.Sort(EligibleCycles, {{"7_Day_End", Order.Descending}}),
+                                    Result = Table.FirstN(Sorted, 1)
+                                in
+                                    Result,
+                        ReportCycle = MostRecent,
                         CycleStartForReport = if Table.IsEmpty(ReportCycle) then null else ReportCycle{0}[7_Day_Start]
                     in
                         if CycleStartForReport <> null then Duration.Days(CycleStartForReport - dI) else 0,

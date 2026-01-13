@@ -1,3 +1,8 @@
+// 🕒 2026_01_13_11_11_31
+// Project: m_code/q_CallTypeCategories.m
+// Author: R. A. Carucci
+// Purpose: Staging query to load and buffer call type mapping CSV for category and response type classification
+
 // ===========================================
 // STAGING QUERY: Call Type Categories
 // Purpose: Load and buffer call type mapping CSV

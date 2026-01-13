@@ -1,3 +1,8 @@
+// 🕒 2026_01_13_11_11_31
+// Project: m_code/q_CycleCalendar.m
+// Author: R. A. Carucci
+// Purpose: Staging query to load and buffer cycle calendar CSV with 7-day and 28-day cycle date ranges for period classification and lagday calculations
+
 // ===========================================
 // STAGING QUERY: Cycle Calendar
 // Purpose: Load and buffer cycle calendar CSV

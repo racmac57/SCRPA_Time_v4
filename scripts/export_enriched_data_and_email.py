@@ -1,3 +1,8 @@
+# 🕒 2026_01_13_11_32_58
+# Project: scripts/export_enriched_data_and_email.py
+# Author: R. A. Carucci
+# Purpose: Export enriched All_Crimes data from Power BI preview table to CSV, create filtered 7-Day + LagDay CSV, remove rms_summary files, and generate email template with cycle name and date range
+
 """
 SCRPA Enriched Data Export and Email Template Generator
 
@@ -169,7 +174,16 @@ def remove_rms_summary_files(report_folder):
         print("ℹ️  No rms_summary files found to remove")
 
 def create_email_template(report_folder, cycle_name, date_range, generation_date):
-    """Create email template as .txt file."""
+    """Create email template as .txt file with exact format specified."""
+    # Format date generated as MM/DD/YYYY
+    try:
+        # Try to parse generation_date if it's in "Month Day, Year" format
+        gen_date_obj = datetime.strptime(generation_date, '%B %d, %Y')
+        date_generated = gen_date_obj.strftime('%m/%d/%Y')
+    except:
+        # If parsing fails, use current date
+        date_generated = datetime.now().strftime('%m/%d/%Y')
+    
     email_template = f"""Subject: SCRPA Weekly Report - Cycle {cycle_name} | {date_range}
 
 Sir,
@@ -177,14 +191,14 @@ Sir,
 Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for Cycle {cycle_name}.
 
 Report Period: {date_range}
-Date Generated: {generation_date}
+Date Generated: {date_generated}
 
 The report includes:
-7-Day Executive Summary with detailed incident summaries
-ArcGIS Map visuals showing incidents occurring in the last 7 days
-Statistical charts and visualizations by crime type
-28-Day Executive Summary (operational planning)
-YTD Executive Summary (strategic analysis)
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
 
 Please let me know if you have any questions or require additional information.
 """
