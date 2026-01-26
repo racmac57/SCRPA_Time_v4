@@ -226,7 +226,13 @@ For issues or questions:
 
 ## Recent Updates
 
-### v1.9.0 (Latest)
+### v1.9.1 (Latest)
+- ✅ **Cycle Calendar Date Lookup Gap Fix**: Fixed missing entry for 01/06/2026 that created a lookup gap
+- ✅ **Validation Logic Fix**: Fixed overly permissive bi-weekly cycle name validation
+  - Now requires exact format: weekly (7 chars) and bi-weekly (6 chars with "BW" at positions 2-3)
+  - Prevents invalid formats like "TestBW" from passing validation
+
+### v1.9.0
 - ✅ **Bi-Weekly Reporting Transition**: System updated to support bi-weekly reporting (every other week) starting 2026
   - Cycle calendar updated with `BiWeekly_Report_Name` column (26 bi-weekly cycles for 2026)
   - Historical 2025 data preserved with weekly format
@@ -338,7 +344,7 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.9.0  
+**Current Version**: 1.9.1  
 **Last Updated**: January 26, 2026  
 **Maintained By**: R. A. Carucci
 

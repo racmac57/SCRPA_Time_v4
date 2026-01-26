@@ -255,7 +255,11 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 ### Recent Improvements
 
-#### v1.9.0 (Latest)
+#### v1.9.1 (Latest)
+- ✅ **Cycle Calendar Gap Fix**: Fixed missing 01/06/2026 entry that created date lookup gap
+- ✅ **Validation Logic Fix**: Fixed overly permissive bi-weekly validation to require exact format
+
+#### v1.9.0
 - ✅ **Bi-Weekly Reporting Transition**
   - System updated to support bi-weekly reporting (every other week) starting 2026
   - Cycle calendar updated with `BiWeekly_Report_Name` column (26 bi-weekly cycles for 2026)
@@ -375,7 +379,7 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 ---
 
-**Version**: 1.9.0  
+**Version**: 1.9.1  
 **Status**: Production  
 **License**: Internal Use Only
 
