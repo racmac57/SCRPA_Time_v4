@@ -16,6 +16,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.1] - 2026-01-26
+
+### Fixed
+- **Cycle Calendar Date Lookup Gap**
+  - Fixed missing entry for 01/06/2026 that created a lookup gap between 01/06-01/12/2026
+  - Added back weekly entry `01/06/2026,12/30/2025,01/05/2026,12/09/2025,01/05/2026,26C01W01,` with empty `BiWeekly_Report_Name`
+  - Ensures all dates in 2026 can be looked up correctly
+  - Maintains backward compatibility while preserving bi-weekly reporting structure
+
+- **Overly Permissive Cycle Name Validation**
+  - Fixed validation logic in `Export_Formatting.m` that was too loose
+  - Previous logic accepted any string containing "BW" with 5+ characters (e.g., "TestBW", "XBWabc")
+  - New validation requires:
+    - Weekly: Must start with "C", contain "W", and be exactly 7 characters (e.g., `26C01W02`)
+    - Bi-weekly: Must be exactly 6 characters with "BW" at positions 2-3 (e.g., `26BW01`)
+  - Prevents data integrity issues in downstream processes
+
+### Added
+- **Issue Fix Documentation**
+  - Created `ISSUE_FIXES_v1.9.1.md` documenting both fixes with testing recommendations
+
+---
+
 ## [1.9.0] - 2026-01-26
 
 ### Added

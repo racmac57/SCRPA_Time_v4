@@ -202,8 +202,13 @@ let
                 CycleNameFormat = if Table.RowCount(table) > 0 then
                     let cycleName = Table.FirstN(table, 1){0}[cycle_name] in
                     // Accept both weekly format (C##W##) and bi-weekly format (##BW##)
-                    (Text.StartsWith(cycleName, "C") and Text.Contains(cycleName, "W")) or
-                    (Text.Contains(cycleName, "BW") and Text.Length(cycleName) >= 5)
+                    // Weekly: Must start with "C", contain "W", and be 7 characters (e.g., "26C01W02")
+                    // Bi-weekly: Must match pattern ##BW## where ## is 2-digit year and 2-digit number (e.g., "26BW01")
+                    let
+                        isWeekly = Text.StartsWith(cycleName, "C") and Text.Contains(cycleName, "W") and Text.Length(cycleName) = 7,
+                        isBiWeekly = Text.Length(cycleName) = 6 and Text.Middle(cycleName, 2, 2) = "BW"
+                    in
+                        isWeekly or isBiWeekly
                 else false
             ],
             
