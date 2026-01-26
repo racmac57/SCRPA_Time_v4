@@ -16,6 +16,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.0] - 2026-01-26
+
+### Added
+- **Bi-Weekly Reporting Support**
+  - Added `BiWeekly_Report_Name` column to cycle calendar CSV
+  - Bi-weekly naming convention: `YYBW##` (e.g., `26BW01`, `26BW02`)
+  - 26 bi-weekly cycles for 2026 (01/13/26 through 12/29/26)
+  - Historical 2025 data preserved with weekly format for reference
+  - Cycle calendar filename updated: `7Day_28Day_Cycle_20260106.csv`
+
+- **Bi-Weekly Cycle Calendar Integration**
+  - Updated `q_CycleCalendar.m` to include `BiWeekly_Report_Name` column type definition
+  - Updated `Export_Formatting.m` to accept both weekly (`C##W##`) and bi-weekly (`##BW##`) formats
+  - All scripts updated to use new cycle calendar file
+
+- **Documentation**
+  - Created `BI_WEEKLY_CYCLE_SETUP.md` - Comprehensive bi-weekly transition guide
+  - Created `STEP1_CYCLE_CALENDAR_UPDATE.md` - Cycle calendar update documentation
+  - Created `STEP2_M_CODE_UPDATES.md` - M code update instructions
+  - Created `STEP3_SCRIPT_VERIFICATION.md` - Script verification and updates
+  - Created `LAGDAY_LOGIC_VERIFICATION.md` - Detailed lagday logic analysis
+  - Created `FINAL_VERIFICATION_SUMMARY.md` - Complete verification summary
+  - Created `POWER_BI_UPDATE_QUICK_REFERENCE.md` - Quick reference for Power BI updates
+  - Created `PRE_SAVE_CHECKLIST.md` - Pre-save verification checklist
+
+### Changed
+- **Reporting Frequency**
+  - Changed from weekly to bi-weekly reporting (every other week) starting 2026
+  - Analysis periods (7-Day, 28-Day) remain unchanged - only reporting frequency changed
+  - Folder naming continues to use weekly format for consistency with existing folders
+
+- **Cycle Calendar**
+  - Updated cycle calendar CSV with bi-weekly entries for 2026
+  - Added `BiWeekly_Report_Name` column populated for 2026 entries
+  - 2025 entries have null `BiWeekly_Report_Name` (expected - historical weekly data)
+  - Updated cycle calendar filename to reflect 2026 data: `7Day_28Day_Cycle_20260106.csv`
+
+- **Power BI M Code**
+  - `q_CycleCalendar.m`: Added `BiWeekly_Report_Name` column to type definitions
+  - `Export_Formatting.m`: Updated cycle name validation to accept both weekly and bi-weekly formats
+  - `all_crimes.m`: Verified correct - no changes needed (works with bi-weekly cycles)
+
+- **Python Scripts**
+  - `generate_weekly_report.py`: Updated cycle calendar path to `7Day_28Day_Cycle_20260106.csv`
+  - `export_excel_sheets_to_csv.py`: Updated cycle calendar path for 7-day CSV filtering
+  - `export_enriched_data_and_email.py`: Updated email template terminology ("Weekly" → "Bi-Weekly")
+  - `prepare_briefing_csv.py`: Already had smart fallback - no changes needed
+
+- **Email Template**
+  - Updated subject line: "SCRPA Weekly Report" → "SCRPA Bi-Weekly Report"
+  - Template generation script uses correct cycle calendar file
+
+### Verified
+- **Lagday Logic Verification**
+  - Verified lagday logic is correct and works perfectly with bi-weekly cycles
+  - Three-tier approach (Report_Due_Date match, date range match, most recent cycle) works correctly
+  - No changes needed to lagday calculation logic
+  - Period classification (7-Day, 28-Day, YTD, Prior Year) works correctly with bi-weekly cycles
+
+### Technical
+- **Backward Compatibility**
+  - `Report_Name` column still exists and is used by `all_crimes.m`
+  - System works with both weekly and bi-weekly cycles
+  - Historical data (2025) continues to use weekly names
+  - Folder naming maintains weekly format for consistency
+
+- **Date Range Logic**
+  - Analysis periods (7-Day, 28-Day) remain unchanged
+  - Date ranges continue to roll forward every 7 days regardless of bi-weekly reporting
+  - Only reporting frequency changed, not analysis windows
+
+---
+
 ## [1.8.0] - 2026-01-13
 
 ### Fixed
@@ -459,7 +532,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Last Updated**: 2026-01-06  
-**Current Version**: 1.7.0  
+**Last Updated**: 2026-01-26  
+**Current Version**: 1.9.0  
 **Maintained By**: R. A. Carucci
 

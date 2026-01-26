@@ -6,7 +6,9 @@
 
 ## System Purpose
 
-The SCRPA Reporting System automates the weekly generation of crime analysis reports from RMS data exports. It transforms raw Excel exports into organized, structured reports with Power BI dashboards, HTML/PDF summaries, and ChatGPT-ready briefing formats.
+The SCRPA Reporting System automates the bi-weekly generation of crime analysis reports from RMS data exports. It transforms raw Excel exports into organized, structured reports with Power BI dashboards, HTML/PDF summaries, and ChatGPT-ready briefing formats.
+
+**Note**: As of 2026, reporting frequency changed from weekly to bi-weekly (every other week). The system supports both formats and maintains historical weekly data for reference.
 
 ---
 
@@ -149,14 +151,18 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 ## Naming Conventions
 
 ### Report Folders
-- **Pattern**: `YYCMMWww_YY_MM_DD`
-- **Example**: `25C12W49_25_12_09`
+- **Pattern**: `YYCMMWww_YY_MM_DD` (weekly format, used for folder names)
+- **Bi-Weekly Format**: `YYBW##` (e.g., `26BW01`, `26BW02`) - used in cycle calendar
+- **Example**: `26C01W04_26_01_27`
 - **Breakdown**:
-  - `25` = Year (2025)
+  - `26` = Year (2026)
   - `C` = Calendar indicator
-  - `12` = Month (December)
-  - `W49` = Week number (ISO week -1 offset)
-  - `_25_12_09` = Date suffix
+  - `01` = Month (January)
+  - `W04` = Week number (ISO week -1 offset)
+  - `_26_01_27` = Date suffix
+- **Bi-Weekly Example**: `26BW02` = 2026 Bi-Weekly Report #2 (01/27/26)
+
+**Note**: Folder names continue to use weekly format for consistency. Bi-weekly names are available in the cycle calendar for display/reporting purposes.
 
 ### Data Files
 - **Full Export**: `YYYY_MM_DD_HH_MM_SS_SCRPA_RMS.csv`
@@ -249,7 +255,34 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ### Recent Improvements
 
-#### v1.7.0 (Latest)
+#### v1.9.0 (Latest)
+- ✅ **Bi-Weekly Reporting Transition**
+  - System updated to support bi-weekly reporting (every other week) starting 2026
+  - Cycle calendar updated with `BiWeekly_Report_Name` column (26 bi-weekly cycles for 2026)
+  - Historical 2025 data preserved with weekly format
+  - Power BI M code updated to support bi-weekly cycle detection
+  - Scripts updated to use updated cycle calendar file
+  - Email template terminology updated: "Weekly Report" → "Bi-Weekly Report"
+  - Lagday logic verified correct - works perfectly with bi-weekly cycles
+  - Analysis periods (7-Day, 28-Day) remain unchanged - only reporting frequency changed
+- ✅ **Cycle Calendar Enhancements**
+  - Added `BiWeekly_Report_Name` column to cycle calendar CSV
+  - Updated cycle calendar filename: `7Day_28Day_Cycle_20260106.csv`
+  - All 26 bi-weekly cycles for 2026 added (01/13/26 through 12/29/26)
+- ✅ **M Code Updates**
+  - `q_CycleCalendar.m`: Added `BiWeekly_Report_Name` column type definition
+  - `Export_Formatting.m`: Updated validation to accept both weekly and bi-weekly formats
+  - `all_crimes.m`: Verified correct - no changes needed
+- ✅ **Script Updates**
+  - Updated `generate_weekly_report.py`, `export_excel_sheets_to_csv.py`, and `export_enriched_data_and_email.py`
+  - All scripts now use updated cycle calendar file
+
+#### v1.8.0
+- ✅ LagDays calculation bug fix using three-tier approach
+- ✅ Standardized code headers added to all M code files
+- ✅ Automated email template generation in workflow
+
+#### v1.7.0
 - ✅ **Project Structure Reorganization**
   - Organized M code into `m_code/` directory with `archive/` subdirectory
   - Created `preview_tables/` directory for Power BI CSV previews
@@ -338,11 +371,11 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 **System Owner**: R. A. Carucci  
 **Department**: City of Hackensack Police Department  
-**Last Updated**: January 6, 2026
+**Last Updated**: January 26, 2026
 
 ---
 
-**Version**: 1.7.0  
+**Version**: 1.9.0  
 **Status**: Production  
 **License**: Internal Use Only
 

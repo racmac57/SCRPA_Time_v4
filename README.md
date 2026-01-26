@@ -6,7 +6,9 @@
 
 ## Overview
 
-The SCRPA Reporting System automates the generation of weekly crime analysis reports from RMS (Records Management System) data exports. The system processes Excel exports, converts them to CSV, generates Power BI dashboards, creates HTML/PDF reports, and organizes all files into a structured folder hierarchy.
+The SCRPA Reporting System automates the generation of bi-weekly crime analysis reports from RMS (Records Management System) data exports. The system processes Excel exports, converts them to CSV, generates Power BI dashboards, creates HTML/PDF reports, and organizes all files into a structured folder hierarchy.
+
+**Note**: As of 2026, reporting frequency changed from weekly to bi-weekly (every other week). Historical 2025 data remains weekly for reference.
 
 ---
 
@@ -80,13 +82,17 @@ The SCRPA Reporting System automates the generation of weekly crime analysis rep
 ## Report Naming Convention
 
 Reports follow this naming pattern:
-- **Format**: `YYCMMWww_YY_MM_DD`
-- **Example**: `25C12W49_25_12_09`
-  - `25` = Year (2025)
+- **Format**: `YYCMMWww_YY_MM_DD` (weekly format, used for folder names)
+- **Bi-Weekly Format**: `YYBW##` (e.g., `26BW01`, `26BW02`) - used in cycle calendar
+- **Example**: `26C01W04_26_01_27`
+  - `26` = Year (2026)
   - `C` = Calendar
-  - `12` = Month (December)
-  - `W49` = Week number (with -1 offset)
-  - `_25_12_09` = Date suffix (YY_MM_DD)
+  - `01` = Month (January)
+  - `W04` = Week number (with -1 offset)
+  - `_26_01_27` = Date suffix (YY_MM_DD)
+- **Bi-Weekly Example**: `26BW02` = 2026 Bi-Weekly Report #2 (01/27/26)
+
+**Note**: Folder names continue to use weekly format for consistency. Bi-weekly names are available in the cycle calendar for display/reporting purposes.
 
 ---
 
@@ -127,9 +133,10 @@ Reports follow this naming pattern:
 - **`prepare_briefing_csv.py`** - Transforms CSV for ChatGPT briefing
 
 ### Report Generation
-- **`generate_weekly_report.py`** - Creates folder structure and copies template
+- **`generate_weekly_report.py`** - Creates folder structure and copies template (supports bi-weekly cycles)
 - **`organize_report_files.py`** - Organizes files into report folder
 - **`generate_all_reports.bat`** - Generates HTML/PDF reports
+- **`export_enriched_data_and_email.py`** - Exports enriched data and generates email template
 
 ---
 
@@ -219,7 +226,35 @@ For issues or questions:
 
 ## Recent Updates
 
-### v1.7.0 (Latest)
+### v1.9.0 (Latest)
+- ✅ **Bi-Weekly Reporting Transition**: System updated to support bi-weekly reporting (every other week) starting 2026
+  - Cycle calendar updated with `BiWeekly_Report_Name` column (26 bi-weekly cycles for 2026)
+  - Historical 2025 data preserved with weekly format
+  - Power BI M code updated to support bi-weekly cycle detection
+  - Scripts updated to use updated cycle calendar file (`7Day_28Day_Cycle_20260106.csv`)
+  - Email template terminology updated: "Weekly Report" → "Bi-Weekly Report"
+  - Lagday logic verified correct - works perfectly with bi-weekly cycles (no changes needed)
+  - Analysis periods (7-Day, 28-Day) remain unchanged - only reporting frequency changed
+- ✅ **Cycle Calendar Updates**:
+  - Added `BiWeekly_Report_Name` column to cycle calendar CSV
+  - Updated cycle calendar filename to reflect 2026 data: `7Day_28Day_Cycle_20260106.csv`
+  - All 26 bi-weekly cycles for 2026 added (01/13/26 through 12/29/26)
+- ✅ **M Code Updates**:
+  - `q_CycleCalendar.m`: Added `BiWeekly_Report_Name` column type definition
+  - `Export_Formatting.m`: Updated validation to accept both weekly (`C##W##`) and bi-weekly (`##BW##`) formats
+  - `all_crimes.m`: Verified correct - no changes needed (works with bi-weekly cycles)
+- ✅ **Script Updates**:
+  - `generate_weekly_report.py`: Updated to use new cycle calendar file
+  - `export_excel_sheets_to_csv.py`: Updated to use new cycle calendar file for 7-day filtering
+  - `export_enriched_data_and_email.py`: Updated terminology and uses correct cycle calendar
+  - `prepare_briefing_csv.py`: Already had smart fallback - no changes needed
+
+### v1.8.0
+- ✅ **LagDays Calculation Bug Fix**: Fixed incorrect LagDays calculation using three-tier approach
+- ✅ **Standardized Code Headers**: Added headers to all M code files
+- ✅ **Email Template Generation**: Automated email template generation in workflow
+
+### v1.7.0
 - ✅ **Project Structure Reorganization**: Organized M code and preview tables into dedicated directories
   - `m_code/` - Active Power BI M code queries
   - `m_code/archive/` - Archived/deprecated M code
@@ -303,8 +338,8 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.7.0  
-**Last Updated**: January 6, 2026  
+**Current Version**: 1.9.0  
+**Last Updated**: January 26, 2026  
 **Maintained By**: R. A. Carucci
 
 ---

@@ -184,7 +184,7 @@ def create_email_template(report_folder, cycle_name, date_range, generation_date
         # If parsing fails, use current date
         date_generated = datetime.now().strftime('%m/%d/%Y')
     
-    email_template = f"""Subject: SCRPA Weekly Report - Cycle {cycle_name} | {date_range}
+    email_template = f"""Subject: SCRPA Bi-Weekly Report - Cycle {cycle_name} | {date_range}
 
 Sir,
 
