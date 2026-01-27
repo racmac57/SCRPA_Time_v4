@@ -186,13 +186,17 @@ Reports follow this naming pattern:
 
 ## Troubleshooting
 
+### Report Folder Empty (Data/Reports/Documentation not populated)
+- **Cause**: Scripts blocking on stdin (e.g. overwrite or input prompts) when run from batch; path case mismatch (`SCRPA` vs `scrpa`); Step 2 output only in log.
+- **Solution**: Fixed in v1.9.2. Ensure you use the latest `Run_SCRPA_Report_Folder.bat`, `generate_all_reports.bat`, `generate_weekly_report.py`, and `organize_report_files.py`. Close Explorer/OneDrive on the report folder if you see Access Denied. Check the run log: `02_ETL_Scripts\SCRPA\logs\SCRPA_run_YYYY-MM-DD_HH-MM.log`.
+
 ### Access Denied Errors
-- **Cause**: OneDrive sync conflicts
-- **Solution**: Wait for sync to complete, or close OneDrive temporarily
+- **Cause**: OneDrive sync, or Explorer/app holding report subfolders (Data, Reports, Documentation).
+- **Solution**: Wait for sync to complete, or close OneDrive/Explorer on the report folder. v1.9.2 reuses existing folders in batch mode instead of delete/recreate.
 
 ### Missing CSV Files
 - **Cause**: Excel file archived before conversion
-- **Solution**: Check `archive\` folder and manually convert if needed
+- **Solution**: Check `archive\` folder and manually convert if needed. See `VERIFICATION_01_27_2026_REPORT.md` for archive fallback and CSV-only re-run steps.
 
 ### Python Not Found
 - **Cause**: Python not in PATH
@@ -217,6 +221,11 @@ For issues or questions:
 
 ### ✅ Resolved Issues
 
+#### Report Folder Empty (Fixed in v1.9.2)
+- **Status**: Fixed
+- **Solution**: Briefing/organize scripts no longer block on stdin (`<nul` redirection); weekly report reuses folder in batch mode instead of overwrite prompt; path case `scrpa` normalized; log message clarified; Step 1/2/3 output and markers added to run log. WinError 5 mitigated by reusing folders.
+- **See**: `CHANGELOG.md` [1.9.2], `VERIFICATION_01_27_2026_REPORT.md` troubleshooting section.
+
 #### Cycle and Range Data Issue (Fixed in v1.2.0)
 - **Status**: Fixed
 - **Solution**: Added CSV fallback support, fixed path case sensitivity, moved archive timing, enhanced debugging
@@ -226,7 +235,23 @@ For issues or questions:
 
 ## Recent Updates
 
-### v1.9.1 (Latest)
+### v1.9.3 (Latest)
+- ✅ **LagDays fix**: `Report_Date_ForLagday` used for LagDays/IsLagDay; lagday tables filter on `Backfill_7Day = TRUE`.
+- ✅ **Bi-weekly email and briefing**: Email and ChatGPT prompt use full bi-weekly period and cycle (e.g. 26BW02, 01/13–01/26).
+- ✅ **Crime breakdown script**: `scripts/crime_breakdown_and_lagdays.py` outputs category counts and LagDays; writes MD and CSV to Data/ and Documentation/.
+- ✅ **Full-dataset export**: `SCRPA_All_Crimes_Full.csv` added to Data/ when running enriched export.
+- ✅ **7-day restructure**: Prefers 2026 cycle calendar; briefing and restructure aligned with bi-weekly.
+
+### v1.9.2
+- ✅ **Report Folder Empty Fix**: Report folder (Data/Reports/Documentation) now populates correctly when running `Run_SCRPA_Report_Folder.bat`
+  - **Briefing script**: Added `<nul` stdin redirection so `prepare_briefing_csv.py` does not block on input
+  - **Weekly report**: Batch-mode detection; reuses existing folder without overwrite prompt when run from automation
+  - **Organize script**: Added `<nul` and log redirection to avoid blocking
+  - **Paths**: `generate_all_reports.bat` uses lowercase `scrpa` to match actual folder
+  - **Logging**: "REPORT_DATE format check" → "Passing REPORT_DATE=..."; Step 1/2/3 output and markers in run log
+  - **WinError 5**: Reuse existing subfolders in batch mode instead of delete/recreate
+
+### v1.9.1
 - ✅ **Cycle Calendar Date Lookup Gap Fix**: Fixed missing entry for 01/06/2026 that created a lookup gap
 - ✅ **Validation Logic Fix**: Fixed overly permissive bi-weekly cycle name validation
   - Now requires exact format: weekly (7 chars) and bi-weekly (6 chars with "BW" at positions 2-3)
@@ -344,9 +369,11 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.9.1  
-**Last Updated**: January 26, 2026  
+**Current Version**: 1.9.3  
+**Last Updated**: 2026-01-27  
 **Maintained By**: R. A. Carucci
+
+**What changed in v1.9.3**: LagDays fix (`Report_Date_ForLagday`), bi-weekly email and briefing period, crime breakdown script, `SCRPA_All_Crimes_Full` export. See [CHANGELOG.md](CHANGELOG.md#193---2026-01-27).
 
 ---
 
