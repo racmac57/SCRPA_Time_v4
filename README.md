@@ -235,7 +235,14 @@ For issues or questions:
 
 ## Recent Updates
 
-### v1.9.2 (Latest)
+### v1.9.3 (Latest)
+- ✅ **LagDays fix**: `Report_Date_ForLagday` used for LagDays/IsLagDay; lagday tables filter on `Backfill_7Day = TRUE`.
+- ✅ **Bi-weekly email and briefing**: Email and ChatGPT prompt use full bi-weekly period and cycle (e.g. 26BW02, 01/13–01/26).
+- ✅ **Crime breakdown script**: `scripts/crime_breakdown_and_lagdays.py` outputs category counts and LagDays; writes MD and CSV to Data/ and Documentation/.
+- ✅ **Full-dataset export**: `SCRPA_All_Crimes_Full.csv` added to Data/ when running enriched export.
+- ✅ **7-day restructure**: Prefers 2026 cycle calendar; briefing and restructure aligned with bi-weekly.
+
+### v1.9.2
 - ✅ **Report Folder Empty Fix**: Report folder (Data/Reports/Documentation) now populates correctly when running `Run_SCRPA_Report_Folder.bat`
   - **Briefing script**: Added `<nul` stdin redirection so `prepare_briefing_csv.py` does not block on input
   - **Weekly report**: Batch-mode detection; reuses existing folder without overwrite prompt when run from automation
@@ -362,9 +369,11 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.9.2  
-**Last Updated**: January 27, 2026  
+**Current Version**: 1.9.3  
+**Last Updated**: 2026-01-27  
 **Maintained By**: R. A. Carucci
+
+**What changed in v1.9.3**: LagDays fix (`Report_Date_ForLagday`), bi-weekly email and briefing period, crime breakdown script, `SCRPA_All_Crimes_Full` export. See [CHANGELOG.md](CHANGELOG.md#193---2026-01-27).
 
 ---
 

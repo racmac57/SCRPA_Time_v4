@@ -266,7 +266,14 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 ### Recent Improvements
 
-#### v1.9.2 (Latest)
+#### v1.9.3 (Latest)
+- ✅ **LagDays fix**: `Report_Date_ForLagday` used for LagDays/IsLagDay; lagday tables filter on `Backfill_7Day = TRUE`.
+- ✅ **Bi-weekly email and briefing**: Full bi-weekly period and cycle (e.g. 26BW02, 01/13–01/26) in email and ChatGPT prompt.
+- ✅ **Crime breakdown script**: `scripts/crime_breakdown_and_lagdays.py` outputs category counts and LagDays; writes to Data/ and Documentation/.
+- ✅ **Full-dataset export**: `SCRPA_All_Crimes_Full.csv` added to Data/ when running enriched export.
+- ✅ **7-day restructure**: Prefers 2026 cycle calendar; briefing and restructure aligned with bi-weekly.
+
+#### v1.9.2
 - ✅ **Report Folder Empty Fix**: Data/Reports/Documentation now populate when running the workflow
   - Briefing/organize scripts no longer block on stdin (`<nul`); weekly report reuses folder in batch mode
   - Path `scrpa` normalized; logging clarified; Step 1/2/3 output and markers in run log; WinError 5 mitigated
@@ -395,7 +402,7 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 ---
 
-**Version**: 1.9.2  
+**Version**: 1.9.3  
 **Status**: Production  
 **License**: Internal Use Only
 
