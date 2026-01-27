@@ -16,6 +16,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.2] - 2026-01-27
+
+### Fixed
+- **Report Folder Empty (Data/Reports/Documentation not populated)**
+  - **Briefing script blocked on stdin** (`generate_all_reports.bat`): `prepare_briefing_csv.py` was run without `<nul` stdin redirection, causing `safe_input()` to block waiting for Enter. Added `<nul` when invoking the briefing script.
+  - **Weekly report script blocked in batch mode** (`generate_weekly_report.py`): When the report folder already existed and stdin was a TTY, the script blocked on "Overwrite? (y/n)". Added batch-mode detection; when stdin is not a TTY (automation), the script reuses the existing folder without prompting.
+  - **Organize script blocked on stdin** (`Run_SCRPA_Report_Folder.bat`): `organize_report_files.py` was called without `<nul`, which could block on prompts. Added `<nul` and output redirection to the run log.
+- **Path case inconsistency** (`generate_all_reports.bat`): `RMS_EXPORT_DIR` used `SCRPA` (uppercase) vs actual folder `scrpa` (lowercase). Changed to lowercase `scrpa`.
+- **Confusing log message** (`Run_SCRPA_Report_Folder.bat`): "REPORT_DATE format check" sounded like an error. Changed to "Passing REPORT_DATE=... to report generation scripts".
+- **Step 1/2/3 output not visible in logs** (`Run_SCRPA_Report_Folder.bat`): Step 1 output went to console only; no step markers. Added `>>"%LOG%" 2>&1` for Step 1 and START/END markers for all steps.
+
+### Changed
+- **WinError 5 Access Denied mitigation**: In batch mode, scripts now reuse existing report folders instead of trying to delete/recreate subfolders (Data, Reports, Documentation), avoiding Access Denied when those folders are in use (e.g. Explorer, OneDrive).
+
+---
+
 ## [1.9.1] - 2026-01-26
 
 ### Fixed

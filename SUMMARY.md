@@ -226,6 +226,17 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 ### ✅ Resolved Issues
 
+#### Report Folder Empty (Fixed in v1.9.2)
+- **Status**: Resolved
+- **Fixes Applied**:
+  - Briefing script: `<nul` stdin redirection so it does not block on input when run from batch
+  - Weekly report: Batch-mode detection; reuses existing folder without overwrite prompt in automation
+  - Organize script: `<nul` and log redirection to avoid blocking
+  - Path case: `generate_all_reports.bat` uses lowercase `scrpa` to match actual folder
+  - Logging: "REPORT_DATE format check" → "Passing REPORT_DATE=..."; Step 1/2/3 markers and output in run log
+  - WinError 5: Reuse existing report subfolders in batch mode instead of delete/recreate
+- **Impact**: Data, Reports, and Documentation now populate correctly in the report folder when running the full workflow.
+
 #### Cycle and Range Data Issue (Fixed in v1.2.0)
 - **Status**: Resolved
 - **Fixes Applied**:
@@ -255,7 +266,12 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 ### Recent Improvements
 
-#### v1.9.1 (Latest)
+#### v1.9.2 (Latest)
+- ✅ **Report Folder Empty Fix**: Data/Reports/Documentation now populate when running the workflow
+  - Briefing/organize scripts no longer block on stdin (`<nul`); weekly report reuses folder in batch mode
+  - Path `scrpa` normalized; logging clarified; Step 1/2/3 output and markers in run log; WinError 5 mitigated
+
+#### v1.9.1
 - ✅ **Cycle Calendar Gap Fix**: Fixed missing 01/06/2026 entry that created date lookup gap
 - ✅ **Validation Logic Fix**: Fixed overly permissive bi-weekly validation to require exact format
 
@@ -375,11 +391,11 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 **System Owner**: R. A. Carucci  
 **Department**: City of Hackensack Police Department  
-**Last Updated**: January 26, 2026
+**Last Updated**: January 27, 2026
 
 ---
 
-**Version**: 1.9.1  
+**Version**: 1.9.2  
 **Status**: Production  
 **License**: Internal Use Only
 
