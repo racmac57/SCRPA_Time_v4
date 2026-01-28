@@ -16,6 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.4] - 2026-01-28
+
+### Changed
+- **Documentation streamlining**: The pipeline (`run_scrpa_pipeline.py`) no longer writes `data_dictionary.yaml/json`, `PROJECT_SUMMARY.yaml/json`, or `claude.md` into each cycle's Documentation folder. These canonical docs live only in `16_Reports/SCRPA/Documentation`. Regenerate with `python scripts/generate_documentation.py -o path/to/SCRPA/Documentation`.
+- **Cycle Documentation contents**: Each cycle's Documentation/ now receives only: `SCRPA_Report_Summary.md` (populated from pipeline data), `CHATGPT_BRIEFING_PROMPT.md` (cycle placeholders filled), and `EMAIL_TEMPLATE.txt`.
+
+### Added
+- **SCRPA_Report_Summary.md populated**: Report summary is now filled with real counts (total incidents, 7-Day/28-Day/YTD/Prior Year, lag/backfill counts, lag mean/median/max) and the 7-day-by-crime-category table from the 7-day YAML. Implemented via `write_report_summary_with_data()` and `get_report_summary_with_data()` in `generate_documentation.py`.
+- **CHATGPT_BRIEFING_PROMPT.md per cycle**: Pipeline generates `CHATGPT_BRIEFING_PROMPT.md` in each cycle's Documentation/ with cycle ID, bi-weekly, report due, and 7-day/bi-weekly date ranges; footer "HPD | SSOCC | SCRPA Report | Cycle: …". Implemented via `write_chatgpt_briefing_prompt()` and `CHATGPT_BRIEFING_TEMPLATE` in `generate_documentation.py`.
+
+### Documentation
+- README: Canonical vs per-cycle documentation clarified; Python pipeline Quick Start and File Types > Documentation updated.
+- SUMMARY: Python-first workflow diagram added; v1.9.4 improvements and Maintenance/Updates sections updated; version set to 1.9.4.
+
+[1.9.4]: https://github.com/racmac57/SCRPA_Time_v4/compare/v1.9.3...v1.9.4
+
+---
+
 ## [1.9.3] - 2026-01-27
 
 ### Fixed

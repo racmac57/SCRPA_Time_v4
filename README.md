@@ -21,8 +21,20 @@ The SCRPA Reporting System automates the generation of bi-weekly crime analysis 
 - **`preview_tables/`** - CSV preview exports from Power BI queries for validation
 - **`time_based/`** - Organized report folders by cycle (YYYY/CCWWW_YY_MM_DD/)
 - **`doc/`** - Documentation and analysis files
+- **`Documentation/`** - **Canonical** project docs (data_dictionary, PROJECT_SUMMARY, claude.md). Not copied to each cycle; update with `python scripts/generate_documentation.py -o path/to/SCRPA/Documentation`.
+- **`scripts/run_scrpa_pipeline.py`** - Python-first pipeline (transforms RMS, writes Data + cycle Documentation + copies Reports).
 
 ## Quick Start
+
+### Python pipeline (16_Reports/SCRPA)
+
+1. Place the latest RMS export in `05_EXPORTS\_RMS\scrpa\`.
+2. Run `Run_SCRPA_Pipeline.bat` (in this repo) or `python scripts/run_scrpa_pipeline.py` with the CSV and report date.
+3. Outputs go to `Time_Based/YYYY/<cycle>_<date>/` with Data/, Documentation/ (cycle-only: SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, EMAIL_TEMPLATE.txt), and Reports/ (HTML copied from SCRPA_ArcPy).
+
+Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports/SCRPA/Documentation`; they are not written into each cycle folder.
+
+## Quick Start (legacy 02_ETL_Scripts)
 
 ### Running a Complete Report
 
@@ -152,10 +164,9 @@ Reports follow this naming pattern:
 - **`SCRPA_Combined_Executive_Summary_*.html/pdf`** - Strategic executive summaries
 
 ### Documentation
-- **`CHATGPT_BRIEFING_PROMPT.md`** - Complete prompt for ChatGPT (includes embedded CSV data)
-- **`CHATGPT_USAGE_INSTRUCTIONS.md`** - Quick reference guide for using ChatGPT prompt
-- **`SCRPA_Report_Summary.md`** - Consolidated report summary
-- **`CHATGPT_PROMPT_GUIDE.md`** - Detailed usage guide
+- **Canonical** (in `16_Reports/SCRPA/Documentation/` only): `data_dictionary.yaml/json`, `PROJECT_SUMMARY.yaml/json`, `claude.md`. Not copied to each cycle; regenerate with `python scripts/generate_documentation.py -o path/to/SCRPA/Documentation`.
+- **Per-cycle** (in each report folder `Documentation/`): `SCRPA_Report_Summary.md` (populated from pipeline data), `CHATGPT_BRIEFING_PROMPT.md` (cycle placeholders filled), `EMAIL_TEMPLATE.txt`.
+- **Legacy**: `CHATGPT_USAGE_INSTRUCTIONS.md`, `CHATGPT_PROMPT_GUIDE.md` where present.
 
 ---
 

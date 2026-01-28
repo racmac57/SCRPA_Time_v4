@@ -66,41 +66,49 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 ## Workflow Diagram
 
+### Python-first pipeline (16_Reports/SCRPA)
+
+```
+1. RMS Export (Excel or CSV)
+   └─> 05_EXPORTS\_RMS\scrpa\
+
+2. Run Pipeline
+   └─> Run_SCRPA_Pipeline.bat  OR  python scripts/run_scrpa_pipeline.py
+       │
+       ├─> scrpa_transform.py     → SCRPA_All_Crimes_Enhanced.csv
+       ├─> prepare_7day_outputs   → SCRPA_7Day_With_LagFlags.csv, SCRPA_7Day_Summary.yaml
+       ├─> Cycle Documentation    → SCRPA_Report_Summary.md (populated), CHATGPT_BRIEFING_PROMPT.md, EMAIL_TEMPLATE.txt
+       └─> Copy Reports           → SCRPA_Combined_Executive_Summary.html (from SCRPA_ArcPy/06_Output, patched)
+
+3. Report Folder (cycle-only docs; no data_dictionary/PROJECT_SUMMARY/claude.md per cycle)
+   └─> 16_Reports\SCRPA\Time_Based\YYYY\<cycle>_<date>\
+       ├─> Data/          (Enhanced CSV, 7-day CSV, YAML summary)
+       ├─> Documentation/ (SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, EMAIL_TEMPLATE.txt)
+       └─> Reports/       (HTML/PDF from ArcPy)
+```
+
+Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports/SCRPA/Documentation` and are not copied to each cycle. Update with: `python scripts/generate_documentation.py -o path/to/SCRPA/Documentation`.
+
+### Legacy 02_ETL_Scripts workflow
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    SCRPA REPORT WORKFLOW                     │
+│                    SCRPA REPORT WORKFLOW (Legacy)            │
 └─────────────────────────────────────────────────────────────┘
 
-1. Excel Export
-   └─> 05_EXPORTS\_RMS\scrpa\*.xlsx
-       │
-       ├─> convert_all_xlsx.bat
-       │   └─> CSV Files (*.csv, *_ReportDate_Last7.csv)
-       │
-       └─> prepare_briefing_csv.py
-           └─> SCRPA_Briefing_Ready_*.csv
+1. Excel Export → 05_EXPORTS\_RMS\scrpa\*.xlsx
+   ├─> convert_all_xlsx.bat → CSV
+   └─> prepare_briefing_csv.py → SCRPA_Briefing_Ready_*.csv
 
-2. Run Automation
-   └─> Run_SCRPA_Report_Folder.bat
-       │
-       ├─> STEP 1: generate_weekly_report.py
-       │   └─> Creates folder structure
-       │   └─> Copies Power BI template
-       │
-       ├─> STEP 2: generate_all_reports.bat
-       │   └─> Generates HTML/PDF reports
-       │
-       ├─> STEP 3: organize_report_files.py
-       │   └─> Copies files to report folder
-       │   └─> Creates documentation
-       │
-       └─> STEP 4: Opens year folder
+2. Run_SCRPA_Report_Folder.bat
+   ├─> STEP 1: generate_weekly_report.py (folder + template)
+   ├─> STEP 2: generate_all_reports.bat (HTML/PDF)
+   └─> STEP 3: organize_report_files.py (copy + documentation)
 
-3. Report Folder
-   └─> 16_Reports\SCRPA\Time_Based\2025\25C12W49_25_12_09\
-       ├─> Data/          (CSV files)
-       ├─> Reports/       (HTML/PDF)
-       └─> Documentation/ (MD files)
+3. Report Folder → Time_Based\YYYY\25C12W49_25_12_09\
+   ├─> Data/
+   ├─> Reports/
+   └─> Documentation/
 ```
 
 ---
@@ -216,9 +224,11 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 - **Annually**: Review folder structure and cleanup
 
 ### Updates
-- **Scripts**: Located in `02_ETL_Scripts\SCRPA\`
+- **Python pipeline**: `16_Reports\SCRPA\scripts\run_scrpa_pipeline.py` (primary); batch: `Run_SCRPA_Pipeline.bat`
+- **Legacy scripts**: `02_ETL_Scripts\SCRPA\`
 - **Templates**: Located in `15_Templates\`
-- **Documentation**: Located in `16_Reports\SCRPA\doc\`
+- **Canonical documentation**: `16_Reports\SCRPA\Documentation\` (data_dictionary, PROJECT_SUMMARY, claude.md)
+- **Project docs**: `16_Reports\SCRPA\doc\`
 
 ---
 
@@ -266,7 +276,13 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 ### Recent Improvements
 
-#### v1.9.3 (Latest)
+#### v1.9.4 (Latest)
+- ✅ **Documentation streamlining**: Pipeline no longer writes `data_dictionary`, `PROJECT_SUMMARY`, or `claude.md` into each cycle's Documentation folder. Canonical docs live in `16_Reports/SCRPA/Documentation`; update with `generate_documentation.py -o <path>`.
+- ✅ **Cycle-only docs**: Each cycle Documentation/ now gets only `SCRPA_Report_Summary.md` (populated from pipeline data), `CHATGPT_BRIEFING_PROMPT.md` (placeholders filled from cycle_info), and `EMAIL_TEMPLATE.txt`.
+- ✅ **SCRPA_Report_Summary.md populated**: Total incidents, period counts (7-Day, 28-Day, YTD, Prior Year), lag/backfill counts, lag mean/median/max, and 7-day-by-crime-category table filled from enhanced data and 7-day YAML.
+- ✅ **CHATGPT_BRIEFING_PROMPT.md generated**: Pipeline writes per-cycle briefing prompt with cycle ID, bi-weekly, report due, 7-day and bi-weekly date ranges; footer "HPD | SSOCC | SCRPA Report | Cycle: …".
+
+#### v1.9.3
 - ✅ **LagDays fix**: `Report_Date_ForLagday` used for LagDays/IsLagDay; lagday tables filter on `Backfill_7Day = TRUE`.
 - ✅ **Bi-weekly email and briefing**: Full bi-weekly period and cycle (e.g. 26BW02, 01/13–01/26) in email and ChatGPT prompt.
 - ✅ **Crime breakdown script**: `scripts/crime_breakdown_and_lagdays.py` outputs category counts and LagDays; writes to Data/ and Documentation/.
@@ -398,11 +414,11 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
 
 **System Owner**: R. A. Carucci  
 **Department**: City of Hackensack Police Department  
-**Last Updated**: January 27, 2026
+**Last Updated**: January 28, 2026
 
 ---
 
-**Version**: 1.9.3  
+**Version**: 1.9.4  
 **Status**: Production  
 **License**: Internal Use Only
 
