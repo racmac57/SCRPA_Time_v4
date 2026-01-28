@@ -1,0 +1,186 @@
+metadata:
+  title: SCRPA Crime Reporting System - Project Summary
+  version: 2.0.0 (Python-First)
+  last_updated: '2026-01-28T13:33:45.423254'
+  description: Python-first crime data transformation system for bi-weekly SCRPA reporting
+architecture:
+  overview: Python-first processing where all data transformations occur in Python
+    scripts. Power BI consumes pre-processed CSV files with minimal M code (simple
+    imports only).
+  data_flow:
+  - 1. RMS Export (Excel/CSV) -> Raw crime incident data
+  - 2. scrpa_transform.py -> Enriched All_Crimes data (cycle, lag days, period, etc.)
+  - 3. prepare_7day_outputs.py -> Filtered 7-day data + lag day metadata
+  - 4. generate_documentation.py -> Documentation files
+  - 5. Power BI (All_Crimes_Simple.m) -> Simple CSV import, no transformations
+  - 6. export_enriched_data_and_email.py -> Email template + organized outputs
+  diagram: "\nRMS Export\n    |\n    v\n[scrpa_transform.py] -----> SCRPA_All_Crimes_Enhanced.csv\n\
+    \    |\n    v\n[prepare_7day_outputs.py] --> SCRPA_7Day_With_LagFlags.csv\n  \
+    \  |                         SCRPA_7Day_Lag_Only.csv\n    |                  \
+    \       SCRPA_7Day_Summary.yaml/json\n    v\n[generate_documentation.py] -> data_dictionary.yaml/json\n\
+    \    |                          PROJECT_SUMMARY.yaml/json\n    |             \
+    \             claude.md\n    |                          SCRPA_Report_Summary.md\n\
+    \    v\n[Power BI - All_Crimes_Simple.m] --> Import CSVs (no transforms)\n   \
+    \ |\n    v\n[export_enriched_data_and_email.py] -> EMAIL_TEMPLATE.txt\n      \
+    \                                 Organized folder structure\n"
+data_sources:
+  rms_export:
+    description: Raw crime incident export from Records Management System
+    location: Varies per export (typically Time_Based/YYYY/CYCLE_NAME/)
+    format: CSV or Excel (.xlsx)
+    refresh: Weekly/Bi-weekly before report generation
+  cycle_calendar:
+    description: SCRPA 7-Day and 28-Day cycle definitions
+    location: C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv
+    format: CSV
+    columns:
+    - Report_Due_Date
+    - 7_Day_Start
+    - 7_Day_End
+    - 28_Day_Start
+    - 28_Day_End
+    - Report_Name
+    - BiWeekly_Report_Name
+    refresh: Annually (at year start)
+scripts:
+  scrpa_transform.py:
+    purpose: Core data transformation engine
+    inputs:
+    - RMS Export
+    - Cycle Calendar
+    outputs:
+    - SCRPA_All_Crimes_Enhanced.csv
+    key_functions:
+    - read_rms_export() - Load raw data
+    - resolve_cycle() - 3-tier cycle lookup
+    - calculate_lag_days() - LagDays = CycleStart - Incident_Date
+    - classify_period() - Incident_Date-based period classification
+    - build_all_crimes_enhanced() - Main transform pipeline
+    dependencies:
+    - pandas
+    - numpy
+  prepare_7day_outputs.py:
+    purpose: Filter 7-day data and generate lag metadata
+    inputs:
+    - SCRPA_All_Crimes_Enhanced.csv
+    outputs:
+    - SCRPA_7Day_With_LagFlags.csv
+    - SCRPA_7Day_Lag_Only.csv
+    - SCRPA_7Day_Summary.yaml
+    - SCRPA_7Day_Summary.json
+    key_functions:
+    - filter_7day_by_report_date() - IsCurrent7DayCycle filter
+    - extract_backfill_lag() - Backfill_7Day filter
+    - generate_lagday_summary() - Metadata generation
+    dependencies:
+    - pandas
+    - pyyaml
+  generate_documentation.py:
+    purpose: Generate structured documentation
+    inputs:
+    - Cycle info
+    - System constants
+    outputs:
+    - data_dictionary.yaml
+    - data_dictionary.json
+    - PROJECT_SUMMARY.yaml
+    - PROJECT_SUMMARY.json
+    - claude.md
+    - SCRPA_Report_Summary.md
+    dependencies:
+    - pyyaml
+  export_enriched_data_and_email.py:
+    purpose: Export data and generate email template
+    inputs:
+    - Power BI preview CSV
+    - Cycle Calendar
+    outputs:
+    - SCRPA_All_Incidents_Enriched_*.csv
+    - SCRPA_7Day_LagDay_Enriched_*.csv
+    - EMAIL_TEMPLATE.txt
+    key_functions:
+    - get_date_range_and_biweekly_from_calendar() - Bi-weekly date calculation
+    - create_email_template() - Email generation with bi-weekly support
+  run_scrpa_pipeline.py:
+    purpose: Main orchestration script
+    inputs:
+    - RMS Export path
+    - Report due date
+    - Output directory
+    outputs:
+    - All generated files in structured folders
+    workflow:
+    - 1. Load RMS export and cycle calendar
+    - 2. Run scrpa_transform.py
+    - 3. Run prepare_7day_outputs.py
+    - 4. Run generate_documentation.py
+    - 5. Validate outputs
+    - 6. Generate summary report
+  validate_parity.py:
+    purpose: Validate Python outputs against M code reference
+    inputs:
+    - Python output CSV
+    - Reference CSV (from M code)
+    outputs:
+    - Validation report
+    checks:
+    - Row count match
+    - Column match
+    - LagDays calculation
+    - Period classification
+    - Backfill_7Day logic
+output_structure:
+  description: Folder structure for each reporting cycle
+  template: "\nTime_Based/YYYY/{CYCLE_NAME}_{YY_MM_DD}/\n├── Data/\n│   ├── SCRPA_All_Crimes_Enhanced.csv\
+    \      # Full enriched dataset\n│   ├── SCRPA_7Day_With_LagFlags.csv       # Filtered:\
+    \ IsCurrent7DayCycle=TRUE\n│   ├── SCRPA_7Day_Lag_Only.csv            # Filtered:\
+    \ Backfill_7Day=TRUE\n│   ├── SCRPA_7Day_Summary.yaml            # Lag day metadata\n\
+    │   └── SCRPA_7Day_Summary.json\n├── Documentation/\n│   ├── data_dictionary.yaml\
+    \               # Field definitions\n│   ├── data_dictionary.json\n│   ├── PROJECT_SUMMARY.yaml\
+    \               # This file\n│   ├── PROJECT_SUMMARY.json\n│   ├── claude.md \
+    \                         # System specification\n│   ├── SCRPA_Report_Summary.md\
+    \            # Report summary template\n│   └── EMAIL_TEMPLATE.txt           \
+    \      # Email for report distribution\n└── Reports/\n    └── (Power BI exports,\
+    \ PDFs, etc.)\n"
+critical_logic:
+  cycle_resolution:
+    description: 3-tier lookup to find the current reporting cycle
+    tiers:
+    - 'Tier 1: Exact Report_Due_Date match (for report day)'
+    - 'Tier 2: Date within 7-Day window (for mid-cycle)'
+    - 'Tier 3: Most recent cycle where 7_Day_End <= date'
+    m_code_lines: 191-224
+  lagdays_calculation:
+    description: Days between incident and cycle start
+    formula: LagDays = CycleStart_7Day - Incident_Date
+    critical_note: Uses CycleStart from Report_Date_ForLagday resolution, NOT Report_Date
+      - Incident_Date
+    m_code_lines: 400-439
+  report_date_for_lagday:
+    description: Date used for lag day cycle resolution
+    formula: Coalesce(Report Date, EntryDate)
+    critical_note: NO Incident_Date fallback - ensures correct lag day detection
+    m_code_lines: 156-168
+  period_classification:
+    description: Classify incident into reporting period
+    based_on: Incident_Date (NOT Report_Date)
+    priority: 7-Day > Prior Year > 28-Day > YTD > Historical
+    critical_note: Prior Year checked before 28-Day to prevent misclassification
+    m_code_lines: 242-273
+  backfill_7day:
+    description: Flag for late-reported incidents
+    condition: Incident_Date < CycleStart AND Report_Date_ForLagday IN [CycleStart,
+      CycleEnd]
+    m_code_lines: 328-336
+bi_weekly_reporting:
+  description: Bi-weekly email and report period calculation
+  examples:
+    26BW01:
+      report_due: 01/13/2026
+      7_day_window: 01/06/2026 - 01/12/2026
+      bi_weekly_period: 12/30/2025 - 01/12/2026
+    26BW02:
+      report_due: 01/27/2026
+      7_day_window: 01/20/2026 - 01/26/2026
+      bi_weekly_period: 01/13/2026 - 01/26/2026
+  formula: Bi-weekly period = (7_Day_Start - 7 days) to 7_Day_End
