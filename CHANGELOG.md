@@ -77,12 +77,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed SCRPA_Report_Summary.md showing incorrect 7-Day counts (3 instead of 2)
   - Fixed lag statistics showing backfill data (14 days) instead of actual 7-Day lag (3.0 days)
 
+- **Configuration Management Issues (2026-02-10 PM)**
+  - Removed `.claude/settings.local.json` from version control (developer-specific file)
+  - Fixed malformed file paths in copy commands (missing backslash separators)
+  - Updated `.gitignore` to prevent future commits of `.local` configuration files
+  - See `doc/raw/LOCAL_CONFIG_REMOVAL_2026_02_10.md` for configuration best practices
+
 ### Breaking Changes
 - **Output Format Change**: `SCRPA_7Day_Summary.yaml` no longer generated per cycle; replaced with `SCRPA_7Day_Summary.json`
 - **Reduced YAML Dependency**: `pyyaml` now only required for canonical documentation generation (`generate_documentation.py`), not for cycle-specific outputs
 
 ### Documentation
 - Created `LAGDAYS_REPORTING_DELAY_FIX_2026_02_10.md` - Complete analysis of LagDays vs IncidentToReportDays confusion
+- Created `LOCAL_CONFIG_REMOVAL_2026_02_10.md` - Configuration management best practices and local file removal rationale
 - Created `HTML_INTEGRATION_IMPLEMENTATION.md` - Complete documentation of HTML generation integration
 - Created `PIPELINE_BUG_FIX_2026_02_10.md` - Details of 7-day counting bug fix
 - Created `YAML_TO_JSON_MIGRATION.md` - Migration documentation and benefits
