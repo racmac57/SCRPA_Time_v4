@@ -68,8 +68,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed lag statistics showing backfill data (14 days) instead of actual 7-Day lag (3.0 days)
 
 ### Breaking Changes
-- **Output Format Change**: `SCRPA_7Day_Summary.yaml` no longer generated; replaced with `SCRPA_7Day_Summary.json`
-- **Dependencies**: No longer requires `pyyaml` package (uses built-in `json` instead)
+- **Output Format Change**: `SCRPA_7Day_Summary.yaml` no longer generated per cycle; replaced with `SCRPA_7Day_Summary.json`
+- **Reduced YAML Dependency**: `pyyaml` now only required for canonical documentation generation (`generate_documentation.py`), not for cycle-specific outputs
 
 ### Documentation
 - Created `HTML_INTEGRATION_IMPLEMENTATION.md` - Complete documentation of HTML generation integration

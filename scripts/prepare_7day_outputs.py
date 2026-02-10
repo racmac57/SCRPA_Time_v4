@@ -16,7 +16,6 @@ The filtering logic matches what Power BI slicer filters would produce:
 """
 
 import pandas as pd
-import yaml
 import json
 from pathlib import Path
 from datetime import datetime, date
