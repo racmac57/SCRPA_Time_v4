@@ -16,6 +16,78 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] - 2026-02-10
+
+### Added
+- **HTML Report Auto-Generation Integration**
+  - Pipeline now automatically calls SCRPA_ArcPy to generate fresh HTML reports before copying
+  - Added `_generate_html_report_via_arcpy()` function to `run_scrpa_pipeline.py`
+  - Sets `REPORT_DATE` environment variable for correct cycle lookup
+  - 5-minute timeout with graceful error handling
+  - Ensures HTML reports always contain current cycle data
+  - Eliminates need for manual SCRPA_ArcPy execution
+
+- **Dynamic M Code for Power BI Template**
+  - M code (`All_Crimes_Simple.m`) now automatically finds the latest cycle folder
+  - Uses `Folder.Contents()` to scan `Time_Based/[CURRENT_YEAR]` directory
+  - Identifies most recently modified cycle folder
+  - Constructs path to `SCRPA_All_Crimes_Enhanced.csv` dynamically
+  - Eliminates manual path editing each cycle
+
+### Changed
+- **YAML to JSON Migration**
+  - Replaced YAML with JSON for 7-day summary output
+  - Changed `SCRPA_7Day_Summary.yaml` → `SCRPA_7Day_Summary.json`
+  - Updated `prepare_7day_outputs.py` to write JSON (`json.dump()`)
+  - Updated `run_scrpa_pipeline.py` to read JSON (`json.load()`)
+  - Benefits: Built-in Python support, faster parsing, better compatibility, no external dependencies
+
+- **Pipeline Structure - Step 6 Enhanced**
+  - Step 6 now has two sub-steps:
+    - 6a: Generate HTML report via SCRPA_ArcPy (NEW)
+    - 6b: Copy HTML to cycle folder (existing)
+  - Ensures HTML is freshly generated before copying
+
+### Fixed
+- **7-Day Counting Bug (Critical Fix)**
+  - Fixed `prepare_7day_outputs.py` incorrectly counting backfill incidents in 7-Day totals
+  - Crime category breakdown now filters to `Period='7-Day'` only (excludes backfill)
+  - Lag statistics now calculated from actual 7-Day period incidents (not backfill)
+  - Changed from `IsLagDay` flag (broken) to `LagDays > 0` check (correct)
+  - Fixed lag statistics calculation to exclude backfill incidents
+
+- **HTML Report Data Mismatch**
+  - HTML reports were showing stale data from previous cycles
+  - Root cause: Pipeline only copied existing HTML, didn't ensure fresh generation
+  - Fixed by integrating SCRPA_ArcPy HTML generation into pipeline
+  - HTML now generated automatically with correct cycle data
+
+- **Documentation Data Errors**
+  - Fixed EMAIL_TEMPLATE.txt showing wrong date range (01/27 instead of 02/03)
+  - Fixed SCRPA_Report_Summary.md showing incorrect 7-Day counts (3 instead of 2)
+  - Fixed lag statistics showing backfill data (14 days) instead of actual 7-Day lag (3.0 days)
+
+### Breaking Changes
+- **Output Format Change**: `SCRPA_7Day_Summary.yaml` no longer generated; replaced with `SCRPA_7Day_Summary.json`
+- **Dependencies**: No longer requires `pyyaml` package (uses built-in `json` instead)
+
+### Documentation
+- Created `HTML_INTEGRATION_IMPLEMENTATION.md` - Complete documentation of HTML generation integration
+- Created `PIPELINE_BUG_FIX_2026_02_10.md` - Details of 7-day counting bug fix
+- Created `YAML_TO_JSON_MIGRATION.md` - Migration documentation and benefits
+- Created `ROOT_CAUSE_HTML_MISMATCH.md` - Analysis of HTML data mismatch issue
+- Updated `BI_WEEKLY_WORKFLOW.md` - Added HTML auto-generation step
+
+### Technical
+- **Subprocess Integration**: Pipeline now uses `subprocess.run()` to execute SCRPA_ArcPy script
+- **Environment Variables**: Passes `REPORT_DATE` to SCRPA_ArcPy for cycle-aware processing
+- **Error Handling**: Graceful degradation if HTML generation fails (falls back to copying existing)
+- **Timeout Protection**: 5-minute timeout prevents hanging on SCRPA_ArcPy execution
+
+[2.0.0]: https://github.com/racmac57/SCRPA_Time_v4/compare/v1.9.4...v2.0.0
+
+---
+
 ## [1.9.4] - 2026-01-28
 
 ### Changed
@@ -607,7 +679,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Last Updated**: 2026-01-26  
-**Current Version**: 1.9.0  
+**Last Updated**: 2026-02-10  
+**Current Version**: 2.0.0  
 **Maintained By**: R. A. Carucci
 

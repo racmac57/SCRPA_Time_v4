@@ -1,19 +1,44 @@
-// 2026_02_10
-// Project: m_code/All_Crimes_Simple.m
-// Author: R. A. Carucci
-// Purpose: Simplified Power Query that imports Python-generated SCRPA_All_Crimes_Enhanced.csv.
-//          AUTOMATIC PATH DETECTION - No manual editing needed each cycle!
-//
-// HOW IT WORKS:
-// This M code automatically finds the CSV file in the most recent cycle folder.
-// When you run the pipeline and open Power BI, it automatically uses the latest cycle's data.
-//
-// USAGE:
-// 1. Run Python pipeline: python scripts/run_scrpa_pipeline.py rms_export.csv --report-date MM/DD/YYYY
-// 2. Pipeline creates cycle folder with data (e.g., 26C02W06_26_02_10/)
-// 3. Open ANY PBIX file and click Refresh - it automatically finds the latest cycle CSV!
-//
-// NO MANUAL PATH EDITING REQUIRED!
+# URGENT: Update Base_Report.pbix Template
+
+**Date:** 2026-02-10  
+**Purpose:** Add automatic path detection to Power BI template
+
+---
+
+## What This Fixes
+
+✅ **No more manual path editing** - Template will automatically find the correct data file  
+✅ **Works for every cycle** - Just copy, open, and refresh  
+✅ **Saves 2-3 minutes** per report  
+
+---
+
+## Instructions
+
+### Step 1: Open the Template
+
+1. Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\`
+2. Open: `Base_Report.pbix`
+
+---
+
+### Step 2: Update the M Code
+
+1. Click **Home** > **Transform Data** (opens Power Query Editor)
+
+2. In the left pane, find your data query (probably named `All_Crimes` or `All_Crimes_Simple`)
+
+3. Click **Advanced Editor** (top ribbon)
+
+4. **Replace the entire M code** with the new version below
+
+---
+
+### Step 3: New M Code (Copy This)
+
+```m
+// 2026_02_10 - AUTOMATIC PATH DETECTION VERSION
+// No manual path editing needed - automatically finds most recent cycle data!
 
 let
     // ===========================================
@@ -22,29 +47,26 @@ let
     // Base directory for all SCRPA reports
     BaseDir = "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based",
     
-    // Get the current year (e.g., 2026)
+    // Get the current year
     CurrentYear = Number.ToText(Date.Year(DateTime.LocalNow())),
     
     // Build path to current year's folder
     YearFolder = BaseDir & "\" & CurrentYear,
     
-    // Get all items (files and folders) in the year directory
-    AllItems = Folder.Contents(YearFolder),
+    // Get all folders in the year directory and find the most recent one
+    AllFolders = Folder.Files(YearFolder),
     
-    // Filter to only folders (not files) by checking if Folder Path is not null
-    AllFolders = Table.SelectRows(AllItems, each [Folder Path] <> null),
-    
-    // Filter to only cycle folders (start with year suffix, e.g., "26C" or "26BW")
+    // Filter to only cycle folders (start with year, e.g., "26C" or "26BW")
     CycleFolders = Table.SelectRows(AllFolders, each Text.StartsWith([Name], Text.End(CurrentYear, 2))),
     
     // Sort by date modified (most recent first)
     SortedFolders = Table.Sort(CycleFolders, {{"Date modified", Order.Descending}}),
     
-    // Get the most recent cycle folder's full path
-    LatestCycleFolder = SortedFolders{0}[Folder Path] & SortedFolders{0}[Name],
+    // Get the most recent cycle folder path
+    LatestCyclePath = SortedFolders{0}[Folder Path],
     
     // Build full path to CSV
-    FilePath = LatestCycleFolder & "\Data\SCRPA_All_Crimes_Enhanced.csv",
+    FilePath = LatestCyclePath & "Data\SCRPA_All_Crimes_Enhanced.csv",
 
     // ===========================================
     // LOAD CSV
@@ -53,25 +75,22 @@ let
         File.Contents(FilePath),
         [
             Delimiter = ",",
-            Columns = 66,  // Must match Python output (includes Report_Date_ForLagday)
-            Encoding = 65001,  // UTF-8
+            Columns = 66,
+            Encoding = 65001,
             QuoteStyle = QuoteStyle.Csv
         ]
     ),
 
-    // Promote first row to headers
     PromotedHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
 
     // ===========================================
     // TYPE CONVERSIONS
     // ===========================================
-    // Apply correct types to columns - no transformations, just typing
     TypedTable = Table.TransformColumnTypes(
         PromotedHeaders,
         {
-            // Original RMS columns
             {"Case Number", type text},
-            {"Incident Date", type text},  // Keep as text, Python has formatted it
+            {"Incident Date", type text},
             {"Incident Time", type text},
             {"Incident Date_Between", type text},
             {"Incident Time_Between", type text},
@@ -101,12 +120,10 @@ let
             {"Det_Assigned", type text},
             {"Case_Status", type text},
             {"NIBRS Classification", type text},
-
-            // Computed columns from Python
             {"BestTimeValue", type time},
             {"TimeSource", type text},
-            {"Incident_Time", type text},  // HH:MM:SS formatted
-            {"Incident_Date", type text},  // MM/DD/YY formatted
+            {"Incident_Time", type text},
+            {"Incident_Date", type text},
             {"Incident_Date_Date", type date},
             {"Report_Date", type date},
             {"Report_Date_ForLagday", type date},
@@ -140,49 +157,112 @@ let
         }
     ),
 
-    // ===========================================
-    // RESULT
-    // ===========================================
     Result = TypedTable
 
 in
     Result
+```
 
+---
 
-// ===========================================
-// NOTES FOR POWER BI DEVELOPERS
-// ===========================================
-//
-// AUTOMATIC PATH DETECTION:
-// This query automatically finds the most recent cycle folder in the current year
-// and loads the SCRPA_All_Crimes_Enhanced.csv from its Data subfolder.
-//
-// HOW IT WORKS:
-// 1. Looks in: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\[CURRENT_YEAR]
-// 2. Gets all folders (using Folder.Contents, not Folder.Files!)
-// 3. Filters to cycle folders starting with year (e.g., "26C" or "26BW")
-// 4. Sorts by last modified date (most recent first)
-// 5. Loads CSV from: [Most Recent Folder]\Data\SCRPA_All_Crimes_Enhanced.csv
-//
-// BENEFITS:
-// ✅ No manual path editing needed each cycle
-// ✅ Always uses the most recent data automatically
-// ✅ Template can be copied and refreshed without modification
-//
-// WORKFLOW:
-// 1. Run pipeline: python scripts/run_scrpa_pipeline.py input.csv --report-date MM/DD/YYYY
-// 2. Pipeline creates new cycle folder with data
-// 3. Open ANY Power BI file and click Refresh - automatically uses latest cycle data!
-//
-// Key computed columns now available directly from Python:
-// - Period: 7-Day, 28-Day, YTD, Prior Year, Historical (based on Incident_Date)
-// - LagDays: CycleStart_7Day - Incident_Date (NOT Report_Date - Incident_Date)
-// - IsLagDay: True if incident occurred before the report cycle
-// - Backfill_7Day: True if incident before cycle, reported during current 7-day
-// - Crime_Category: Motor Vehicle Theft, Burglary Auto, Robbery, etc.
-// - TimeOfDay: Late Night, Early Morning, Morning, Afternoon, Evening Peak, Night
-// - Clean_Address: Street address only (for map labels)
-//
-// For questions or issues, see:
-// - Documentation: Time_Based/YYYY/CYCLE/Documentation/
-// - Data Dictionary: Documentation/data_dictionary.yaml
+### Step 4: Apply and Test
+
+1. Click **Done** (closes Advanced Editor)
+
+2. Click **Close & Apply** (saves and refreshes data)
+
+3. **Test it:** 
+   - It should load data from your most recent cycle folder
+   - Check the record count (bottom right) - should match your latest cycle
+
+4. **Save the template:**
+   - Go to **File** > **Save As**
+   - Save back to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+   - ⚠️ **Important:** Overwrite the existing template
+
+---
+
+### Step 5: Verify It Works
+
+1. Close Power BI
+
+2. Go to your current cycle folder:
+   ```
+   Time_Based\2026\26C02W06_26_02_10\
+   ```
+
+3. Delete the old PBIX file if it exists
+
+4. Copy the updated template:
+   ```
+   From: 15_Templates\Base_Report.pbix
+   To: Time_Based\2026\26C02W06_26_02_10\26C02W06_26_02_10.pbix
+   ```
+
+5. Open the copied PBIX
+
+6. Click **Refresh**
+
+7. It should automatically load the correct data (252 records)
+
+---
+
+## How It Works
+
+The new M code:
+1. Looks in the `Time_Based\[CURRENT_YEAR]\` folder
+2. Finds all cycle folders (start with year code like "26")
+3. Sorts by last modified date
+4. Loads CSV from the **most recent** cycle folder's Data subfolder
+
+**Benefits:**
+- ✅ No manual path editing
+- ✅ Always uses the most recent data
+- ✅ Template works across all cycles
+- ✅ Just copy and refresh!
+
+---
+
+## Troubleshooting
+
+### Error: "We couldn't find any Data"
+
+**Cause:** M code can't find the Time_Based folder
+
+**Solution:** 
+Check the `BaseDir` path in line 6 of the M code:
+```m
+BaseDir = "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based",
+```
+
+Make sure this matches your actual folder structure.
+
+---
+
+### Error: "Expression.Error: We cannot apply field access"
+
+**Cause:** No cycle folders found in the year directory
+
+**Solution:**
+1. Make sure you have at least one cycle folder for the current year
+2. Cycle folders must start with the year code (e.g., "26C" or "26BW")
+
+---
+
+## Next Steps
+
+After updating the template:
+1. ✅ Run your next bi-weekly report
+2. ✅ Just open PBIX and click Refresh (no path editing!)
+3. ✅ Charts should display correctly automatically
+
+**This is a one-time update** - you'll never need to manually edit paths again!
+
+---
+
+## Questions?
+
+See the full workflow documentation:
+```
+16_Reports\SCRPA\BI_WEEKLY_WORKFLOW.md
+```

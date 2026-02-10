@@ -76,13 +76,14 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
    └─> Run_SCRPA_Pipeline.bat  OR  python scripts/run_scrpa_pipeline.py
        │
        ├─> scrpa_transform.py     → SCRPA_All_Crimes_Enhanced.csv
-       ├─> prepare_7day_outputs   → SCRPA_7Day_With_LagFlags.csv, SCRPA_7Day_Summary.yaml
+       ├─> prepare_7day_outputs   → SCRPA_7Day_With_LagFlags.csv, SCRPA_7Day_Summary.json
+       ├─> Generate HTML (NEW)    → Calls SCRPA_ArcPy to generate fresh HTML
        ├─> Cycle Documentation    → SCRPA_Report_Summary.md (populated), CHATGPT_BRIEFING_PROMPT.md, EMAIL_TEMPLATE.txt
        └─> Copy Reports           → SCRPA_Combined_Executive_Summary.html (from SCRPA_ArcPy/06_Output, patched)
 
 3. Report Folder (cycle-only docs; no data_dictionary/PROJECT_SUMMARY/claude.md per cycle)
    └─> 16_Reports\SCRPA\Time_Based\YYYY\<cycle>_<date>\
-       ├─> Data/          (Enhanced CSV, 7-day CSV, YAML summary)
+       ├─> Data/          (Enhanced CSV, 7-day CSV, JSON summary)
        ├─> Documentation/ (SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, EMAIL_TEMPLATE.txt)
        └─> Reports/       (HTML/PDF from ArcPy)
 ```
@@ -276,10 +277,16 @@ Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports
 
 ### Recent Improvements
 
-#### v1.9.4 (Latest)
+#### v2.0.0 (Latest - 2026-02-10)
+- ✅ **HTML Auto-Generation Integration**: Pipeline now automatically calls SCRPA_ArcPy to generate fresh HTML reports before copying. Eliminates stale data issues.
+- ✅ **Dynamic M Code**: Power BI M code automatically finds latest cycle folder. No more manual path editing.
+- ✅ **YAML → JSON Migration**: Replaced YAML with JSON for 7-day summary. Faster, built-in, no external dependencies.
+- ✅ **7-Day Counting Bug Fixed**: Crime category breakdown now correctly excludes backfill incidents from 7-Day totals. Lag statistics calculated from actual 7-Day period incidents only.
+
+#### v1.9.4
 - ✅ **Documentation streamlining**: Pipeline no longer writes `data_dictionary`, `PROJECT_SUMMARY`, or `claude.md` into each cycle's Documentation folder. Canonical docs live in `16_Reports/SCRPA/Documentation`; update with `generate_documentation.py -o <path>`.
 - ✅ **Cycle-only docs**: Each cycle Documentation/ now gets only `SCRPA_Report_Summary.md` (populated from pipeline data), `CHATGPT_BRIEFING_PROMPT.md` (placeholders filled from cycle_info), and `EMAIL_TEMPLATE.txt`.
-- ✅ **SCRPA_Report_Summary.md populated**: Total incidents, period counts (7-Day, 28-Day, YTD, Prior Year), lag/backfill counts, lag mean/median/max, and 7-day-by-crime-category table filled from enhanced data and 7-day YAML.
+- ✅ **SCRPA_Report_Summary.md populated**: Total incidents, period counts (7-Day, 28-Day, YTD, Prior Year), lag/backfill counts, lag mean/median/max, and 7-day-by-crime-category table filled from enhanced data and 7-day JSON.
 - ✅ **CHATGPT_BRIEFING_PROMPT.md generated**: Pipeline writes per-cycle briefing prompt with cycle ID, bi-weekly, report due, 7-day and bi-weekly date ranges; footer "HPD | SSOCC | SCRPA Report | Cycle: …".
 
 #### v1.9.3
@@ -414,11 +421,11 @@ Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports
 
 **System Owner**: R. A. Carucci  
 **Department**: City of Hackensack Police Department  
-**Last Updated**: January 28, 2026
+**Last Updated**: February 10, 2026
 
 ---
 
-**Version**: 1.9.4  
+**Version**: 2.0.0  
 **Status**: Production  
 **License**: Internal Use Only
 

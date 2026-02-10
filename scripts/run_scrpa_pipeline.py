@@ -22,7 +22,7 @@ Output Structure:
     ├── Data/
     │   ├── SCRPA_All_Crimes_Enhanced.csv
     │   ├── SCRPA_7Day_With_LagFlags.csv
-    │   └── SCRPA_7Day_Summary.yaml
+    │   └── SCRPA_7Day_Summary.json
     ├── Documentation/   (cycle-specific only)
     │   ├── SCRPA_Report_Summary.md   (populated from pipeline data)
     │   ├── CHATGPT_BRIEFING_PROMPT.md
@@ -41,6 +41,7 @@ import os
 import re
 import shutil
 import tempfile
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from datetime import datetime, date, timedelta
@@ -74,6 +75,8 @@ from generate_documentation import (
 
 BASE_DIR = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA")
 TIME_BASED_DIR = BASE_DIR / "Time_Based"
+TEMPLATE_DIR = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates")
+POWERBI_TEMPLATE = TEMPLATE_DIR / "Base_Report.pbix"
 
 
 # =============================================================================
@@ -133,6 +136,77 @@ def _clean_data_folder(data_dir: Path) -> None:
 SCRPA_ARCPY_OUTPUT = Path(
     r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output"
 )
+
+# SCRPA_ArcPy main script path
+SCRPA_ARCPY_SCRIPT = Path(
+    r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\05_orchestrator\RMS_Statistical_Export_FINAL_COMPLETE.py"
+)
+
+
+# =============================================================================
+# HTML Report Generation (via SCRPA_ArcPy)
+# =============================================================================
+
+
+def _generate_html_report_via_arcpy(
+    rms_path: Path,
+    cycle_info: Dict[str, Any]
+) -> bool:
+    """
+    Call SCRPA_ArcPy to generate fresh HTML report from RMS export.
+    
+    This ensures the HTML report in 06_Output is current before copying.
+    SCRPA_ArcPy reads from 05_EXPORTS\_RMS\scrpa\ and generates HTML with
+    the actual incident data.
+    
+    Args:
+        rms_path: Path to the RMS export file (xlsx/csv)
+        cycle_info: Dictionary with cycle metadata including 'report_due'
+    
+    Returns:
+        True if generation succeeded, False otherwise
+    """
+    import subprocess
+    
+    if not SCRPA_ARCPY_SCRIPT.exists():
+        print(f"  ⚠️  SCRPA_ArcPy script not found: {SCRPA_ARCPY_SCRIPT}")
+        print(f"  HTML report will not be generated - copy will use existing file")
+        return False
+    
+    # Prepare environment with REPORT_DATE for cycle lookup
+    env = os.environ.copy()
+    report_date = cycle_info.get('report_due', '')
+    if report_date:
+        env['REPORT_DATE'] = report_date
+        print(f"  Generating HTML report for {report_date}...")
+    else:
+        print(f"  Generating HTML report (auto-detect date)...")
+    
+    # Run SCRPA_ArcPy script
+    try:
+        result = subprocess.run(
+            [sys.executable, str(SCRPA_ARCPY_SCRIPT)],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout
+        )
+        
+        if result.returncode == 0:
+            print(f"  ✅ HTML report generated successfully")
+            return True
+        else:
+            print(f"  ❌ HTML generation failed (exit code {result.returncode})")
+            if result.stderr:
+                print(f"  Error output: {result.stderr[:500]}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print(f"  ⏱️  HTML generation timed out after 5 minutes")
+        return False
+    except Exception as e:
+        print(f"  ❌ Error running SCRPA_ArcPy: {e}")
+        return False
 
 
 # =============================================================================
@@ -377,6 +451,31 @@ def patch_scrpa_combined_exec_summary_after_copy(
     print(
         f"  Patch: inline fallback, changed={changed} | {copied_html_path.name}"
     )
+
+
+def _copy_powerbi_template(root_dir: Path, cycle_name: str) -> Optional[Path]:
+    """
+    Copy Power BI template to cycle folder with cycle-specific name.
+    
+    Args:
+        root_dir: Cycle root folder
+        cycle_name: Cycle name (e.g., 26C01W04_26_01_27)
+    
+    Returns:
+        Path to copied template, or None if template not found
+    """
+    if not POWERBI_TEMPLATE.exists():
+        print(f"  Power BI template not found: {POWERBI_TEMPLATE} (skipping copy)")
+        return None
+    
+    dest = root_dir / f"{cycle_name}.pbix"
+    try:
+        shutil.copy2(POWERBI_TEMPLATE, dest)
+        print(f"  Copied Power BI template: {dest.name}")
+        return dest
+    except OSError as e:
+        print(f"  Could not copy Power BI template: {e}")
+        return None
 
 
 def _copy_scrpa_reports_to_cycle(reports_dir: Path, cycle_info: Optional[Dict[str, Any]] = None) -> list:
@@ -647,6 +746,11 @@ def run_pipeline(
 
         print(f"  Output directory: {paths['root']}")
 
+        # Copy Power BI template to cycle folder
+        pbix_path = _copy_powerbi_template(paths['root'], paths['root'].name)
+        if pbix_path:
+            results['files_created'].append(str(pbix_path))
+
         # =================================================================
         # STEP 3: Transform data
         # =================================================================
@@ -680,31 +784,31 @@ def run_pipeline(
         print(f"  Saved: {enhanced_csv.name}")
 
         # =================================================================
-        # STEP 4: Generate 7-day outputs (one CSV + one YAML only)
+        # STEP 4: Generate 7-day outputs (one CSV + one JSON only)
         # =================================================================
         print(f"\n[4/6] Generating 7-day outputs (prepare_7day_outputs)...")
-        csv_7day, yaml_summary = save_7day_outputs(
+        csv_7day, json_summary = save_7day_outputs(
             df_enhanced,
             paths['data'],
             cycle_info=cycle_info,
             timestamp=False
         )
-        results['files_created'].extend([str(csv_7day), str(yaml_summary)])
+        results['files_created'].extend([str(csv_7day), str(json_summary)])
 
         # =================================================================
         # STEP 5: Cycle documentation only (no canonical docs copied here)
         # Canonical docs: 16_Reports/SCRPA/Documentation; update via generate_documentation.py -o <path>
         # =================================================================
         print(f"\n[5/6] Writing cycle documentation...")
-        yaml_data = {}
-        if yaml_summary.exists():
+        json_data = {}
+        if json_summary.exists():
             try:
-                with open(yaml_summary, 'r', encoding='utf-8') as f:
-                    yaml_data = yaml.safe_load(f) or {}
+                with open(json_summary, 'r', encoding='utf-8') as f:
+                    json_data = json.load(f) or {}
             except Exception:
                 pass
         period_counts = df_enhanced['Period'].value_counts() if 'Period' in df_enhanced.columns else {}
-        lag_analysis = yaml_data.get('lag_analysis') or {}
+        lag_analysis = json_data.get('lag_analysis') or {}
         lag_dist = lag_analysis.get('lagdays_distribution') or {}
         summary_data = {
             'total': len(df_enhanced),
@@ -717,7 +821,7 @@ def run_pipeline(
             'lag_mean': lag_dist.get('mean', '-'),
             'lag_median': lag_dist.get('median', '-'),
             'lag_max': lag_dist.get('max', '-'),
-            '7day_by_crime_category': yaml_data.get('7day_by_crime_category') or [],
+            '7day_by_crime_category': json_data.get('7day_by_crime_category') or [],
         }
         report_summary_path = write_report_summary_with_data(
             paths['documentation'], cycle_info, summary_data
@@ -731,9 +835,19 @@ def run_pipeline(
         print(f"  Created: {email_path.name}")
 
         # =================================================================
-        # STEP 6: Copy reports from SCRPA_ArcPy/06_Output to cycle Reports folder
+        # STEP 6: Generate and copy HTML reports
+        # First generate fresh HTML via SCRPA_ArcPy, then copy to cycle folder
         # =================================================================
-        print(f"\n[6/6] Copying reports to {paths['reports'].name}/...")
+        print(f"\n[6/6] Generating and copying reports...")
+        
+        # 6a. Generate HTML report from RMS export
+        print(f"  [6a] Generating HTML report via SCRPA_ArcPy...")
+        html_generated = _generate_html_report_via_arcpy(rms_path, cycle_info)
+        if not html_generated:
+            print(f"  ⚠️  HTML generation failed/skipped - will copy existing file if available")
+        
+        # 6b. Copy reports from SCRPA_ArcPy/06_Output to cycle Reports folder
+        print(f"  [6b] Copying reports to {paths['reports'].name}/...")
         reports_copied = _copy_scrpa_reports_to_cycle(paths['reports'], cycle_info)
         results['files_created'].extend(reports_copied)
 

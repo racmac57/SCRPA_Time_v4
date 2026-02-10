@@ -246,6 +246,12 @@ For issues or questions:
 
 ## Recent Updates
 
+### v2.0.0 (Latest - 2026-02-10)
+- ✅ **HTML Auto-Generation**: Pipeline now automatically calls SCRPA_ArcPy to generate fresh HTML reports
+- ✅ **Dynamic M Code**: Power BI template automatically finds latest cycle data (no manual editing)
+- ✅ **YAML → JSON**: Replaced YAML with JSON for better compatibility and performance
+- ✅ **7-Day Counting Fix**: Fixed bug where backfill incidents were counted in 7-Day totals
+
 ### v1.9.3 (Latest)
 - ✅ **LagDays fix**: `Report_Date_ForLagday` used for LagDays/IsLagDay; lagday tables filter on `Backfill_7Day = TRUE`.
 - ✅ **Bi-weekly email and briefing**: Email and ChatGPT prompt use full bi-weekly period and cycle (e.g. 26BW02, 01/13–01/26).
@@ -380,11 +386,11 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.9.3  
-**Last Updated**: 2026-01-27  
+**Current Version**: 2.0.0  
+**Last Updated**: 2026-02-10  
 **Maintained By**: R. A. Carucci
 
-**What changed in v1.9.3**: LagDays fix (`Report_Date_ForLagday`), bi-weekly email and briefing period, crime breakdown script, `SCRPA_All_Crimes_Full` export. See [CHANGELOG.md](CHANGELOG.md#193---2026-01-27).
+**What changed in v2.0.0**: HTML auto-generation integration, dynamic M code (no manual path editing), YAML→JSON migration, 7-day counting bug fixed. See [CHANGELOG.md](CHANGELOG.md#200---2026-02-10).
 
 ---
 

@@ -9,7 +9,7 @@ SCRPA 7-Day Outputs - Filtered Data and Lag Day Metadata Generator
 This module filters enriched SCRPA data for 7-day reporting and generates:
 1. SCRPA_7Day_With_LagFlags.csv - All incidents reported in current 7-day window
 2. SCRPA_7Day_Lag_Only.csv - Backfill lag incidents (Backfill_7Day = TRUE)
-3. SCRPA_7Day_Summary.yaml/.json - LagDay metadata (counts, date ranges)
+3. SCRPA_7Day_Summary.json - LagDay metadata (counts, date ranges)
 
 The filtering logic matches what Power BI slicer filters would produce:
 - IsCurrent7DayCycle = TRUE (Report_Date_ForLagday in current 7-day window)
@@ -150,23 +150,53 @@ def generate_lagday_summary(
     if 'Crime_Category' in df_lag_only.columns and len(df_lag_only) > 0:
         lag_by_category = df_lag_only['Crime_Category'].value_counts().to_dict()
 
-    # LagDays distribution
+    # 7-Day by Crime_Category: TotalCount and LagDayCount per category + TOTAL row
+    by_crime_category = []
+    if 'Crime_Category' in df_7day.columns and len(df_7day) > 0:
+        # Filter to only actual 7-Day period incidents (not backfill)
+        df_7day_period_only = df_7day[df_7day['Period'] == '7-Day'].copy() if 'Period' in df_7day.columns else df_7day.copy()
+        
+        has_lag = 'LagDays' in df_7day_period_only.columns
+        for cat, grp in df_7day_period_only.groupby('Crime_Category', dropna=False):
+            cat_name = str(cat) if pd.notna(cat) else 'Unknown'
+            total = len(grp)
+            # Count incidents with lag days (LagDays > 0)
+            lag_count = int((grp['LagDays'] > 0).sum()) if has_lag else 0
+            by_crime_category.append({
+                'Crime_Category': cat_name,
+                'LagDayCount': lag_count,
+                'TotalCount': total,
+            })
+        by_crime_category.sort(key=lambda x: (-x['TotalCount'], x['Crime_Category']))
+        total_lag = sum(r['LagDayCount'] for r in by_crime_category)
+        total_all = sum(r['TotalCount'] for r in by_crime_category)
+        by_crime_category.append({
+            'Crime_Category': 'TOTAL',
+            'LagDayCount': total_lag,
+            'TotalCount': total_all,
+        })
+
+    # LagDays distribution (for actual 7-Day period incidents only, not backfill)
     lagdays_distribution = {}
-    if 'LagDays' in df_lag_only.columns and len(df_lag_only) > 0:
-        lag_values = df_lag_only['LagDays'].dropna()
-        if len(lag_values) > 0:
-            lagdays_distribution = {
-                'min': int(lag_values.min()),
-                'max': int(lag_values.max()),
-                'mean': round(float(lag_values.mean()), 1),
-                'median': int(lag_values.median()),
-                'ranges': {
-                    '1-7_days': int(((lag_values >= 1) & (lag_values <= 7)).sum()),
-                    '8-14_days': int(((lag_values >= 8) & (lag_values <= 14)).sum()),
-                    '15-28_days': int(((lag_values >= 15) & (lag_values <= 28)).sum()),
-                    '29+_days': int((lag_values >= 29).sum()),
+    if 'Period' in df_7day.columns and 'LagDays' in df_7day.columns and len(df_7day) > 0:
+        # Filter to only 7-Day period incidents that have lag days
+        df_7day_period_only = df_7day[df_7day['Period'] == '7-Day'].copy()
+        if len(df_7day_period_only) > 0:
+            lag_values = df_7day_period_only['LagDays'].dropna()
+            lag_values = lag_values[lag_values > 0]  # Only incidents with actual lag
+            if len(lag_values) > 0:
+                lagdays_distribution = {
+                    'min': int(lag_values.min()),
+                    'max': int(lag_values.max()),
+                    'mean': round(float(lag_values.mean()), 1),
+                    'median': int(lag_values.median()),
+                    'ranges': {
+                        '1-7_days': int(((lag_values >= 1) & (lag_values <= 7)).sum()),
+                        '8-14_days': int(((lag_values >= 8) & (lag_values <= 14)).sum()),
+                        '15-28_days': int(((lag_values >= 15) & (lag_values <= 28)).sum()),
+                        '29+_days': int((lag_values >= 29).sum()),
+                    }
                 }
-            }
 
     # Period breakdown in 7-day data
     period_breakdown = {}
@@ -197,6 +227,7 @@ def generate_lagday_summary(
             'by_crime_category': lag_by_category,
             'lagdays_distribution': lagdays_distribution,
         },
+        '7day_by_crime_category': by_crime_category,
         'period_breakdown': period_breakdown,
         'incident_date_range': {
             'earliest': str(min_incident) if min_incident else None,
@@ -215,67 +246,47 @@ def save_7day_outputs(
     df_full: pd.DataFrame,
     output_dir: Path,
     cycle_info: Optional[Dict[str, Any]] = None,
-    timestamp: bool = True
-) -> Tuple[Path, Path, Path, Path]:
+    timestamp: bool = False
+) -> Tuple[Path, Path]:
     """
-    Generate and save all 7-day output files.
+    Generate and save 7-day output files (streamlined: 2 files only).
+
+    Writes:
+    1. SCRPA_7Day_With_LagFlags.csv - rows where Report Date falls within 7-Day period
+    2. SCRPA_7Day_Summary.json - metadata including 7day_by_crime_category (Crime_Category, LagDayCount, TotalCount, TOTAL)
 
     Args:
         df_full: Full enriched DataFrame
         output_dir: Output directory path
         cycle_info: Optional cycle information dict
-        timestamp: Whether to include timestamp in filenames
+        timestamp: If True, also write timestamped copies (default False for clean Data folder)
 
     Returns:
-        Tuple of (7day_csv_path, lag_csv_path, summary_yaml_path, summary_json_path)
+        Tuple of (7day_csv_path, summary_json_path)
     """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    ts = datetime.now().strftime('%Y%m%d_%H%M%S') if timestamp else ''
-    ts_suffix = f'_{ts}' if ts else ''
-
-    # Filter data
+    # Filter: Report Date within 7-Day period (IsCurrent7DayCycle = TRUE)
     df_7day = filter_7day_by_report_date(df_full)
     df_lag_only = extract_backfill_lag(df_full)
-
-    # Also create the combined 7-Day + IsLagDay filter
     df_7day_and_lag = extract_7day_and_lag(df_full)
 
-    # Save 7-Day filtered CSV (IsCurrent7DayCycle = TRUE)
-    csv_7day_path = output_dir / f'SCRPA_7Day_With_LagFlags{ts_suffix}.csv'
+    # Generate summary (includes 7day_by_crime_category: Crime_Category, LagDayCount, TotalCount, TOTAL)
+    summary = generate_lagday_summary(df_full, df_7day, df_lag_only, cycle_info)
+
+    # Save 7-Day CSV only (no separate Lag-Only CSV)
+    csv_7day_path = output_dir / 'SCRPA_7Day_With_LagFlags.csv'
     df_7day.to_csv(csv_7day_path, index=False)
     print(f"  Saved 7-Day filtered: {csv_7day_path.name} ({len(df_7day)} rows)")
 
-    # Save Lag-Only CSV (Backfill_7Day = TRUE)
-    csv_lag_path = output_dir / f'SCRPA_7Day_Lag_Only{ts_suffix}.csv'
-    df_lag_only.to_csv(csv_lag_path, index=False)
-    print(f"  Saved Lag-Only: {csv_lag_path.name} ({len(df_lag_only)} rows)")
-
-    # Generate and save summary
-    summary = generate_lagday_summary(df_full, df_7day_and_lag, df_lag_only, cycle_info)
-
-    yaml_path = output_dir / f'SCRPA_7Day_Summary{ts_suffix}.yaml'
-    with open(yaml_path, 'w', encoding='utf-8') as f:
-        yaml.dump(summary, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
-    print(f"  Saved YAML summary: {yaml_path.name}")
-
-    json_path = output_dir / f'SCRPA_7Day_Summary{ts_suffix}.json'
+    # Save JSON summary (replaces YAML for better compatibility)
+    json_path = output_dir / 'SCRPA_7Day_Summary.json'
     with open(json_path, 'w', encoding='utf-8') as f:
         json.dump(summary, f, indent=2, ensure_ascii=False)
     print(f"  Saved JSON summary: {json_path.name}")
 
-    # Also save stable-name versions (without timestamp)
-    if timestamp:
-        df_7day.to_csv(output_dir / 'SCRPA_7Day_With_LagFlags.csv', index=False)
-        df_lag_only.to_csv(output_dir / 'SCRPA_7Day_Lag_Only.csv', index=False)
-        with open(output_dir / 'SCRPA_7Day_Summary.yaml', 'w', encoding='utf-8') as f:
-            yaml.dump(summary, f, default_flow_style=False, sort_keys=False, allow_unicode=True)
-        with open(output_dir / 'SCRPA_7Day_Summary.json', 'w', encoding='utf-8') as f:
-            json.dump(summary, f, indent=2, ensure_ascii=False)
-        print("  Saved stable-name copies (no timestamp)")
-
-    return csv_7day_path, csv_lag_path, yaml_path, json_path
+    return csv_7day_path, json_path
 
 
 # =============================================================================
