@@ -1,0 +1,782 @@
+Returns:
+         Tuple of (TimeOfDay label, TimeOfDay_SortKey)
+     """
+     if t is None:
+         return ("Unknown Time", 99)
+
+     hr = t.hour
+
+     if 4 <= hr < 8:
+         return ("Early Morning (04:00-07:59)", 2)
+     elif 8 <= hr < 12:
+         return ("Morning (08:00-11:59)", 3)
+     elif 12 <= hr < 16:
+         return ("Afternoon (12:00-15:59)", 4)
+     elif 16 <= hr < 20:
+         return ("Evening Peak (16:00-19:59)", 5)
+     elif 20 <= hr < 24:
+         return ("Night (20:00-23:59)", 6)
+     else:  # 0 <= hr < 4
+         return ("Late Night (00:00-03:59)", 1)
+
+
+ def get_start_of_hour(t: Optional[time]) -> str:
+     """Return start of hour as HH:00:00 string.""" if t is None:
+         return "00:00:00"
+     return f"{t.hour:02d}:00:00"
+
+
+ # =============================================================================
+ # CRIME CATEGORY CLASSIFICATION
+ # =============================================================================
+
+ def classify_crime_category(all_incidents: str, narrative: Optional[str]) -> str:
+     """
+     Classify crime into category. Matches M code lines 504-521.
+     """ L = (all_incidents or '').upper()
+     N = (narrative or '').upper()
+
+     # Motor Vehicle Theft with theft-from narrative -> Burglary Auto
+     if 'MOTOR VEHICLE THEFT' in L:
+         if 'THEFT OF HIS PROPERTY' in N or 'THEFT FROM MOTOR VEHICLE' in N:
+             return "Burglary Auto"
+         return "Motor Vehicle Theft"
+
+     # Direct Burglary Auto matches
+     if any(x in L for x in ['BURGLARY - AUTO', 'ATTEMPTED BURGLARY - AUTO', 'THEFT FROM MOTOR VEHICLE']):
+         return "Burglary Auto"
+
+     # Commercial/Residence Burglary
+     if any(x in L for x in ['BURGLARY - COMMERCIAL', 'ATTEMPTED BURGLARY - COMMERCIAL',
+                              'BURGLARY - RESIDENCE', 'ATTEMPTED BURGLARY - RESIDENCE']):
+         return "Burglary - Comm & Res"
+
+     # Robbery
+     if 'ROBBERY' in L:
+         return "Robbery"
+
+     # Sexual Offenses
+     if any(x in L for x in ['SEXUAL', 'RAPE']):
+         return "Sexual Offenses"
+
+     return "Other"
+
+
+ # =============================================================================
+ # PERIOD CLASSIFICATION
+ # =============================================================================
+
+ def classify_period(
+     incident_date: Optional[date],
+     current_year: int,
+     cycle_start_7: Optional[date],
+     cycle_end_7: Optional[date],
+     cycle_start_28: Optional[date],
+     cycle_end_28: Optional[date]
+ ) -> Tuple[str, int]:
+     """
+     Classify incident into reporting period. Matches M code lines 242-273. Priority order: 7-Day -> Prior Year (currentYear-1) -> 28-Day -> YTD -> Historical
+
+     Returns:
+         Tuple of (Period label, Period_SortKey)
+     """
+     if incident_date is None:
+         return ("Historical", 5)
+
+     incident_year = incident_date.year
+
+     # Check 7-Day first (highest priority)
+     if cycle_start_7 and cycle_end_7:
+         if cycle_start_7 <= incident_date <= cycle_end_7:
+             return ("7-Day", 1)
+
+     # Check Prior Year before 28-Day (to prevent prior year from being classified as 28-Day)
+     if incident_year == current_year - 1:
+         return ("Prior Year", 4)
+
+     # Check 28-Day (only for current year incidents, not prior year)
+     if cycle_start_28 and cycle_end_28:
+         if cycle_start_28 <= incident_date <= cycle_end_28:
+             return ("28-Day", 2)
+
+     # YTD: incident occurred in current year but outside 7-Day/28-Day windows
+     if incident_year == current_year:
+         return ("YTD", 3)
+
+     # Historical: older years (2024 and earlier)
+     return ("Historical", 5)
+
+
+ def build_period_debug(
+     incident_date: Optional[date],
+     has_cycle: bool,
+     report_due_date: Optional[date],
+     cycle_start: Optional[date],
+     cycle_end: Optional[date],
+     in_7day: bool,
+     in_28day: bool
+ ) -> str:
+     """Build debug string for period calculation. Matches M code lines 278-298.""" d_str = "NULL" if incident_date is None else str(incident_date)
+     year_str = "NULL" if incident_date is None else str(incident_date.year)
+
+     return (
+         f"dI={d_str.replace('-', '/')} | "
+         f"HasCycle={str(has_cycle).lower()} | "
+         f"ReportDue={str(report_due_date).replace('-', '/') if report_due_date else 'NULL'} | "
+         f"CycleStart={str(cycle_start).replace('-', '/') if cycle_start else 'NULL'} | "
+         f"CycleEnd={str(cycle_end).replace('-', '/') if cycle_end else 'NULL'} | "
+         f"in7Day={str(in_7day).lower()} | "
+         f"in28Day={str(in_28day).lower()} | "
+         f"Year={year_str}"
+     )
+
+
+ # =============================================================================
+ # VEHICLE AND ADDRESS FORMATTING
+ # =============================================================================
+
+ def format_vehicle(
+     reg_state: Any,
+     registration: Any,
+     make: Any,
+     model: Any
+ ) -> Optional[str]:
+     """
+     Format vehicle info as "STATE - REG, MAKE/MODEL". Matches M code lines 574-598 (Vehicle_1) and 600-624 (Vehicle_2).
+     """ reg_state_str = str(reg_state).strip() if reg_state and not pd.isna(reg_state) else ""
+     registration_str = str(registration).strip() if registration and not pd.isna(registration) else ""
+     make_str = str(make).strip() if make and not pd.isna(make) else ""
+     model_str = str(model).strip() if model and not pd.isna(model) else ""
+
+     # Build state/registration part
+     if reg_state_str and registration_str:
+         state_reg = f"{reg_state_str} - {registration_str}"
+     elif registration_str:
+         state_reg = registration_str
+     else:
+         state_reg = reg_state_str
+
+     # Build make/model part
+     if make_str and model_str:
+         make_model = f"{make_str}/{model_str}"
+     elif make_str:
+         make_model = make_str
+     else:
+         make_model = model_str
+
+     # Combine
+     if state_reg and make_model:
+         result = f"{state_reg}, {make_model}"
+     elif state_reg:
+         result = state_reg
+     else:
+         result = make_model
+
+     if not result:
+         return None
+
+     return result.upper()
+
+
+ def clean_address(full_address: Any) -> Optional[str]:
+     """
+     Clean address by removing ", Hackensack, NJ, XXXXX" suffix. Matches M code lines 633-644.
+     """ if full_address is None or pd.isna(full_address):
+         return None
+
+     addr = str(full_address).strip()
+     if not addr:
+         return None
+
+     # Remove ", Hackensack, NJ" and everything after
+     idx = addr.find(', Hackensack, NJ')
+     if idx > 0:
+         return addr[:idx]
+
+     return addr
+
+
+ def clean_narrative(narrative: Any) -> Optional[str]:
+     """
+     Clean narrative text: remove line breaks, collapse whitespace. Matches M code lines 551-572.
+     """ if narrative is None or pd.isna(narrative):
+         return None
+
+     text = str(narrative)
+     if not text.strip():
+         return None
+
+     # Replace various line breaks with space
+     text = text.replace('\r\n', ' ').replace('\n', ' ').replace('\r', ' ')
+
+     # Collapse multiple spaces
+     while '    ' in text:
+         text = text.replace('    ', ' ')
+     while '   ' in text:
+         text = text.replace('   ', ' ')
+     while '  ' in text:
+         text = text.replace('  ', ' ')
+
+     # Remove control characters
+     text = ''.join(c for c in text if c.isprintable() or c == ' ')
+
+     return text.strip() if text.strip() else None
+
+
+ def clean_incident_type(incident_type: Any) -> Optional[str]:
+     """
+     Clean incident type by removing " - 2C" suffix. Matches M code lines 523-530.
+     """ if incident_type is None or pd.isna(incident_type):
+         return None
+
+     text = str(incident_type)
+     idx = text.find(' - 2C')
+     if idx > 0:
+         return text[:idx]
+
+     return text
+
+
+ def normalize_incident_type(incident_type: Any) -> Optional[str]:
+     """
+     Normalize incident type by replacing "Attempted Burglary" with "Burglary". Matches M code lines 532-549.
+     """ if incident_type is None or pd.isna(incident_type):
+         return None
+
+     return str(incident_type).replace('Attempted Burglary', 'Burglary')
+
+
+ # =============================================================================
+ # MAIN TRANSFORM FUNCTION
+ # =============================================================================
+
+ def read_rms_export(path: Union[str, Path]) -> pd.DataFrame:
+     """
+     Load RMS export CSV/Excel file. Args:
+         path: Path to RMS export file
+
+     Returns:
+         DataFrame with RMS data
+     """
+     path = Path(path)
+
+     if path.suffix.lower() in ['.xlsx', '.xls']:
+         df = pd.read_excel(path)
+     else:
+         df = pd.read_csv(path, low_memory=False)
+
+     return df
+
+
+ def build_all_crimes_enhanced(
+     rms_df: pd.DataFrame,
+     calendar_df: pd.DataFrame,
+     report_due_date: Optional[date] = None,
+     today: Optional[date] = None
+ ) -> pd.DataFrame:
+     """
+     Main transformation pipeline matching All_Crimes.m logic. Args:
+         rms_df: Raw RMS export DataFrame
+         calendar_df: Cycle calendar DataFrame
+         report_due_date: Optional specific report due date (defaults to today)
+         today: Optional override for "today" (defaults to actual today)
+
+     Returns:
+         Enriched DataFrame matching preview table structure
+     """
+     # Work on a copy
+     df = rms_df.copy()
+
+     # Set today
+     if today is None:
+         today = date.today()
+     current_year = today.year
+
+     # =========================================================================
+     # STEP 1: Resolve Current Cycle (matches M code lines 191-232)
+     # =========================================================================
+     if report_due_date:
+         cycle = resolve_cycle(calendar_df, report_due_date)
+     else:
+         cycle = resolve_cycle(calendar_df, today)
+
+     has_current_cycle = cycle is not None
+
+     if has_current_cycle:
+         current_cycle_report_due = cycle['Report_Due_Date']
+         current_cycle_start = cycle['7_Day_Start']
+         current_cycle_end = cycle['7_Day_End']
+         current_cycle_28_start = cycle['28_Day_Start']
+         current_cycle_28_end = cycle['28_Day_End']
+         current_cycle_name = cycle['Report_Name']
+     else:
+         current_cycle_report_due = None
+         current_cycle_start = None
+         current_cycle_end = None
+         current_cycle_28_start = None
+         current_cycle_28_end = None
+         current_cycle_name = None
+
+     # =========================================================================
+     # STEP 2: Time Processing with Cascading Logic (matches M code lines 64-109)
+     # =========================================================================
+     def process_time_row(row):
+         """Process time columns with cascading: Incident Time -> Incident Time_Between -> Report Time"""
+         it = parse_time(row.get('Incident Time'))
+         itb = parse_time(row.get('Incident Time_Between'))
+         rt = parse_time(row.get('Report Time'))
+
+         # Best time value (cascade)
+         best = it if it else (itb if itb else rt)
+
+         # Time source
+         if it:
+             source = "Incident Time"
+         elif itb:
+             source = "Incident Time_Between"
+         elif rt:
+             source = "Report Time"
+         else:
+             source = "None"
+
+         return best, source
+
+     time_results = df.apply(process_time_row, axis=1)
+     df['BestTimeValue'] = [r[0] for r in time_results]
+     df['TimeSource'] = [r[1] for r in time_results]
+     df['Incident_Time'] = df['BestTimeValue'].apply(format_time_str)
+
+     # =========================================================================
+     # STEP 3: Incident Date Processing (matches M code lines 114-139)
+     # =========================================================================
+     def process_incident_date_row(row):
+         """Process incident date with cascading: Incident Date -> Incident Date_Between -> Report Date"""
+         d_it = parse_date(row.get('Incident Date'))
+         d_itb = parse_date(row.get('Incident Date_Between'))
+         d_rt = parse_date(row.get('Report Date'))
+
+         best = d_it if d_it else (d_itb if d_itb else d_rt)
+         return best
+
+     df['Incident_Date_Date'] = df.apply(process_incident_date_row, axis=1)
+     df['Incident_Date'] = df['Incident_Date_Date'].apply(format_date_str)
+
+     # =========================================================================
+     # STEP 4: Report Date Processing (matches M code lines 144-182)
+     # =========================================================================
+     def process_report_date_row(row):
+         """Process report date with cascade to Incident_Date_Date as fallback.""" d_rd = parse_date(row.get('Report Date'))
+         d_ed = parse_date(row.get('EntryDate'))
+         incident_date_date = row.get('Incident_Date_Date')
+
+         # Report_Date: Report Date -> EntryDate -> Incident_Date_Date
+         report_date = coalesce_any(d_rd, coalesce_any(d_ed, incident_date_date))
+
+         # Report_Date_ForLagday: ONLY Report Date or EntryDate (NO Incident_Date fallback)
+         # This is critical for correct LagDay calculation
+         report_date_for_lagday = coalesce_any(d_rd, d_ed)
+
+         return report_date, report_date_for_lagday
+
+     report_results = df.apply(process_report_date_row, axis=1)
+     df['Report_Date'] = [r[0] for r in report_results]
+     df['Report_Date_ForLagday'] = [r[1] for r in report_results]
+
+     df['Report_Date_Text'] = df['Report_Date'].apply(
+         lambda d: d.strftime('%m/%d/%y') if d else None
+     )
+
+     # IncidentToReportDays
+     def calc_incident_to_report_days(row):
+         rd = row.get('Report_Date')
+         idd = row.get('Incident_Date_Date')
+         if rd and idd:
+             return (rd - idd).days
+         return None
+
+     df['IncidentToReportDays'] = df.apply(calc_incident_to_report_days, axis=1)
+
+     # =========================================================================
+     # STEP 5: Period Classification (matches M code lines 242-313)
+     # =========================================================================
+     def classify_period_row(row):
+         incident_date = row.get('Incident_Date_Date')
+         period, sort_key = classify_period(
+             incident_date,
+             current_year,
+             current_cycle_start,
+             current_cycle_end,
+             current_cycle_28_start,
+             current_cycle_28_end
+         )
+
+         # Build debug info
+         in_7day = (
+             incident_date is not None and
+             current_cycle_start is not None and
+             current_cycle_end is not None and
+             current_cycle_start <= incident_date <= current_cycle_end
+         )
+         in_28day = (
+             incident_date is not None and
+             current_cycle_28_start is not None and
+             current_cycle_28_end is not None and
+             current_cycle_28_start <= incident_date <= current_cycle_28_end
+         )
+
+         debug = build_period_debug(
+             incident_date,
+             has_current_cycle,
+             current_cycle_report_due,
+             current_cycle_start,
+             current_cycle_end,
+             in_7day,
+             in_28day
+         )
+
+         return period, sort_key, debug
+
+     period_results = df.apply(classify_period_row, axis=1)
+     df['Period'] = [r[0] for r in period_results]
+     df['Period_SortKey'] = [r[1] for r in period_results]
+     df['_Period_Debug'] = [r[2] for r in period_results]
+
+     # =========================================================================
+     # STEP 6: Cycle Name Assignment (matches M code lines 315-326)
+     # =========================================================================
+     def get_cycle_name(incident_date):
+         if incident_date is None:
+             return "Unknown"
+
+         cycle = resolve_cycle_for_date(calendar_df, incident_date)
+         if cycle is not None:
+             return cycle['Report_Name']
+         return "Historical"
+
+     df['cycle_name'] = df['Incident_Date_Date'].apply(get_cycle_name)
+
+     # =========================================================================
+     # STEP 7: Backfill_7Day Flag (matches M code lines 328-336)
+     # =========================================================================
+     def calc_backfill_7day(row):
+         """
+         Backfill_7Day: Incident occurred BEFORE cycle start
+         AND Report_Date_ForLagday is WITHIN current 7-day window.
+         """ if not has_current_cycle:
+             return False
+
+         incident_date = row.get('Incident_Date_Date')
+         report_date_for_lagday = row.get('Report_Date_ForLagday')
+
+         if incident_date is None or report_date_for_lagday is None:
+             return False
+
+         return (
+             incident_date < current_cycle_start and
+             current_cycle_start <= report_date_for_lagday <= current_cycle_end
+         )
+
+     df['Backfill_7Day'] = df.apply(calc_backfill_7day, axis=1)
+
+     # cycle_name_adjusted (matches M code lines 338-343)
+     df['cycle_name_adjusted'] = df.apply(
+         lambda row: coalesce_text(current_cycle_name, row['cycle_name']) if row['Backfill_7Day'] else
+ row['cycle_name'],
+         axis=1
+     )
+
+     # =========================================================================
+     # STEP 8: IsCurrent7DayCycle (matches M code lines 348-358)
+     # =========================================================================
+     def calc_is_current_7day_cycle(row):
+         """Check if Report_Date_ForLagday falls within current 7-day cycle.""" if not has_current_cycle:
+             return False
+
+         report_date_for_lagday = row.get('Report_Date_ForLagday')
+         if report_date_for_lagday is None:
+             return False
+
+         return current_cycle_start <= report_date_for_lagday <= current_cycle_end
+
+     df['IsCurrent7DayCycle'] = df.apply(calc_is_current_7day_cycle, axis=1)
+
+     # =========================================================================
+     # STEP 9: IsLagDay and LagDays (matches M code lines 360-439)
+     # =========================================================================
+     def calc_is_lagday_and_lagdays(row):
+         """
+         Calculate IsLagDay and LagDays using 3-tier cycle resolution. For each row, find cycle based on Report_Date_ForLagday using same 3-tier approach. IsLagDay = True if Incident_Date < CycleStartForReport
+         LagDays = CycleStartForReport - Incident_Date (in days)
+         """
+         incident_date = row.get('Incident_Date_Date')
+         report_date_for_lagday = row.get('Report_Date_ForLagday')
+
+         if incident_date is None or report_date_for_lagday is None:
+             return False, 0 if incident_date is None or report_date_for_lagday is None else None
+
+         # Find cycle for this row's Report_Date_ForLagday using 3-tier approach
+         report_cycle = resolve_cycle(calendar_df, report_date_for_lagday)
+
+         if report_cycle is None:
+             return False, 0
+
+         cycle_start_for_report = report_cycle['7_Day_Start']
+
+         if cycle_start_for_report is None:
+             return False, 0
+
+         is_lag_day = incident_date < cycle_start_for_report
+
+         if not is_lag_day:
+             return False, 0
+
+         lag_days = (cycle_start_for_report - incident_date).days
+         return True, lag_days
+
+     lag_results = df.apply(calc_is_lagday_and_lagdays, axis=1)
+     df['IsLagDay'] = [r[0] for r in lag_results]
+     df['LagDays'] = [r[1] for r in lag_results]
+
+     # =========================================================================
+     # STEP 10: Time of Day (matches M code lines 444-484)
+     # =========================================================================
+     df['StartOfHour'] = df['BestTimeValue'].apply(get_start_of_hour)
+
+     tod_results = df['BestTimeValue'].apply(classify_time_of_day)
+     df['TimeOfDay'] = [r[0] for r in tod_results]
+     df['TimeOfDay_SortKey'] = [r[1] for r in tod_results]
+
+     # =========================================================================
+     # STEP 11: Incident Consolidation & Category (matches M code lines 489-521)
+     # =========================================================================
+     def build_all_incidents(row):
+         i1 = row.get('Incident Type_1') or ''
+         i2 = row.get('Incident Type_2') or ''
+         i3 = row.get('Incident Type_3') or ''
+
+         parts = [str(i1) if i1 and not pd.isna(i1) else '']
+         if i2 and not pd.isna(i2) and str(i2).strip():
+             parts.append(str(i2))
+         if i3 and not pd.isna(i3) and str(i3).strip():
+             parts.append(str(i3))
+
+         return ', '.join(p for p in parts if p)
+
+     df['ALL_INCIDENTS'] = df.apply(build_all_incidents, axis=1)
+
+     # Clean incident types (remove " - 2C" suffix)
+     for col in ['Incident Type_1', 'Incident Type_2', 'Incident Type_3']:
+         if col in df.columns:
+             df[col] = df[col].apply(clean_incident_type)
+
+     # Normalize incident types
+     df['Incident_Type_1_Norm'] = df['Incident Type_1'].apply(normalize_incident_type)
+     df['Incident_Type_2_Norm'] = df['Incident Type_2'].apply(normalize_incident_type)
+     df['Incident_Type_3_Norm'] = df['Incident Type_3'].apply(normalize_incident_type)
+
+     # Crime Category
+     df['Crime_Category'] = df.apply(
+         lambda row: classify_crime_category(row.get('ALL_INCIDENTS', ''), row.get('Narrative')),
+         axis=1
+     )
+
+     # Clean narrative
+     if 'Narrative' in df.columns:
+         df['Narrative'] = df['Narrative'].apply(clean_narrative)
+
+     # =========================================================================
+     # STEP 12: Vehicle Formatting (matches M code lines 574-631)
+     # =========================================================================
+     df['Vehicle_1'] = df.apply(
+         lambda row: format_vehicle(
+             row.get('Reg State 1'),
+             row.get('Registration 1'),
+             row.get('Make1'),
+             row.get('Model1')
+         ),
+         axis=1
+     )
+
+     df['Vehicle_2'] = df.apply(
+         lambda row: format_vehicle(
+             row.get('Reg State 2'),
+             row.get('Registration 2'),
+             row.get('Make2'),
+             row.get('Model2')
+         ),
+         axis=1
+     )
+
+     # Vehicle_1_and_Vehicle_2 (combined)
+     df['Vehicle_1_and_Vehicle_2'] = df.apply(
+         lambda row: f"{row['Vehicle_1']} | {row['Vehicle_2']}"
+             if row['Vehicle_1'] and row['Vehicle_2'] else None,
+         axis=1
+     )
+
+     # =========================================================================
+     # STEP 13: Clean Address (matches M code lines 633-644)
+     # =========================================================================
+     df['Clean_Address'] = df['FullAddress'].apply(clean_address)
+
+     # =========================================================================
+     # STEP 14: IncidentKey for Category Lookup (matches M code lines 649-654)
+     # =========================================================================
+     df['IncidentKey'] = df.apply(
+         lambda row: coalesce_text(row.get('ALL_INCIDENTS'), row.get('Incident Type_1')),
+         axis=1
+     )
+
+     # =========================================================================
+     # STEP 15: Category_Type and Response_Type (simplified - no fuzzy matching)
+     # =========================================================================
+     # Note: The M code uses fuzzy matching against CallTypeCategories table. # For Python, we'll use a simplified direct lookup or default to "Unknown"
+     # This can be enhanced with a call_type_categories.csv file later
+     df['Category_Type'] = "Unknown"
+     df['Response_Type'] = "Unknown"
+
+     # =========================================================================
+     # STEP 16: Time Validation (matches M code lines 719-729)
+     # =========================================================================
+     def build_time_validation(row):
+         source = row.get('TimeSource', 'None')
+         it_orig = row.get('Incident Time')
+         itb_orig = row.get('Incident Time_Between')
+         rt_orig = row.get('Report Time')
+         best = row.get('BestTimeValue')
+
+         it_str = "null" if it_orig is None or pd.isna(it_orig) else str(it_orig)
+         itb_str = "null" if itb_orig is None or pd.isna(itb_orig) else str(itb_orig)
+         rt_str = "null" if rt_orig is None or pd.isna(rt_orig) else str(rt_orig)
+         best_str = "null" if best is None else best.strftime('%I:%M %p')
+
+         return (
+             f"Source: {source} | "
+             f"Original IT: {it_str} | "
+             f"Original ITB: {itb_str} | "
+             f"Original RT: {rt_str} | "
+             f"Cascaded: {best_str}"
+         )
+
+     df['Time_Validation'] = df.apply(build_time_validation, axis=1)
+
+     # =========================================================================
+     # STEP 17: Sort and finalize (matches M code lines 733-741)
+     # =========================================================================
+     # Sort by Incident Date ascending, Period descending, Report Date ascending
+     df = df.sort_values(
+         by=['Incident Date', 'Period', 'Report Date', 'Report_Date'],
+         ascending=[True, False, True, True],
+         na_position='first'
+     )
+
+     # =========================================================================
+     # STEP 18: Select and order columns to match preview table
+     # =========================================================================
+     output_columns = [
+         # Original RMS columns
+         'Case Number', 'Incident Date', 'Incident Time', 'Incident Date_Between',
+         'Incident Time_Between', 'Report Date', 'Report Time', 'Incident Type_1',
+         'Incident Type_2', 'Incident Type_3', 'FullAddress', 'Grid', 'Zone',
+         'Narrative', 'Total Value Stolen', 'Total Value Recover', 'Registration 1',
+         'Make1', 'Model1', 'Reg State 1', 'Registration 2', 'Reg State 2', 'Make2',
+         'Model2', 'Reviewed By', 'CompleteCalc', 'Officer of Record', 'Squad',
+         'Det_Assigned', 'Case_Status', 'NIBRS Classification',
+         # Computed columns
+         'BestTimeValue', 'TimeSource', 'Incident_Time', 'Incident_Date',
+         'Incident_Date_Date', 'Report_Date', 'Report_Date_Text',
+         'IncidentToReportDays', 'Period', '_Period_Debug', 'Period_SortKey',
+         'cycle_name', 'Backfill_7Day', 'cycle_name_adjusted', 'IsCurrent7DayCycle',
+         'IsLagDay', 'LagDays', 'StartOfHour', 'TimeOfDay', 'TimeOfDay_SortKey',
+         'ALL_INCIDENTS', 'Crime_Category', 'Incident_Type_1_Norm',
+         'Incident_Type_2_Norm', 'Incident_Type_3_Norm', 'Vehicle_1', 'Vehicle_2',
+         'Vehicle_1_and_Vehicle_2', 'Clean_Address', 'IncidentKey', 'Category_Type',
+         'Response_Type', 'Time_Validation'
+     ]
+
+     # Add Report_Date_ForLagday (used internally but may be useful for debugging)
+     output_columns.append('Report_Date_ForLagday')
+
+     # Only include columns that exist
+     final_columns = [c for c in output_columns if c in df.columns]
+
+     # Add any remaining original columns not in the list
+     for col in df.columns:
+         if col not in final_columns:
+             final_columns.append(col)
+
+     return df[final_columns].reset_index(drop=True)
+
+
+ # =============================================================================
+ # CLI ENTRY POINT
+ # =============================================================================
+
+ def main():
+     """Command-line interface for scrpa_transform.""" import argparse
+
+     parser = argparse.ArgumentParser(
+         description='SCRPA Transform - Convert RMS export to enriched crime data'
+     )
+     parser.add_argument(
+         'input',
+         help='Path to RMS export CSV or Excel file'
+     )
+     parser.add_argument(
+         '-o', '--output',
+         help='Output CSV path (default: input_enhanced.csv)',
+         default=None
+     )
+     parser.add_argument(
+         '--report-date',
+         help='Report due date (MM/DD/YYYY format)',
+         default=None
+     )
+     parser.add_argument(
+         '--calendar',
+         help='Path to cycle calendar CSV',
+         default=str(CYCLE_CALENDAR_PATH)
+     )
+     parser.add_argument(
+         '--today',
+         help='Override today date (MM/DD/YYYY format) for testing',
+         default=None
+     )
+
+     args = parser.parse_args()
+
+     # Load data
+     print(f"Loading RMS export: {args.input}")
+     rms_df = read_rms_export(args.input)
+     print(f"  {len(rms_df)} rows loaded")
+
+     print(f"Loading cycle calendar: {args.calendar}")
+     calendar_df = load_cycle_calendar(Path(args.calendar))
+     print(f"  {len(calendar_df)} cycles loaded")
+
+     # Parse dates
+     report_due_date = None
+     if args.report_date:
+         report_due_date = datetime.strptime(args.report_date, '%m/%d/%Y').date()
+         print(f"Using report due date: {report_due_date}")
+
+     today = None
+     if args.today:
+         today = datetime.strptime(args.today, '%m/%d/%Y').date()
+         print(f"Using today override: {today}")
+
+     # Transform
+     print("Transforming data...")
+     enhanced_df = build_all_crimes_enhanced(
+         rms_df,
+         calendar_df,
+         report_due_date=report_due_date,
+         today=today
+     )
+
+     # Output
+     output_path = args.output or Path(args.input).stem + '_enhanced.csv'
+     print(f"Saving to: {output_path}")
+     enhanced_df.to_csv(output_path, index=False)
+
+     print(f"Done! {len(enhanced_df)} rows written.")

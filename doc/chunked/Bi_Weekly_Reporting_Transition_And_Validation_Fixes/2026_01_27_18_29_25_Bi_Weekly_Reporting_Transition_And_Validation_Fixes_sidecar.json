@@ -1,0 +1,104 @@
+{
+  "source_file": "Bi_Weekly_Reporting_Transition_And_Validation_Fixes.md",
+  "source_path": "C:\\_chunker\\02_data\\Bi_Weekly_Reporting_Transition_And_Validation_Fixes.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\Bi_Weekly_Reporting_Transition_And_Validation_Fixes\\2026_01_27_18_29_25_Bi_Weekly_Reporting_Transition_And_Validation_Fixes.origin.json",
+  "created_at": "2026_01_27_18_29_25",
+  "tags": [
+    "code",
+    "data",
+    "docs",
+    "excel",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "2025",
+      "2026",
+      "bi-weekly",
+      "updated",
+      "cycle",
+      "update"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "# SCRPA bi-weekly reporting cycle changes\n_Exported on 1/27/2026 at 12:49:13 EST from Cursor (2.4.21)_\n\n---\n\n**User**\n\nread \"C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\16_Reports\\SCRPA\\CHANGELOG.md\"\n\"C:\\Users\\carucci_r\\OneDrive - C...",
+    "first_line": "# SCRPA bi-weekly reporting cycle changes"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-27T18:29:25+00:00_Bi_Weekly_Reporting_Transition_And_Validation_Fixes_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "2025",
+        "2026",
+        "bi-weekly",
+        "code",
+        "cycle",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "sql",
+        "update",
+        "updated"
+      ],
+      "key_terms": [
+        "2025",
+        "2026",
+        "bi-weekly",
+        "updated",
+        "cycle",
+        "update"
+      ],
+      "summary": "# SCRPA bi-weekly reporting cycle changes\n_Exported on 1/27/2026 at 12:49:13 EST from Cursor (2.4.21)_\n\n---\n\n**User**\n\nread \"C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\16_Reports\\SCRPA\\CHANGELOG.md\"\n\"C:\\Users\\carucci_r\\OneDrive - C...",
+      "char_length": 26791,
+      "byte_length": 27578
+    },
+    {
+      "chunk_id": "2026-01-27T18:29:25+00:00_Bi_Weekly_Reporting_Transition_And_Validation_Fixes_chunk2",
+      "chunk_index": 2,
+      "file": "chunk_00001.txt",
+      "tags": [
+        "2024",
+        "2025",
+        "2026",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "save",
+        "sql",
+        "updated"
+      ],
+      "key_terms": [
+        "2025",
+        "2026",
+        "updated",
+        "save",
+        "fix",
+        "2024"
+      ],
+      "summary": "---\n\n**User**\n\nlets keep it \nI updated the Export_Formatting.m and refreshed the CycleCalendar\nReport_Due_Date\t7_Day_Start\t7_Day_End\t28_Day_Start\t28_Day_End\tReport_Name\tBiWeekly_Report_Name\n01/07/2025\t12/31/2024\t01/06/2025\t12/10/2024\t01/...",
+      "char_length": 8476,
+      "byte_length": 8682
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

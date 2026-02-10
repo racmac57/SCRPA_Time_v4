@@ -1,0 +1,70 @@
+{
+  "source_file": "CLAUDE_CODE_FOLLOWUP_SCRPA_EDITS.md",
+  "source_path": "C:\\_chunker\\02_data\\CLAUDE_CODE_FOLLOWUP_SCRPA_EDITS.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\CLAUDE_CODE_FOLLOWUP_SCRPA_EDITS\\2026_01_28_18_09_40_CLAUDE_CODE_FOLLOWUP_SCRPA_EDITS.origin.json",
+  "created_at": "2026_01_28_18_09_40",
+  "tags": [
+    "code",
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "cycle",
+      "time",
+      "incident",
+      "7-day",
+      "cycle_name",
+      "current"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "# Claude Code Follow-Up: SCRPA Python Transform Edits\n\n**Date:** 2026-01-28  \n**Purpose:** Edits to `scripts/scrpa_transform.py` and related outputs based on user review of `m_code/preview_tables/all_crimes/2026_01_28_all_crimes.csv` and...",
+    "first_line": "# Claude Code Follow-Up: SCRPA Python Transform Edits"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_CLAUDE_CODE_FOLLOWUP_SCRPA_EDITS_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "7-day",
+        "code",
+        "current",
+        "cycle",
+        "cycle_name",
+        "data",
+        "docs",
+        "incident",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "sql",
+        "time"
+      ],
+      "key_terms": [
+        "cycle",
+        "time",
+        "incident",
+        "7-day",
+        "cycle_name",
+        "current"
+      ],
+      "summary": "# Claude Code Follow-Up: SCRPA Python Transform Edits\n\n**Date:** 2026-01-28  \n**Purpose:** Edits to `scripts/scrpa_transform.py` and related outputs based on user review of `m_code/preview_tables/all_crimes/2026_01_28_all_crimes.csv` and...",
+      "char_length": 10501,
+      "byte_length": 10669
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

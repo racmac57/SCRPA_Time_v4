@@ -1,0 +1,192 @@
+Timestamp vs date). ---
+
+**Changes in `scrpa_transform.py`**
+
+1. **Normalize cycle dates to Python `date`**  
+   A small helper converts cycle values (e.g. from the calendar) to Python `date` so comparisons with `Incident_Date_Date` are reliable (handles pandas Timestamp/NaT). 2. **Fallback when 28-day window is missing**  
+   If **28_Day_Start** or **28_Day_End** is missing for the cycle, the script now sets the 28-day window to the **28 days ending on 7_Day_End** (i.e. `7_Day_End - 27 days` through `7_Day_End`). So 01/15 is in that window when 7_Day_End is 01/26. 3. **Fallback when 28-day = 7-day in the calendar**  
+   If the calendar has the 28-day window equal to the 7-day window (a common mistake), the script overwrites that and uses the same “28 days ending on 7_Day_End” rule. That fixes cases where 28_Day_Start was wrongly set to 01/20. After re-running the pipeline (e.g. `Run_SCRPA_Pipeline.bat` with report date 01/28/2026), incident 26-005140 (01/15/2026) should classify as **28-Day** in the Sexual Offenses chart. ---
+
+**Do those M codes need to be considered? **
+
+- **All_Crimes_Simple.m** – No change needed for this fix. It only loads the CSV; **Period** comes from Python. - **Export_Formatting.m** – No. It formats/exports; it doesn’t compute Period. - **q_CycleCalendar.m** – No. It just loads the same cycle calendar CSV. Period logic is in Python; the fix was to use the calendar correctly and add fallbacks. - **q_RMS_Source.m** – No. It’s the RMS source; Period is computed in Python from that data + calendar. - **q_CallTypeCategories.m** – No. It’s for call type categories, not Period. So **only the Python script needed updating**; the M code files you listed do not need changes for this YTD vs 28-Day issue. ---
+
+**Optional: check the calendar**
+
+If you want to confirm the source of the problem, open:
+
+`C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv`
+
+Find the row for **26C01W04** (Report_Due_Date 01/27/2026 or 7_Day_End 01/26/2026) and check:
+
+- **28_Day_Start** should be **12/30/2025** (or 27 days before 01/26/2026). - **28_Day_End** should be **01/26/2026**. If 28_Day_Start is 01/20 (same as 7_Day_Start), the Python fallback above will now correct it so 01/15 is 28-Day. Re-run the pipeline and refresh Power BI to see the fix. ---
+
+**User**
+
+I understand now when I export a new rms data set and run the script will the "Period" value for 26-009173 still be YTD, cycle_name "Historical", cycle_name_adjusted "Historical"@m_code/preview_tables/all_crimes/2026_01_28_14_18_49_All_Crimes_Simple.xlsx 
+
+---
+
+**Cursor**
+
+
+Here’s how 26-009173 will behave when you export new RMS data and run the script. **Short answer:**  
+With the **same report date** (e.g. 01/28/2026) and the **same incident date** for 26-009173 in the new export, you’ll still get:
+
+- **Period = YTD**
+- **cycle_name = "Historical"**
+- **cycle_name_adjusted = "Historical"**
+
+That’s expected from the current logic, not a bug. **Why:**
+
+1. **Period = YTD**  
+   Period is driven by **Incident_Date** and the **current report’s** 7‑day and 28‑day windows. If 26-009173 has **Incident_Date = 01/27/2026** and you run for report date **01/28/2026** (cycle 26C01W04):
+
+   - 7‑Day window = 01/20–01/26 → 01/27 is **outside** → not 7‑Day. - 28‑Day window = 12/30/2025–01/26/2026 → 01/27 is **after** 01/26 → outside → not 28‑Day. - Incident is in the current year → so it falls through to **YTD**. So with the same report date and same incident date, Period stays **YTD**. 2. **cycle_name = "Historical"**  
+   `cycle_name` is the **calendar** 7‑day cycle that **contains** that incident’s **Incident_Date**. If 01/27/2026 doesn’t fall inside any cycle’s 7_Day_Start–7_Day_End in your calendar (e.g. 26C01W04 ends 01/26 and the next cycle hasn’t started yet, or 01/27 is a gap), then no cycle contains that date → **cycle_name = "Historical"**. 3. **cycle_name_adjusted = "Historical"**  
+   `cycle_name_adjusted` is the same as `cycle_name` unless **Backfill_7Day = TRUE** (lag incident reported in the current 7‑day window). For 26-009173, if it’s not a backfill case, it stays **"Historical"**. **When you change report date / cycle:**
+
+If you run with a **later** report date (e.g. 02/03/2026), the “current” cycle becomes 26C01W05 (e.g. 01/27–02/02). Then:
+
+- 01/27/2026 can fall **inside** that cycle’s 7‑day window → Period can become **7‑Day**, and cycle_name / cycle_name_adjusted can become **26C01W05** (or whatever that cycle’s Report_Name is), not Historical. So:
+
+- **New RMS export, same report date (e.g. 01/28/2026):**  
+  Yes — 26-009173 will still have **Period = YTD**, **cycle_name = "Historical"**, **cycle_name_adjusted = "Historical"** as long as its Incident_Date and the calendar are unchanged. - **New RMS export, later report date (e.g. 02/03/2026):**  
+  The same incident can later show as 7‑Day and a non‑Historical cycle name once its incident date falls inside the new cycle’s 7‑day window. ---
+
+**User**
+
+Got it, next issue. review the contents of C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Data There are too many files in this directory. The initial plan was to streamline this folder had only 2-3 files now has 35 that over a 1000% increase. I want the data set from the export for export from today will be incidents from 12/31/2024 to 01/28/2026. I want that data set to be enriched so the .csv or .xlsx that is placed in /Data to be what the preview table provides (in the eariler example of the preview table I provided). a second .csv or .xlsx file that shows only the data where the Report Date falls with in the 7-Day period for this report it will be 01/21/2026 - 01/26/2026, lastly I want a YAML file that shows the Crime_Category of the incidents in the 7-Day period the total count of incidents and the number of incidents with LagDayCount, example: see attached. the Report directory C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Reports is empty which is not correct it should have the .html report from C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output, it lloks like the ChatGPT prompt briefing instructions @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\2026_01_27_14_06_37_rms_summary.html @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\BRIEFING_INSTRUCTIONS.txt @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\CHATGPT_BRIEFING_PROMPT.md @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\SCRPA_Briefing_Ready_2026_01_27_14_06_36.csv @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\System_Summary_20260127_140634.md @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\SCRPA_Combined_Executive_Summary_20260127_140634.html @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\SCRPA_Combined_Executive_Summary_20260127_140634.md @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\SCRPA_YTD_Executive_Summary_20260127_140634.md @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\SCRPA_28Day_Executive_Summary_20260127_140634.md @c:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\SCRPA_7Day_Executive_Summary_20260127_140634.md are all in this folder making me think it is created with in this directory please investigate
+the contents of C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation look ok
+
+---
+
+**Cursor**
+
+
+Reviewing the Data folder contents and pipeline so we can streamline outputs and fix the Reports folder. Implementing the plan: creating a todo list and applying changes. Implementing changes: updating the pipeline and prepare_7day_outputs. Adding _clean_data_folder and fixing cycle date handling. Checking run_scrpa_pipeline imports and where to add the helper:
+
+
+
+Fixing incident_end handling and adding _clean_data_folder. Updating prepare_7day_outputs: add Crime_Category table (LagDayCount, TotalCount, TOTAL), write only 7-day CSV and YAML, and return (csv_7day, yaml_path). Initializing `by_crime_category` when the 7-day frame is empty. Updating save_7day_outputs to write only the 7-day CSV and YAML (no lag-only CSV, no JSON, no timestamped files) and return (csv_7day_path, yaml_path). Checking generate_lagday_summary: the second parameter is used for by_crime_category — we're passing df_7day_and_lag; it should be df_7day (Report Date in 7-Day). Adding the copy-reports step to the pipeline and fixing the print_summary files list (only 3 Data files now). Adding `import shutil` at the top and using it in the copy function. Adding a print for step 6 and verifying the pipeline. Adding Reports to the printed summary. Summary of what was implemented:
+
+---
+
+## 1. **Data folder: only 3 files**
+
+- **Cleanup:** At the start of the Data write step, the pipeline removes old timestamped files (e.g. `SCRPA_*_20260128_141135.csv`) so only the stable names remain. - **No timestamped outputs:** The pipeline no longer writes any `*_YYYYMMDD_HHMMSS. *` files. - **Exactly 3 files in Data:**
+  1. **SCRPA_All_Crimes_Enhanced.csv** – Full enriched dataset (preview-table style). 2. **SCRPA_7Day_With_LagFlags.csv** – Rows where **Report Date** falls within the 7-Day period (IsCurrent7DayCycle = TRUE). 3. **SCRPA_7Day_Summary.yaml** – Metadata plus the 7-day-by-category table. - **Removed from Data:**  
+  SCRPA_7Day_Lag_Only.csv, all timestamped CSVs, and SCRPA_7Day_Summary.json. ---
+
+## 2. **Incident date filter**
+
+- The full enriched CSV is limited to **Incident_Date** from **12/31/2024** through the **report date** (e.g. 01/28/2026). - The pipeline logs:  
+  `Filtered to incident date 2024-12-31–2026-01-28: N rows`. ---
+
+## 3. **YAML: 7-day by Crime_Category**
+
+- **SCRPA_7Day_Summary.yaml** now includes a **`7day_by_crime_category`** list with one entry per crime category and a **TOTAL** row, in the form you asked for:
+  - **Crime_Category** – e.g. "Burglary - Comm & Res", "Burglary Auto", "TOTAL". - **LagDayCount** – Count of incidents in that category with IsLagDay = TRUE in the 7-Day set. - **TotalCount** – Total incidents in that category in the 7-Day set. - Categories are sorted by TotalCount descending; the last entry is TOTAL (sums of LagDayCount and TotalCount). ---
+
+## 4. **Reports folder: copy from SCRPA_ArcPy/06_Output**
+
+- **Step 6** of the pipeline copies into the cycle **Reports** folder:
+  - The **latest** `SCRPA_Combined_Executive_Summary_*.html` from  
+    `C:\...\02_ETL_Scripts\SCRPA_ArcPy\06_Output`  
+    as **SCRPA_Combined_Executive_Summary.html**. - The **latest** `*_rms_summary.html` from the same folder as **rms_summary.html**. - If **06_Output** is missing or has no matching files, the step is skipped and a short message is printed (no error). - So the HTML reports are still **generated** by the ArcPy/briefing process in **06_Output**; the pipeline only **copies** the latest ones into  
+  `Time_Based\2026\26C01W04_26_01_28\Reports\`  
+  so each cycle folder has its own copy. ---
+
+## 5. **Pipeline steps**
+
+- Steps are now **[1/6]** through **[6/6]** (Load → Create structure → Transform → 7-day outputs → Documentation → Copy reports). - The final printed summary lists **Data/**, **Documentation/**, and **Reports/** (when any reports were copied). ---
+
+**Suggested next run**
+
+1. Run **Run_SCRPA_Pipeline.bat** with your report date. 2. Check **Data/** – you should see only the 3 files above and no timestamped duplicates. 3. Open **SCRPA_7Day_Summary.yaml** and confirm **7day_by_crime_category** with LagDayCount, TotalCount, and TOTAL. 4. Check **Reports/** – it should contain **SCRPA_Combined_Executive_Summary.html** and **rms_summary.html** if **06_Output** had them. If you want the Reports source path to be configurable (e.g. via env or CLI), that can be added next. ---
+
+**User**
+
+
+SCRPA Pipeline
+--------------
+RMS file: C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\2026_01_28_15_08_36_SCRPA_RMS.xlsx
+
+Enter report date (MM/DD/YYYY): 01/28/2026
+
+Running pipeline for report date 01/28/2026...
+
+======================================================================
+SCRPA PIPELINE - Python-First Crime Data Processing
+======================================================================
+
+[1/6] Loading data...
+  RMS Export: C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\2026_01_28_15_08_36_SCRPA_RMS.xlsx
+C:\Users\carucci_r\scoop\apps\python\current\Lib\site-packages\openpyxl\styles\stylesheet.py:237: UserWarning: Workbook contains no default style, apply openpyxl's default
+  warn("Workbook contains no default style, apply openpyxl's default")
+  Loaded 252 rows from RMS export
+  Cycle Calendar: C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv
+  Loaded 79 cycles
+  Resolved cycle: 26C01W04
+  Bi-Weekly cycle: 26BW02
+
+[2/6] Creating output structure...
+  Output directory: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28
+
+[3/6] Transforming data (scrpa_transform)... Generated 252 enriched rows
+
+ERROR: Cannot compare Timestamp with datetime.date. Use ts == pd.Timestamp(date) or ts.date() == date instead. Traceback (most recent call last):
+  File "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py", line 424, in run_pipeline
+    mask = (df_enhanced['Incident_Date_Date'] >= pd.Timestamp(incident_start)) & (
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carucci_r\scoop\apps\python\current\Lib\site-packages\pandas\core\ops\common.py", line 85, in new_method
+    return method(self, other)
+  File "C:\Users\carucci_r\scoop\apps\python\current\Lib\site-packages\pandas\core\arraylike.py", line 62, in __ge__
+    return self._cmp_method(other, operator.ge)
+           ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\carucci_r\scoop\apps\python\current\Lib\site-packages\pandas\core\series.py", line 6735, in _cmp_method
+    res_values = ops.comparison_op(lvalues, rvalues, op)
+  File "C:\Users\carucci_r\scoop\apps\python\current\Lib\site-packages\pandas\core\ops\array_ops.py", line 351, in comparison_op
+    res_values = comp_method_OBJECT_ARRAY(op, lvalues, rvalues)
+  File "C:\Users\carucci_r\scoop\apps\python\current\Lib\site-packages\pandas\core\ops\array_ops.py", line 131, in comp_method_OBJECT_ARRAY
+    result = libops.scalar_compare(x.ravel(), y, op)
+  File "pandas/_libs/ops.pyx", line 107, in pandas._libs.ops.scalar_compare
+  File "pandas/_libs/tslibs/timestamps.pyx", line 492, in pandas._libs.tslibs.timestamps._Timestamp.__richcmp__
+TypeError: Cannot compare Timestamp with datetime.date. Use ts == pd.Timestamp(date) or ts.date() == date instead. Pipeline exited with error code 1. Press any key to continue . . . ---
+
+**Cursor**
+
+
+Fixing the incident-date filter: the column can be datetime.date or Timestamp, so normalizing both sides for comparison. The failure came from comparing a column that can be `datetime.date` with `pd.Timestamp(...)`, which pandas doesn’t allow. **Change made:** The incident date column is normalized with `pd.to_datetime(..., errors='coerce')` before building the mask, so both sides of the comparison are timestamp-like and the filter runs without error. Re-run the pipeline (e.g. double‑click `Run_SCRPA_Pipeline.bat` and enter 01/28/2026); it should complete successfully. ---
+
+**User**
+
+I do not think that C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Reports\rms_summary.html is needed as it is not processed by AI and when I provide the ChatGPT prompt I will get a better more robust file. Additionally there is not ChatGPT prompt that was generated with the other files. @Time_Based/2026/26C01W04_26_01_28/Reports/SCRPA_Combined_Executive_Summary.html the cycle needs to be updated to the bi-weekly version also the range needs updating too
+
+update the verion from v1.1 to the new version
+
+The footer needs to be updated to show the correct Cyclewill it be difficult to remove the 
+
+@Time_Based/2026/26C01W04_26_01_28/Documentation/SCRPA_Report_Summary.md is it expected for the all the values to be null if so what is the point of the file
+
+no need to add C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\claude.md
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\PROJECT_SUMMARY.json
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\PROJECT_SUMMARY.yaml
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\data_dictionary.json
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\data_dictionary.yaml to each report that is generated
+
+the Claude.md can remain in the root C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA or should the Claude.md be saved C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based as it is relating to the Time_Based report where the other version of the report that has not been used yet is C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Place_Based I do not want to confuse things. Or if and when we make the place based report can both projects be on one Claude.md. should C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\data_dictionary.json
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\data_dictionary.yaml be moved and replace C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Standards\RMS\SCRPA or somewhere in C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Standards\unified_data_dictionary. C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\PROJECT_SUMMARY.json
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\PROJECT_SUMMARY.yaml can be moved and save in the root or if you recommened another place. Before providing a final answer, ask any clarifying questions needed to fully understand my request. Additionally, highlight any potential blind spots, assumptions, or overlooked factors that I may not have considered. ---
+
+**Cursor**
+
+
+Here’s a concise summary of what I’m inferring and what I need you to confirm. ---
+
+## What I’m assuming
+
+1. **Reports**
+   - Stop copying `rms_summary.html` into the cycle Reports folder (only copy `SCRPA_Combined_Executive_Summary.html`). - “No ChatGPT prompt was generated” = you expect a ChatGPT/briefing prompt file to be created (e.g. next to the HTML) but it isn’t; you want that fixed or clarified. 2. **SCRPA_Combined_Executive_Summary.html**
+   - Show **bi-weekly cycle** (e.g. 26BW02) instead of “Cycle: Auto-Detected”. - Show **actual range** (e.g. 01/13/2026–01/26/2026) instead of “Range: Auto-Detected - Current”. - Bump **version** from v1.1 to a new version (e.g. v1.2). - **Footer**: show the correct cycle (and possibly range) instead of “Cycle: Auto-Detected”. 3. **SCRPA_Report_Summary.md**
+   - It’s currently full of null/empty values; you want it to either be populated with real data (cycle, range, counts, etc.)

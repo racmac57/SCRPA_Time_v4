@@ -1,0 +1,33 @@
+{
+  "tags": [
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "editor",
+        "settings",
+        "false",
+        "json",
+        "prettier",
+        "files"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# How to Disable Auto-Formatting for M Code Files\n\n## Current Settings\n\nYour workspace already has `.vscode/settings.json` configured, but here's how to verify and strengthen the settings:\n\n## Method 1: Workspace Settings (Already Config...",
+      "first_line": "# How to Disable Auto-Formatting for M Code Files"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-27T18:32:26.833267",
+  "department": "admin"
+}

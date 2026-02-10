@@ -1,0 +1,580 @@
+Microsoft Windows [Version 10.0.26200.7628]
+(c) Microsoft Corporation. All rights reserved. C:\>cd C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA
+
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA>npx @anthropic-ai/claude-code
+
+╭─── Claude Code v2.1.20 ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                        │
+│                  Welcome back RAC! │ Run /init to create a CLAUDE.md file with instructions for Cla… │
+│                                                    │ ─────────────────────────────────────────────────────────────── │
+│                                                    │ Recent activity                                                 │
+│                       ▐▛███▜▌                      │ 21h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│                      ▝▜█████▛▘                     │ 21h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│                        ▘▘ ▝▝                       │ 22h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│  Opus 4.5 · Claude Pro · racarucci@icloud.com's    │ /resume for more                                                │
+│  Organization                                      │                                                                 │
+│  ~\OneDrive - City of Hackensack\16_Reports\SCRPA  │                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+> I need you to implement the Python-First SCRPA Crime Reporting System conversion plan. Please follow the plan
+  located at:
+
+  `c:\Users\carucci_r\.cursor\plans\python-first_scrpa_conversion_79b5fb6b.plan.md`
+
+  **Objective**: Convert the SCRPA crime reporting system from Power BI M code to Python-first logic. All data
+  transformations should be done in Python, with Power BI M code simplified to simple CSV imports only. **Key Requirements**:
+  1. Maintain exact parity with existing M code logic (`m_code/All_Crimes.m`) for cycle detection, lag days, and
+  period classification
+  2. Generate structured outputs in Data, Reports, and Documentation folders
+  3. Update email templates for bi-weekly reporting (showing bi-weekly date ranges, not just 7-day windows)
+  4. Create comprehensive documentation: `claude.md`, `data_dictionary.yaml/json`, and `PROJECT_SUMMARY.yaml/json`
+
+  **Reference Files**:
+  - M Code: `m_code/All_Crimes.m` (742 lines - match this logic exactly)
+  - Preview Table: `alL_crimes_preview_table_26_01_27.csv` (use as validation reference)
+  - Cycle Calendar: `C:\Users\carucci_r\OneDrive - City of
+  Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv`
+  - Existing Export Script: `scripts/export_enriched_data_and_email.py` (already has bi-weekly logic -
+  verify/update)
+
+  **Implementation Order** (from plan todos):
+  1. Create `scripts/scrpa_transform.py` - Core transformation logic matching All_Crimes.m
+  2. Create `scripts/prepare_7day_outputs.py` - 7-day filtering and lag day metadata
+  3. Create `scripts/generate_documentation.py` - All documentation files (claude.md, data_dictionary,
+  PROJECT_SUMMARY)
+  4. Verify/update `scripts/export_enriched_data_and_email.py` - Bi-weekly email template
+  5. Create `scripts/run_scrpa_pipeline.py` - Main orchestration script
+  6. Create `scripts/validate_parity.py` - Validation against reference CSV
+  7. Create `m_code/All_Crimes_Simple.m` - Simplified M code for CSV imports only
+
+  **Critical Logic Rules** (must match M code exactly):
+  - Cycle Resolution: 3-tier lookup (Report_Due_Date match → In-cycle → Most recent)
+  - LagDays = CycleStart_7Day - Incident_Date (NOT Report_Date - Incident_Date)
+  - Report_Date_ForLagday: Only Report_Date or EntryDate (no Incident_Date fallback)
+  - Period Classification: Incident_Date-driven, precedence: 7-Day → 28-Day → YTD → Prior Year
+  - Backfill_7Day: Incident before cycle start AND Report_Date_ForLagday in current 7-day window
+
+  **Bi-Weekly Email Requirements**:
+  - For 26BW01 (01/13/2026 report): Report Period should be 12/30/2025 - 01/12/2026
+  - For 26BW02 (01/27/2026 report): Report Period should be 01/13/2026 - 01/26/2026
+  - Email template must show bi-weekly reporting period, not just 7-day window
+
+  **Documentation Requirements**:
+  - `claude.md`: System specification with technical implementation details
+  - `data_dictionary.yaml` + `.json`: Field definitions and schema
+  - `PROJECT_SUMMARY.yaml` + `.json`: Project overview including:
+  - Data sources (RMS export location, cycle calendar)
+  - Script processing flow (which scripts process which data)
+  - Data flow diagram
+  - Output locations
+  - Script dependencies
+  - Architecture overview
+
+  Please begin implementation following the plan phases. Start with Phase 1 (Core Python Transform Script) and work
+  through each phase systematically. Validate outputs against `alL_crimes_preview_table_26_01_27.csv` to ensure
+  exact parity with M code. Ask me if you need clarification on any part of the plan or encounter issues during implementation. ● I'll start by reading the plan file and key reference files to understand the full scope before implementation. ● Read 3 files (ctrl+o to expand)
+
+● Let me read the cycle calendar and preview table structure, along with the existing export script. Reading 3 files… (ctrl+o to expand)
+
+* Percolating… (esc to interrupt · thought for 2s)
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ? for shortcuts
+
+╭─── Claude Code v2.1.20 ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                        │
+│                  Welcome back RAC! │ Run /init to create a CLAUDE.md file with instructions for Cla… │
+│                                                    │ ─────────────────────────────────────────────────────────────── │
+│                                                    │ Recent activity                                                 │
+│                       ▐▛███▜▌                      │ 21h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│                      ▝▜█████▛▘                     │ 22h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│                        ▘▘ ▝▝                       │ 22h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│  Opus 4.5 · Claude Pro · racarucci@icloud.com's    │ /resume for more                                                │
+│  Organization                                      │                                                                 │
+│  ~\OneDrive - City of Hackensack\16_Reports\SCRPA  │                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+> I need you to implement the Python-First SCRPA Crime Reporting System conversion plan. Please follow the plan
+  located at:
+
+  `c:\Users\carucci_r\.cursor\plans\python-first_scrpa_conversion_79b5fb6b.plan.md`
+
+  **Objective**: Convert the SCRPA crime reporting system from Power BI M code to Python-first logic. All data
+  transformations should be done in Python, with Power BI M code simplified to simple CSV imports only. **Key Requirements**:
+  1. Maintain exact parity with existing M code logic (`m_code/All_Crimes.m`) for cycle detection, lag days, and
+  period classification
+  2. Generate structured outputs in Data, Reports, and Documentation folders
+  3. Update email templates for bi-weekly reporting (showing bi-weekly date ranges, not just 7-day windows)
+  4. Create comprehensive documentation: `claude.md`, `data_dictionary.yaml/json`, and `PROJECT_SUMMARY.yaml/json`
+
+  **Reference Files**:
+  - M Code: `m_code/All_Crimes.m` (742 lines - match this logic exactly)
+  - Preview Table: `alL_crimes_preview_table_26_01_27.csv` (use as validation reference)
+  - Cycle Calendar: `C:\Users\carucci_r\OneDrive - City of
+  Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv`
+  - Existing Export Script: `scripts/export_enriched_data_and_email.py` (already has bi-weekly logic -
+  verify/update)
+
+  **Implementation Order** (from plan todos):
+  1. Create `scripts/scrpa_transform.py` - Core transformation logic matching All_Crimes.m
+  2. Create `scripts/prepare_7day_outputs.py` - 7-day filtering and lag day metadata
+  3. Create `scripts/generate_documentation.py` - All documentation files (claude.md, data_dictionary,
+  PROJECT_SUMMARY)
+  4. Verify/update `scripts/export_enriched_data_and_email.py` - Bi-weekly email template
+  5. Create `scripts/run_scrpa_pipeline.py` - Main orchestration script
+  6. Create `scripts/validate_parity.py` - Validation against reference CSV
+  7. Create `m_code/All_Crimes_Simple.m` - Simplified M code for CSV imports only
+
+  **Critical Logic Rules** (must match M code exactly):
+  - Cycle Resolution: 3-tier lookup (Report_Due_Date match → In-cycle → Most recent)
+  - LagDays = CycleStart_7Day - Incident_Date (NOT Report_Date - Incident_Date)
+  - Report_Date_ForLagday: Only Report_Date or EntryDate (no Incident_Date fallback)
+  - Period Classification: Incident_Date-driven, precedence: 7-Day → 28-Day → YTD → Prior Year
+  - Backfill_7Day: Incident before cycle start AND Report_Date_ForLagday in current 7-day window
+
+  **Bi-Weekly Email Requirements**:
+  - For 26BW01 (01/13/2026 report): Report Period should be 12/30/2025 - 01/12/2026
+  - For 26BW02 (01/27/2026 report): Report Period should be 01/13/2026 - 01/26/2026
+  - Email template must show bi-weekly reporting period, not just 7-day window
+
+  **Documentation Requirements**:
+  - `claude.md`: System specification with technical implementation details
+  - `data_dictionary.yaml` + `.json`: Field definitions and schema
+  - `PROJECT_SUMMARY.yaml` + `.json`: Project overview including:
+  - Data sources (RMS export location, cycle calendar)
+  - Script processing flow (which scripts process which data)
+  - Data flow diagram
+  - Output locations
+  - Script dependencies
+  - Architecture overview
+
+  Please begin implementation following the plan phases. Start with Phase 1 (Core Python Transform Script) and work
+  through each phase systematically. Validate outputs against `alL_crimes_preview_table_26_01_27.csv` to ensure
+  exact parity with M code. Ask me if you need clarification on any part of the plan or encounter issues during implementation. ● I'll start by reading the plan file and key reference files to understand the full scope before implementation. ● Read 3 files (ctrl+o to expand)
+
+● Let me read the cycle calendar and preview table structure, along with the existing export script. ● Read 3 files (ctrl+o to expand)
+
+● Let me get the preview table column structure and check the scripts folder. ● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Now I have a complete picture of the requirements. Let me create tasks to track progress and begin implementation. ● Now I'll create the core transformation script. This is the most critical piece - it must exactly match the M code
+  logic. ● Write(scripts\scrpa_transform.py)
+
+* Creating core transformation script… (esc to interrupt · ctrl+t to hide tasks · 3m 56s · ↓ 4.7k tokens · thinking)
+  ⎿  ■ Create scripts/scrpa_transform.py - Core transformation logic
+     □ Create scripts/prepare_7day_outputs.py - 7-day filtering
+     □ Create scripts/generate_documentation.py - Documentation generator
+     □ Verify/update export_enriched_data_and_email.py bi-weekly logic
+     □ Create scripts/run_scrpa_pipeline.py - Orchestration
+     □ Create scripts/validate_parity.py - Validation script
+     □ Create m_code/All_Crimes_Simple.m - Simplified M code
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> 
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ? for shortcuts
+
+╭─── Claude Code v2.1.20 ──────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                        │
+│                  Welcome back RAC! │ Run /init to create a CLAUDE.md file with instructions for Cla… │
+│                                                    │ ─────────────────────────────────────────────────────────────── │
+│                                                    │ Recent activity                                                 │
+│                       ▐▛███▜▌                      │ 22h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│                      ▝▜█████▛▘                     │ 22h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│                        ▘▘ ▝▝                       │ 22h ago  please read C:\Users\carucci_r\OneDrive - City of Hac… │
+│  Opus 4.5 · Claude Pro · racarucci@icloud.com's    │ /resume for more                                                │
+│  Organization                                      │                                                                 │
+│  ~\OneDrive - City of Hackensack\16_Reports\SCRPA  │                                                                 │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+> I need you to implement the Python-First SCRPA Crime Reporting System conversion plan. Please follow the plan
+  located at:
+
+  `c:\Users\carucci_r\.cursor\plans\python-first_scrpa_conversion_79b5fb6b.plan.md`
+
+  **Objective**: Convert the SCRPA crime reporting system from Power BI M code to Python-first logic. All data
+  transformations should be done in Python, with Power BI M code simplified to simple CSV imports only. **Key Requirements**:
+  1. Maintain exact parity with existing M code logic (`m_code/All_Crimes.m`) for cycle detection, lag days, and
+  period classification
+  2. Generate structured outputs in Data, Reports, and Documentation folders
+  3. Update email templates for bi-weekly reporting (showing bi-weekly date ranges, not just 7-day windows)
+  4. Create comprehensive documentation: `claude.md`, `data_dictionary.yaml/json`, and `PROJECT_SUMMARY.yaml/json`
+
+  **Reference Files**:
+  - M Code: `m_code/All_Crimes.m` (742 lines - match this logic exactly)
+  - Preview Table: `alL_crimes_preview_table_26_01_27.csv` (use as validation reference)
+  - Cycle Calendar: `C:\Users\carucci_r\OneDrive - City of
+  Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv`
+  - Existing Export Script: `scripts/export_enriched_data_and_email.py` (already has bi-weekly logic -
+  verify/update)
+
+  **Implementation Order** (from plan todos):
+  1. Create `scripts/scrpa_transform.py` - Core transformation logic matching All_Crimes.m
+  2. Create `scripts/prepare_7day_outputs.py` - 7-day filtering and lag day metadata
+  3. Create `scripts/generate_documentation.py` - All documentation files (claude.md, data_dictionary,
+  PROJECT_SUMMARY)
+  4. Verify/update `scripts/export_enriched_data_and_email.py` - Bi-weekly email template
+  5. Create `scripts/run_scrpa_pipeline.py` - Main orchestration script
+  6. Create `scripts/validate_parity.py` - Validation against reference CSV
+  7. Create `m_code/All_Crimes_Simple.m` - Simplified M code for CSV imports only
+
+  **Critical Logic Rules** (must match M code exactly):
+  - Cycle Resolution: 3-tier lookup (Report_Due_Date match → In-cycle → Most recent)
+  - LagDays = CycleStart_7Day - Incident_Date (NOT Report_Date - Incident_Date)
+  - Report_Date_ForLagday: Only Report_Date or EntryDate (no Incident_Date fallback)
+  - Period Classification: Incident_Date-driven, precedence: 7-Day → 28-Day → YTD → Prior Year
+  - Backfill_7Day: Incident before cycle start AND Report_Date_ForLagday in current 7-day window
+
+  **Bi-Weekly Email Requirements**:
+  - For 26BW01 (01/13/2026 report): Report Period should be 12/30/2025 - 01/12/2026
+  - For 26BW02 (01/27/2026 report): Report Period should be 01/13/2026 - 01/26/2026
+  - Email template must show bi-weekly reporting period, not just 7-day window
+
+  **Documentation Requirements**:
+  - `claude.md`: System specification with technical implementation details
+  - `data_dictionary.yaml` + `.json`: Field definitions and schema
+  - `PROJECT_SUMMARY.yaml` + `.json`: Project overview including:
+  - Data sources (RMS export location, cycle calendar)
+  - Script processing flow (which scripts process which data)
+  - Data flow diagram
+  - Output locations
+  - Script dependencies
+  - Architecture overview
+
+  Please begin implementation following the plan phases. Start with Phase 1 (Core Python Transform Script) and work
+  through each phase systematically. Validate outputs against `alL_crimes_preview_table_26_01_27.csv` to ensure
+  exact parity with M code. Ask me if you need clarification on any part of the plan or encounter issues during implementation. ● I'll start by reading the plan file and key reference files to understand the full scope before implementation. ● Read 3 files (ctrl+o to expand)
+
+● Let me read the cycle calendar and preview table structure, along with the existing export script. ● Read 3 files (ctrl+o to expand)
+
+● Let me get the preview table column structure and check the scripts folder. ● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Now I have a complete picture of the requirements. Let me create tasks to track progress and begin implementation. ● Now I'll create the core transformation script. This is the most critical piece - it must exactly match the M code
+  logic. ● Write(scripts\scrpa_transform.py)
+
+  7 tasks (0 done, 1 in progress, 6 open) · ctrl+t to hide tasks
+  ■ Create scripts/scrpa_transform.py - Core transformation logic
+  □ Create scripts/prepare_7day_outputs.py - 7-day filtering
+  □ Create scripts/generate_documentation.py - Documentation generator
+  □ Verify/update export_enriched_data_and_email.py bi-weekly logic
+  □ Create scripts/run_scrpa_pipeline.py - Orchestration
+  □ Create scripts/validate_parity.py - Validation script
+  □ Create m_code/All_Crimes_Simple.m - Simplified M code
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Create file
+ scripts\scrpa_transform.py
+╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌
+ # 2026_01_28
+ # Project: scripts/scrpa_transform.py
+ # Author: R. A. Carucci
+ # Purpose: Core Python transformation engine matching All_Crimes.m logic exactly. #          Converts RMS export data to enriched SCRPA format with cycle detection,
+ #          lag days calculation, period classification, and crime categorization.
+
+ """ SCRPA Transform - Python-First Data Transformation Engine
+
+ This module provides the core transformation logic that exactly matches the Power BI
+ M code in All_Crimes.m. All data enrichment is done here, enabling Power BI to become
+ a simple CSV consumer. Critical Logic Rules (must match M code exactly):
+ 1. Cycle Resolution: 3-tier lookup (Report_Due_Date match -> In-cycle -> Most recent)
+ 2. LagDays = CycleStart_7Day - Incident_Date (NOT Report_Date - Incident_Date)
+ 3. Report_Date_ForLagday: Only Report_Date or EntryDate (no Incident_Date fallback)
+ 4. Period Classification: Incident_Date-driven, precedence: 7-Day -> Prior Year -> 28-Day -> YTD -> Historical
+ 5. Backfill_7Day: Incident before cycle start AND Report_Date_ForLagday in current 7-day window
+ """
+
+ import pandas as pd
+ import numpy as np
+ from pathlib import Path
+ from datetime import datetime, date, time, timedelta
+ from typing import Optional, Tuple, Dict, Any, Union
+ import warnings
+ import re
+
+ # Suppress pandas warnings for cleaner output
+ warnings.filterwarnings('ignore', category=pd.errors.SettingWithCopyWarning)
+
+
+ # =============================================================================
+ # CONFIGURATION
+ # =============================================================================
+
+ CYCLE_CALENDAR_PATH = Path(
+     r"C:\Users\carucci_r\OneDrive - City of
+ Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv"
+ )
+
+ # Column mappings from RMS export to expected names
+ RMS_COLUMN_MAP = {
+     'Case Number': 'Case Number',
+     'Incident Date': 'Incident Date',
+     'Incident Time': 'Incident Time',
+     'Incident Date_Between': 'Incident Date_Between',
+     'Incident Time_Between': 'Incident Time_Between',
+     'Report Date': 'Report Date',
+     'Report Time': 'Report Time',
+     'Incident Type_1': 'Incident Type_1',
+     'Incident Type_2': 'Incident Type_2',
+     'Incident Type_3': 'Incident Type_3',
+     'FullAddress': 'FullAddress',
+     'Grid': 'Grid',
+     'Zone': 'Zone',
+     'Narrative': 'Narrative',
+     'Total Value Stolen': 'Total Value Stolen',
+     'Total Value Recover': 'Total Value Recover',
+     'Registration 1': 'Registration 1',
+     'Make1': 'Make1',
+     'Model1': 'Model1',
+     'Reg State 1': 'Reg State 1',
+     'Registration 2': 'Registration 2',
+     'Reg State 2': 'Reg State 2',
+     'Make2': 'Make2',
+     'Model2': 'Model2',
+     'Reviewed By': 'Reviewed By',
+     'CompleteCalc': 'CompleteCalc',
+     'Officer of Record': 'Officer of Record',
+     'Squad': 'Squad',
+     'Det_Assigned': 'Det_Assigned',
+     'Case_Status': 'Case_Status',
+     'NIBRS Classification': 'NIBRS Classification',
+     'EntryDate': 'EntryDate',  # May not be in all exports
+ }
+
+
+ # =============================================================================
+ # HELPER FUNCTIONS (Matching M code CoalesceText, CoalesceAny, AsTime, AsDate)
+ # =============================================================================
+
+ def coalesce_text(a: Any, b: Any) -> Optional[str]:
+     """Return first non-null, non-empty text value. Matches M code CoalesceText.""" if a is None or (isinstance(a, str) and a.strip() == '') or pd.isna(a):
+         return b if not pd.isna(b) else None
+     return str(a) if not pd.isna(a) else None
+
+
+ def coalesce_any(a: Any, b: Any) -> Any:
+     """Return first non-null value. Matches M code CoalesceAny.""" return a if not pd.isna(a) and a is not None else b
+
+
+ def parse_time(v: Any) -> Optional[time]:
+     """
+     Parse various time formats to Python time object. Matches M code AsTime function behavior.
+     """ if v is None or pd.isna(v):
+         return None
+
+     # Already a time
+     if isinstance(v, time):
+         return v
+
+     # datetime -> extract time
+     if isinstance(v, datetime):
+         return v.time()
+
+     # pd.Timestamp -> extract time
+     if isinstance(v, pd.Timestamp):
+         return v.time() if not pd.isna(v) else None
+
+     # timedelta -> convert to time
+     if isinstance(v, (timedelta, pd.Timedelta)):
+         try:
+             total_seconds = v.total_seconds()
+             hours = int(total_seconds // 3600) % 24
+             minutes = int((total_seconds % 3600) // 60)
+             seconds = int(total_seconds % 60)
+             return time(hours, minutes, seconds)
+         except:
+             return None
+
+     # Number (Excel serial time)
+     if isinstance(v, (int, float)):
+         try:
+             # Excel time fraction
+             if 0 <= v < 1:
+                 total_seconds = int(v * 86400)
+                 hours = total_seconds // 3600
+                 minutes = (total_seconds % 3600) // 60
+                 seconds = total_seconds % 60
+                 return time(hours, minutes, seconds)
+             return None
+         except:
+             return None
+
+     # Text parsing
+     if isinstance(v, str):
+         v_str = v.strip()
+         if not v_str:
+             return None
+
+         # Try various formats
+         time_formats = [
+             '%H:%M:%S',
+             '%I:%M:%S %p',
+             '%I:%M %p',
+             '%H:%M',
+             '%I:%M:%S%p',
+             '%I:%M%p',
+         ]
+
+         for fmt in time_formats:
+             try:
+                 dt = datetime.strptime(v_str, fmt)
+                 return dt.time()
+             except ValueError:
+                 continue
+
+         # Try adding :00 for formats like "16:40"
+         if ':' in v_str and v_str.count(':') == 1:
+             try:
+                 dt = datetime.strptime(v_str + ':00', '%H:%M:%S')
+                 return dt.time()
+             except ValueError:
+                 pass
+
+         return None
+
+     return None
+
+
+ def parse_date(v: Any) -> Optional[date]:
+     """
+     Parse various date formats to Python date object. Matches M code AsDate function behavior.
+     """ if v is None or pd.isna(v):
+         return None
+
+     # Already a date
+     if isinstance(v, date) and not isinstance(v, datetime):
+         return v
+
+     # datetime -> extract date
+     if isinstance(v, datetime):
+         return v.date()
+
+     # pd.Timestamp -> extract date
+     if isinstance(v, pd.Timestamp):
+         return v.date() if not pd.isna(v) else None
+
+     # Number (Excel serial date)
+     if isinstance(v, (int, float)) and not pd.isna(v):
+         try:
+             # Excel date serial number (days since 1899-12-30)
+             return (datetime(1899, 12, 30) + timedelta(days=int(v))).date()
+         except:
+             return None
+
+     # Text parsing
+     if isinstance(v, str):
+         v_str = v.strip()
+         if not v_str or v_str.lower() in ('null', 'none', ''):
+             return None
+
+         date_formats = [
+             '%m/%d/%Y',
+             '%Y-%m-%d',
+             '%m/%d/%y',
+             '%Y/%m/%d',
+             '%d/%m/%Y',
+             '%m-%d-%Y',
+         ]
+
+         for fmt in date_formats:
+             try:
+                 dt = datetime.strptime(v_str, fmt)
+                 return dt.date()
+             except ValueError:
+                 continue
+
+         # Try pandas parsing as fallback
+         try:
+             return pd.to_datetime(v_str).date()
+         except:
+             return None
+
+     return None
+
+
+ def format_time_str(t: Optional[time]) -> str:
+     """Format time as HH:MM:SS string, default to 00:00:00.""" if t is None:
+         return "00:00:00"
+     return t.strftime('%H:%M:%S')
+
+
+ def format_date_str(d: Optional[date]) -> str:
+     """Format date as MM/dd/yy string.""" if d is None:
+         return "Unknown"
+     return d.strftime('%m/%d/%y')
+
+
+ # =============================================================================
+ # CYCLE CALENDAR FUNCTIONS
+ # =============================================================================
+
+ def load_cycle_calendar(path: Path = CYCLE_CALENDAR_PATH) -> pd.DataFrame:
+     """Load and parse the cycle calendar CSV.""" df = pd.read_csv(path)
+
+     # Parse date columns
+     date_cols = ['Report_Due_Date', '7_Day_Start', '7_Day_End', '28_Day_Start', '28_Day_End']
+     for col in date_cols:
+         if col in df.columns:
+             df[col] = pd.to_datetime(df[col], format='%m/%d/%Y').dt.date
+
+     return df
+
+
+ def resolve_cycle(calendar_df: pd.DataFrame, report_due_date: date) -> Optional[pd.Series]:
+     """
+     3-tier cycle resolution matching M code lines 191-224. Tier 1: Exact Report_Due_Date match (most accurate - report day lookup)
+     Tier 2: Today/report_due within a 7-day cycle (for mid-cycle refreshes)
+     Tier 3: Most recent cycle that ended on/before the date
+
+     Args:
+         calendar_df: Cycle calendar DataFrame
+         report_due_date: The date to resolve cycle for
+
+     Returns:
+         Series with cycle info or None if no match
+     """
+     # Tier 1: Exact Report_Due_Date match
+     match1 = calendar_df[calendar_df['Report_Due_Date'] == report_due_date]
+     if len(match1) > 0:
+         return match1.iloc[0]
+
+     # Tier 2: Date within a 7-day cycle window
+     match2 = calendar_df[
+         (calendar_df['7_Day_Start'] <= report_due_date) &
+         (report_due_date <= calendar_df['7_Day_End'])
+     ]
+     if len(match2) > 0:
+         return match2.iloc[0]
+
+     # Tier 3: Most recent cycle (7_Day_End <= report_due_date)
+     eligible = calendar_df[calendar_df['7_Day_End'] <= report_due_date]
+     if len(eligible) > 0:
+         sorted_df = eligible.sort_values('7_Day_End', ascending=False)
+         return sorted_df.iloc[0]
+
+     return None
+
+
+ def resolve_cycle_for_date(calendar_df: pd.DataFrame, d: date) -> Optional[pd.Series]:
+     """
+     Find the cycle that a given date falls within. Used for cycle_name assignment based on Incident_Date.
+     """ if d is None:
+         return None
+
+     match = calendar_df[
+         (calendar_df['7_Day_Start'] <= d) &
+         (d <= calendar_df['7_Day_End'])
+     ]
+     if len(match) > 0:
+         return match.iloc[0]
+
+     return None
+
+
+ # =============================================================================
+ # TIME OF DAY CLASSIFICATION
+ # =============================================================================
+
+ def classify_time_of_day(t: Optional[time]) -> Tuple[str, int]:
+     """
+     Classify time into period of day. Matches M code lines 453-484.

@@ -1,0 +1,52 @@
+{
+  "integrity_sha256": "cc24f7484fdf4460c272adbc87dca1b9b3305a952567908911d04e4720128319",
+  "sent_at": "2026-01-17T04:41:06.8554242Z",
+  "original_full_path": "C:\\Users\\carucci_r\\Downloads\\ChatGPT-ArcGIS Pro Path Repair.json",
+  "source_cleanup": "not_required",
+  "original_directory": "C:\\Users\\carucci_r\\Downloads",
+  "original_filename": "ChatGPT-ArcGIS Pro Path Repair.json",
+  "modified_time": "2026-01-17T04:40:15.7106259Z",
+  "size_bytes": 326922,
+  "destination_status": "present",
+  "created_time": "2026-01-17T04:40:14.6955864Z",
+  "operation": "MOVE",
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "dataset",
+    "excel",
+    "finance",
+    "it-ops",
+    "json",
+    "markdown",
+    "police",
+    "powershell",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "data",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "arcpy",
+        "path",
+        "you",
+        "aprx",
+        "esri",
+        "print"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "{\n  \"metadata\": {\n    \"title\": \"ArcGIS Pro Path Repair\",\n    \"user\": {\n      \"name\": \"Anonymous\",\n      \"email\": \"gmfzqprc7z@privaterelay.appleid.com\"\n    },\n    \"dates\": {\n      \"created\": \"1/16/2026 19:20:24\",\n      \"updated\": \"1/16/20...",
+      "first_line": "{"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-16T23:41:16.419732",
+  "department": "admin"
+}

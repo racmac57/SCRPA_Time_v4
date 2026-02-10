@@ -1,0 +1,842 @@
+Implementation Plan
+
+### 4.1 Priority 1: Critical Changes (Must-Have)
+
+#### Task 1.1: Remove Excel Files from Data Folder
+
+**Priority**: High
+**Effort**: Low (5 minutes)
+**Risk**: Low
+
+**Steps**:
+1. Open `organize_report_files.py`
+2. Comment out or remove lines 590-595 (Excel file copy block)
+3. Add comment explaining removal
+4. Test: Run workflow, verify Excel files not copied
+5. Verify: Check Data folder, should only have CSV files
+
+**Code Change**:
+```python
+# Lines 590-595 - REMOVE
+# # 1b. Copy Excel files to Data folder (filtered by date if available)
+# print("\n📊 Copying Excel files to Data/ folder...")
+# excel_files = collect_excel_files(report_date_tuple)
+# for excel_file in excel_files:
+#     if copy_file_safe(excel_file, data_folder):
+#         copied_count += 1
+
+# REPLACEMENT:
+# Excel files removed from Data folder per requirements (2026-01-06)
+# Original Excel exports remain in 05_EXPORTS\_RMS\scrpa\ (source location)
+```
+
+**Testing**:
+1. Run workflow with a test report date
+2. Check Data folder - should see only CSV files
+3. Check source folder - should still have Excel files
+
+**Rollback**: Uncomment lines 590-595
+
+---
+
+#### Task 1.2: Update ChatGPT Prompt to Reference SCRPA_7Day_Detailed.csv
+
+**Priority**: High
+**Effort**: Medium (1-2 hours)
+**Risk**: Medium (changes prompt behavior)
+
+**Steps**:
+1. Open `prepare_briefing_csv.py`
+2. Update `create_chatgpt_prompt_file()` function (lines 498-1053)
+3. Change CSV file reference from `SCRPA_Briefing_Ready_*.csv` to `SCRPA_7Day_Detailed.csv`
+4. Load SCRPA_7Day_Detailed.csv instead of briefing_df for embedding
+5. Update column descriptions to include enhanced columns
+6. Update CSV column mapping section
+7. Test: Generate prompt, verify CSV data embedded correctly
+
+**Code Changes**:
+
+**File**: `prepare_briefing_csv.py`
+
+**Change 1: Function signature** (line 498):
+```python
+# OLD:
+def create_chatgpt_prompt_file(output_folder, csv_filename, briefing_df, cycle_info):
+
+# NEW:
+def create_chatgpt_prompt_file(output_folder, csv_filename, briefing_df, detailed_csv_path, cycle_info):
+```
+
+**Change 2: Load Detailed CSV** (after line 501):
+```python
+# NEW: Load SCRPA_7Day_Detailed.csv for embedding
+if detailed_csv_path and os.path.exists(detailed_csv_path):
+    print(f"   Loading {os.path.basename(detailed_csv_path)} for embedding...")
+    detailed_df = pd.read_csv(detailed_csv_path)
+    use_detailed = True
+    print(f"   ✓ Loaded {len(detailed_df)} rows from Detailed CSV")
+else:
+    print(f"   ⚠️  SCRPA_7Day_Detailed.csv not found, using briefing CSV instead")
+    detailed_df = briefing_df
+    use_detailed = False
+```
+
+**Change 3: Update CSV summary** (lines 517-526):
+```python
+# Get CSV summary stats
+if use_detailed:
+    total_cases = len(detailed_df)
+    crime_counts = detailed_df['Crime_Category'].value_counts().to_dict()
+    csv_file_note = "SCRPA_7Day_Detailed.csv (preferred - includes all enhanced columns)"
+else:
+    total_cases = len(briefing_df)
+    crime_counts = briefing_df['IncidentType'].value_counts().to_dict()
+    csv_file_note = "SCRPA_Briefing_Ready_*.csv (fallback)"
+```
+
+**Change 4: Update header** (lines 518-526):
+```python
+# CSV Data Summary
+f.write("## CSV Data Summary\n\n")
+if use_detailed:
+    f.write(f"**CSV File**: `SCRPA_7Day_Detailed.csv`\n\n")
+    f.write(f"**Note**: This is the preferred data file with all RMS columns plus enhanced analytical columns.\n\n")
+else:
+    f.write(f"**CSV File**: `{os.path.basename(csv_filename)}`\n\n")
+    f.write(f"**Note**: SCRPA_7Day_Detailed.csv not found, using transformed briefing CSV.\n\n")
+```
+
+**Change 5: Embed detailed CSV data** (lines 558-567):
+```python
+# Include Full CSV Data
+f.write("## Complete CSV Data\n\n")
+f.write("**IMPORTANT**: The complete CSV data is included below. ") f.write("Use this data to extract all details from the Narrative column and other fields.\n\n")
+
+if use_detailed:
+    f.write("**Source**: SCRPA_7Day_Detailed.csv (all RMS columns + enhanced analytical columns)\n\n")
+    f.write("**Enhanced Columns Available**:\n")
+    f.write("- `IsLagDay`, `LagDays` - Backfill incident tracking\n")
+    f.write("- `CycleStartDate`, `CycleEndDate` - Cycle date boundaries\n")
+    f.write("- `TimeOfDay`, `TimeOfDay_SortKey` - Time-of-day categorization\n")
+    f.write("- `Crime_Category` - Category mapping (Burglary Auto, Motor Vehicle Theft, etc. )\n")
+    f.write("- `IncidentType` - Normalized incident type (statute suffix removed)\n")
+    f.write("- `Clean_Address` - Address without 'Hackensack, NJ' suffix\n")
+    f.write("- `Vehicle_1`, `Vehicle_2` - Consolidated vehicle information\n")
+    f.write("- And many more analytical columns (see column list)\n\n")
+
+f.write("### CSV File Content\n\n")
+f.write("```csv\n")
+# Use pandas to_csv with proper CSV formatting
+csv_buffer = (detailed_df if use_detailed else briefing_df).to_csv(
+    index=False, quoting=csv.QUOTE_MINIMAL, escapechar='\\'
+)
+f.write(csv_buffer)
+f.write("```\n\n")
+```
+
+**Change 6: Update call to create_chatgpt_prompt_file** (line 1128):
+```python
+# OLD:
+prompt_file = create_chatgpt_prompt_file(OUTPUT_FOLDER, output_file, briefing_df, cycle_info)
+
+# NEW: Find SCRPA_7Day_Detailed.csv in Data folder if available
+detailed_csv_path = None
+# Check in output folder first
+detailed_csv_candidate = os.path.join(OUTPUT_FOLDER, "SCRPA_7Day_Detailed.csv")
+if os.path.exists(detailed_csv_candidate):
+    detailed_csv_path = detailed_csv_candidate
+else:
+    # Check in latest report folder
+    report_base = r"C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based"
+    current_year = datetime.now().strftime("%Y")
+    year_folder = os.path.join(report_base, current_year)
+    if os.path.exists(year_folder):
+        report_folders = [f for f in os.listdir(year_folder)
+                        if os.path.isdir(os.path.join(year_folder, f))]
+        if report_folders:
+            report_folders_with_time = [
+                (os.path.join(year_folder, f), os.path.getmtime(os.path.join(year_folder, f)))
+                for f in report_folders
+            ]
+            if report_folders_with_time:
+                latest_report_folder = max(report_folders_with_time, key=lambda x: x[1])[0]
+                detailed_csv_in_report = os.path.join(latest_report_folder, "Data", "SCRPA_7Day_Detailed.csv")
+                if os.path.exists(detailed_csv_in_report):
+                    detailed_csv_path = detailed_csv_in_report
+
+prompt_file = create_chatgpt_prompt_file(OUTPUT_FOLDER, output_file, briefing_df, detailed_csv_path, cycle_info)
+```
+
+**Testing**:
+1. Run prepare_briefing_csv.py
+2. Open generated CHATGPT_BRIEFING_PROMPT.md
+3. Verify:
+   - Header says "CSV File: SCRPA_7Day_Detailed.csv"
+   - Enhanced columns are listed
+   - Embedded CSV data has all columns (40+)
+   - Narrative column is preserved
+4. Test with ChatGPT: Upload prompt, verify it can parse the CSV correctly
+
+**Rollback**: Keep backup of original prepare_briefing_csv.py
+
+---
+
+#### Task 1.3: Add Dual-Orientation HTML Templates
+
+**Priority**: High
+**Effort**: Medium (2-3 hours)
+**Risk**: Medium (changes HTML template)
+
+**Steps**:
+1. Open `prepare_briefing_csv.py`
+2. Update HTML template section (lines 658-929)
+3. Add landscape orientation instructions
+4. Add landscape-specific CSS
+5. Update formatting requirements
+6. Test: Generate prompt, verify both templates are present
+
+**Code Changes**:
+
+**File**: `prepare_briefing_csv.py`
+
+**Change 1: Update Global Instructions** (after line 620):
+```python
+f.write("### Global Instructions\n\n")
+f.write("**IMPORTANT: Generate TWO HTML Outputs**\n\n")
+f.write("1. **Portrait Orientation** (8.5\" x 11\"):\n")
+f.write("   - File: `SCRPA_Briefing_Portrait_{date}.html`\n")
+f.write("   - Standard vertical layout\n")
+f.write("   - Use template below as-is\n\n")
+f.write("2. **Landscape Orientation** (11\" x 8.5\"):\n")
+f.write("   - File: `SCRPA_Briefing_Landscape_{date}.html`\n")
+f.write("   - Horizontal layout optimizations\n")
+f.write("   - Apply landscape CSS modifications (see below)\n\n")
+f.write("* Both files should contain the same data and content\n")
+f.write("* Both files should be print-ready with CSS @media print rules\n")
+f.write("* Landscape version should use CSS modifications for wider layout\n\n")
+f.write("---\n\n")
+f.write("* **Sort** every section **chronologically** (oldest → newest).\n\n")
+# ... rest of existing instructions
+```
+
+**Change 2: Add Landscape CSS Section** (after line 753, before `</style>`):
+```python
+# Within the HTML template string, after the portrait CSS (before </style>):
+html_template = f"""<!doctype html>
+<html lang="en">
+<head>
+...existing CSS...
+  /* Print: force single page if content fits; avoid orphans/widows */
+  @media print{{
+    @page {{ size: A4; margin: 10mm; }}
+    body{{ background:#fff; }}
+    .page{{ box-shadow:none; padding:0; }}
+    .case-card, .section {{ page-break-inside: avoid; }}
+    a[href]:after{{ content:""; }} /* remove URL prints */
+  }}
+
+  /* LANDSCAPE VARIANT CSS */
+  /* For landscape HTML file, replace @page size with: */
+  /* @page {{ size: landscape; margin: 10mm; }} */
+  /* And adjust these values: */
+  /* .page {{ max-width: 1000px; }} */
+  /* .meta {{ grid-template-columns: repeat(4, minmax(0,1fr)); }} */
+</style>
+...
+```
+
+**Change 3: Add Landscape Template Section** (after line 929):
+```python
+f.write("```\n\n")
+f.write("---\n\n")
+
+# NEW: Landscape Template Section
+f.write("### Landscape HTML Template\n\n")
+f.write("Generate a **second HTML file** with the same structure as above, but with these CSS modifications:\n\n")
+f.write("**CSS Changes for Landscape**:\n\n")
+f.write("1. **@media print block** (replace @page rule):\n")
+f.write("   ```css\n")
+f.write("   @media print {\n")
+f.write("     @page { size: landscape; margin: 10mm; }\n")
+f.write("     body { background:#fff; }\n")
+f.write("     .page { box-shadow:none; padding:0; }\n")
+f.write("     .case-card, .section { page-break-inside: avoid; }\n")
+f.write("     a[href]:after { content:\"\"; }\n")
+f.write("   }\n")
+f.write("   ```\n\n")
+f.write("2. **.page max-width** (increase for wider layout):\n")
+f.write("   ```css\n")
+f.write("   .page {\n")
+f.write("     max-width: 1000px; /* Was 820px */\n")
+f.write("     ...\n")
+f.write("   }\n")
+f.write("   ```\n\n")
+f.write("3. **.meta grid-template-columns** (more columns for horizontal space):\n")
+f.write("   ```css\n")
+f.write("   .meta {\n")
+f.write("     display:grid; grid-template-columns: repeat(4, minmax(0,1fr)); /* Was 3 */\n")
+f.write("     ...\n")
+f.write("   }\n")
+f.write("   ```\n\n")
+f.write("**File Naming**:\n")
+f.write(f"- Portrait: `SCRPA_Briefing_Portrait_{generated_date_str}.html`\n")
+f.write(f"- Landscape: `SCRPA_Briefing_Landscape_{generated_date_str}.html`\n\n")
+f.write("**Content**: Use the same data from the CSV for both files, only CSS differs.\n\n")
+f.write("---\n\n")
+```
+
+**Change 4: Update Formatting Requirements** (replace lines 931-947):
+```python
+# Formatting Requirements
+f.write("### Formatting Requirements\n\n")
+f.write("**Generate BOTH Orientations**:\n")
+f.write("* **Portrait Version**: Standard 8.5\" x 11\" page (template above)\n")
+f.write("* **Landscape Version**: Rotated 11\" x 8.5\" page (CSS modifications above)\n\n")
+f.write("**Common Requirements** (both files):\n")
+f.write("* **Font:** DIN\n")
+f.write("* **Color for Titles/Headers:** HEX `#0d233c`\n")
+f.write("* **Page Layout:** Aim for **single page** output suitable for PDF inclusion.\n")
+f.write("* **Header block:** title, Cycle ID, date range, Prepared by, Submitted to, Version.\n")
+# ... rest of existing requirements
+```
+
+**Testing**:
+1. Generate new ChatGPT prompt
+2. Verify both portrait and landscape templates are included
+3. Test with ChatGPT: Ask it to generate both HTML files
+4. Open both HTML files in browser, verify:
+   - Portrait: 820px width, 3-column meta grid
+   - Landscape: 1000px width, 4-column meta grid
+5. Print to PDF, verify:
+   - Portrait: 8.5" x 11"
+   - Landscape: 11" x 8.5"
+
+**Rollback**: Keep backup of original prompt template
+
+---
+
+### 4.2 Priority 2: Important Changes (Should-Have)
+
+#### Task 2.1: Add SCRPA_Full_Export_Enhanced.csv (Option A - Manual)
+
+**Priority**: Medium
+**Effort**: Low (30 minutes per export)
+**Risk**: Medium (manual process prone to error)
+
+**Steps**:
+1. **Open Power BI Desktop** with All_Crimes query
+2. **Edit** q_RMS_Source query in Power Query Editor
+3. **Replace** LatestFilePath logic with CombinedData logic (see Section 2.1)
+4. **Apply** and refresh query (will take several minutes)
+5. **Export** All_Crimes table to CSV: Table → Export Data
+6. **Save** as `SCRPA_Full_Export_Enhanced.csv` in `05_EXPORTS\_RMS\scrpa\`
+7. **Revert** q_RMS_Source query back to LatestFilePath logic
+8. **Save** Power BI file
+
+**M Code Change**:
+```m
+// q_RMS_Source - TEMPORARY CHANGE FOR FULL EXPORT
+// Replace this query temporarily to load ALL files instead of latest
+
+let FolderPath = "C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa",
+    AllFiles = Folder.Files(FolderPath),
+    XlsxFiles = Table.SelectRows(
+        AllFiles,
+        each Text.EndsWith([Name], ".xlsx", Comparer.OrdinalIgnoreCase)),
+    SortedFiles = Table.Sort(XlsxFiles, {{"Date modified", Order.Descending}}),
+
+    // NEW: Load and combine ALL Excel files
+    CombinedData = Table.Combine(
+        List.Transform(
+            SortedFiles[Content],
+            each Excel.Workbook(_, true){0}[Data]
+        )
+    )
+in
+    CombinedData
+
+// REVERT TO THIS AFTER EXPORT:
+// let FolderPath = "C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa",
+//     AllFiles = Folder.Files(FolderPath),
+//     XlsxFiles = Table.SelectRows(
+//         AllFiles,
+//         each Text.EndsWith([Name], ".xlsx", Comparer.OrdinalIgnoreCase)),
+//     SortedFiles = Table.Sort(XlsxFiles, {{"Date modified", Order.Descending}}),
+//     LatestFilePath = SortedFiles{0}[Folder Path] & SortedFiles{0}[Name],
+//     Source = Excel.Workbook(File.Contents(LatestFilePath), true),
+//     FirstTable = Source{0}[Data] in FirstTable
+```
+
+**Copy to Report Folder**:
+Update `organize_report_files.py` to copy the full export:
+
+```python
+# After line 589 (after copying CSV files):
+
+# 1c. Copy Full Export Enhanced CSV (all incidents, no filter)
+print("\n📊 Copying Full Export Enhanced CSV...")
+full_export_csv = os.path.join(RMS_EXPORT_DIR, "SCRPA_Full_Export_Enhanced.csv")
+if os.path.exists(full_export_csv):
+    if copy_file_safe(full_export_csv, data_folder):
+        copied_count += 1
+        # Check file size and warn if large
+        file_size_mb = os.path.getsize(full_export_csv) / (1024 * 1024)
+        if file_size_mb > 25:
+            print(f"  ⚠️  Large file: {file_size_mb:.1f} MB")
+else:
+    print(f"  ⚠️  Full Export Enhanced CSV not found: {full_export_csv}")
+    print(f"     This is optional - only needed for historical analysis")
+```
+
+**Testing**:
+1. Follow steps above to generate full export
+2. Verify CSV has all expected columns (same as 7-day Detailed)
+3. Check row count (should be 1000s of rows)
+4. Run organize_report_files.py, verify file is copied
+5. Check Data folder, verify file is present
+
+**Rollback**: Delete SCRPA_Full_Export_Enhanced.csv if not needed
+
+---
+
+#### Task 2.2: Add CSV Validation Function
+
+**Priority**: Medium
+**Effort**: Low (1 hour)
+**Risk**: Low
+
+**Steps**:
+1. Open `organize_report_files.py`
+2. Add validation function (after imports, before main functions)
+3. Call validation function after loading each CSV
+4. Add helpful error messages
+
+**Code Changes**:
+
+**File**: `organize_report_files.py`
+
+**Add validation function** (after line 22, before first function):
+```python
+# CSV Validation Functions
+REQUIRED_7DAY_COLUMNS = [
+    "Case Number", "Incident Date", "Report Date", "Incident Type_1",
+    "Narrative", "FullAddress", "Grid", "Zone"
+]
+
+ENHANCED_7DAY_COLUMNS = [
+    "IsLagDay", "LagDays", "CycleStartDate", "CycleEndDate",
+    "Crime_Category", "IncidentType"
+]
+
+def validate_csv_structure(csv_path, required_columns=None, enhanced_columns=None):
+    """
+    Validate CSV file structure and warn about missing columns. Args:
+        csv_path: Path to CSV file
+        required_columns: List of required column names (will error if missing)
+        enhanced_columns: List of enhanced column names (will warn if missing)
+
+    Returns:
+        tuple: (is_valid, warnings)
+    """
+    try:
+        import pandas as pd
+        df = pd.read_csv(csv_path, nrows=1)  # Only read header row
+        columns = df.columns.tolist()
+
+        warnings = []
+        is_valid = True
+
+        # Check required columns
+        if required_columns:
+            missing_required = [col for col in required_columns if col not in columns]
+            if missing_required:
+                is_valid = False
+                warnings.append(f"❌ Missing required columns: {', '.join(missing_required)}")
+
+        # Check enhanced columns (warning only)
+        if enhanced_columns:
+            missing_enhanced = [col for col in enhanced_columns if col not in columns]
+            if missing_enhanced:
+                warnings.append(f"⚠️  Missing enhanced columns: {', '.join(missing_enhanced)}")
+                warnings.append(f"   This may indicate the CSV is from raw export, not restructure script")
+
+        # Check file age
+        import os
+        from datetime import datetime, timedelta
+        file_age_hours = (datetime.now() - datetime.fromtimestamp(os.path.getmtime(csv_path))).total_seconds() / 3600
+        if file_age_hours > 24:
+            warnings.append(f"⚠️  CSV file is {file_age_hours:.1f} hours old (may be stale)")
+
+        return is_valid, warnings
+
+    except Exception as e:
+        return False, [f"❌ Error reading CSV: {e}"]
+
+def validate_7day_detailed_csv(csv_path):
+    """Validate SCRPA_7Day_Detailed.csv structure"""
+    return validate_csv_structure(
+        csv_path,
+        required_columns=REQUIRED_7DAY_COLUMNS,
+        enhanced_columns=ENHANCED_7DAY_COLUMNS
+    )
+```
+
+**Call validation** (after line 598, before running restructure):
+```python
+# After finding last7_csv:
+if last7_csv:
+    print("\n📅 Processing 7-day filtered CSV (restructuring)...")
+
+    # NEW: Validate CSV structure before processing
+    is_valid, warnings = validate_7day_detailed_csv(last7_csv)
+    for warning in warnings:
+        print(f"  {warning}")
+
+    if not is_valid:
+        print(f"  ❌ CSV validation failed. Cannot proceed with restructure.") print(f"     Check that the CSV was exported correctly from Power BI.") print(f"     Required columns: {', '.join(REQUIRED_7DAY_COLUMNS)}")
+    else:
+        # ... existing restructure code
+```
+
+**Testing**:
+1. Test with valid CSV - should pass validation
+2. Test with CSV missing columns - should fail validation
+3. Test with old CSV (24+ hours) - should warn
+4. Verify error messages are helpful
+
+**Rollback**: Remove validation function calls
+
+---
+
+#### Task 2.3: Add Cycle Calendar Expiry Check
+
+**Priority**: Medium
+**Effort**: Low (30 minutes)
+**Risk**: Low
+
+**Steps**:
+1. Open `scrpa_7day_restructure.py`
+2. Add expiry check to `get_cycle_info_from_calendar()` function
+3. Warn if cycle calendar is out of date
+
+**Code Changes**:
+
+**File**: `scrpa_7day_restructure.py`
+
+**Add expiry check** (after line 118, in get_cycle_info_from_calendar):
+```python
+def get_cycle_info_from_calendar(report_due_date=None):
+    """
+    Get cycle information from cycle calendar based on Report_Due_Date. ...
+    """
+    try:
+        if not CYCLE_CSV.exists():
+            print(f"⚠️  Cycle calendar not found: {CYCLE_CSV}")
+            return None
+
+        # NEW: Check cycle calendar file age
+        from datetime import datetime, timedelta
+        file_mtime = datetime.fromtimestamp(CYCLE_CSV.stat().st_mtime)
+        file_age_days = (datetime.now() - file_mtime).days
+
+        if file_age_days > 180:  # 6 months
+            print(f"⚠️  WARNING: Cycle calendar is {file_age_days} days old")
+            print(f"   Last modified: {file_mtime.strftime('%Y-%m-%d')}")
+            print(f"   Consider updating: {CYCLE_CSV}")
+
+        cycle_df = pd.read_csv(CYCLE_CSV)
+
+        # NEW: Check if cycle calendar has future dates
+        max_date_str = cycle_df['7_Day_End'].max()
+        max_date = pd.to_datetime(max_date_str).date()
+        today = datetime.now().date()
+        days_until_expiry = (max_date - today).days
+
+        if days_until_expiry < 30:
+            print(f"⚠️  WARNING: Cycle calendar expires in {days_until_expiry} days")
+            print(f"   Latest cycle ends: {max_date}")
+            print(f"   Update calendar before: {max_date}")
+
+        # ... rest of function
+```
+
+**Testing**:
+1. Test with current cycle calendar - should not warn
+2. Test with old cycle calendar (modify file date) - should warn
+3. Verify warnings are helpful
+
+**Rollback**: Remove expiry checks
+
+---
+
+### 4.3 Priority 3: Enhancements (Nice-to-Have)
+
+#### Task 3.1: Add File Size Warnings
+
+**Priority**: Low
+**Effort**: Low (15 minutes)
+**Risk**: Low
+
+**Steps**:
+1. Open `organize_report_files.py`
+2. Add file size check when copying files
+3. Warn if files are large
+
+**Code Changes**:
+
+**File**: `organize_report_files.py`
+
+**Update copy_file_safe function** (lines 352-374):
+```python
+def copy_file_safe(source, dest_dir, dest_name=None, warn_size_mb=25):
+    """Copy file with error handling and size warnings"""
+    try:
+        if not os.path.exists(source):
+            print(f"  ⚠️  Source not found: {os.path.basename(source)}")
+            return False
+
+        if dest_name is None:
+            dest_name = os.path.basename(source)
+
+        dest_path = os.path.join(dest_dir, dest_name)
+
+        # Create destination directory if needed
+        os.makedirs(dest_dir, exist_ok=True)
+
+        # NEW: Check file size before copy
+        file_size_mb = os.path.getsize(source) / (1024 * 1024)
+        if file_size_mb > warn_size_mb:
+            print(f"  ⚠️  Large file: {dest_name} ({file_size_mb:.1f} MB)")
+
+        # Copy file
+        shutil.copy2(source, dest_path)
+        print(f"  ✓ Copied: {dest_name}")
+        return True
+
+    except Exception as e:
+        print(f"  ❌ Failed to copy {os.path.basename(source)}: {e}")
+        return False
+```
+
+**Testing**:
+1. Copy small file - should not warn
+2. Copy large file (>25 MB) - should warn
+3. Verify warning displays file size
+
+**Rollback**: Remove size check
+
+---
+
+#### Task 3.2: Create requirements.txt
+
+**Priority**: Low
+**Effort**: Low (5 minutes)
+**Risk**: None
+
+**Steps**:
+1. Create `requirements.txt` in SCRPA scripts folder
+2. List all Python dependencies
+3. Document in README
+
+**Code**:
+
+**File**: `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\requirements.txt`
+```
+# SCRPA Report Generation - Python Dependencies
+# Install: pip install -r requirements.txt
+
+pandas>=1.5.0,<3.0.0
+numpy>=1.23.0,<2.0.0
+
+# Optional (for enhanced functionality)
+# openpyxl>=3.0.0  # Excel file reading (if needed)
+```
+
+**Testing**:
+1. Create new virtualenv
+2. Run `pip install -r requirements.txt`
+3. Verify all scripts run without import errors
+
+**Rollback**: Delete requirements.txt
+
+---
+
+#### Task 3.3: Add Version Column to CSV Exports
+
+**Priority**: Low
+**Effort**: Low (30 minutes)
+**Risk**: Low
+
+**Steps**:
+1. Open `scrpa_7day_restructure.py`
+2. Add version column to DataFrame
+3. Update all CSV exports
+
+**Code Changes**:
+
+**File**: `scrpa_7day_restructure.py`
+
+**Add version constant** (after line 49):
+```python
+# Version tracking
+SCRPA_VERSION = "1.6.0"  # Update this when making significant changes
+```
+
+**Add version column** (in build_detailed function, after line 365):
+```python
+# Add version tracking
+dfw["SCRPA_Version"] = SCRPA_VERSION
+dfw["Export_Timestamp"] = datetime.now().isoformat()
+```
+
+**Update column order** (in build_detailed function, after line 390):
+```python
+# Reorder: Version columns at the end
+cols = list(dfw.columns)
+version_cols = ["SCRPA_Version", "Export_Timestamp"]
+for col in version_cols:
+    if col in cols:
+        cols.remove(col)
+        cols.append(col)
+dfw = dfw[cols]
+```
+
+**Testing**:
+1. Run restructure script
+2. Check CSV - should have SCRPA_Version and Export_Timestamp columns
+3. Verify values are correct
+
+**Rollback**: Remove version columns
+
+---
+
+### 4.4 Testing & Validation Plan
+
+**Phase 1: Unit Testing** (per task)
+- Test each change in isolation
+- Verify rollback procedure works
+- Document any edge cases discovered
+
+**Phase 2: Integration Testing** (after all changes)
+1. **Test Full Workflow**:
+   - Run complete workflow from batch script
+   - Verify all files generated correctly
+   - Check Data folder contents
+   - Verify no Excel files present
+   - Verify SCRPA_7Day_Detailed.csv has all columns
+   - Verify ChatGPT prompt references Detailed CSV
+
+2. **Test ChatGPT Prompt**:
+   - Upload prompt to ChatGPT
+   - Verify it can parse the CSV data
+   - Request both portrait and landscape HTML
+   - Verify HTML files are generated correctly
+   - Print to PDF, verify orientations
+
+3. **Test Edge Cases**:
+   - Empty CSV (no incidents)
+   - CSV with missing columns
+   - Old cycle calendar
+   - Large full export (>25 MB)
+
+**Phase 3: User Acceptance Testing**
+1. Run workflow for next report cycle
+2. Generate reports
+3. Review with stakeholders
+4. Collect feedback
+
+**Acceptance Criteria**:
+- ✅ No Excel files in Data folder
+- ✅ SCRPA_7Day_Detailed.csv present with all columns
+- ✅ SCRPA_7Day_Summary.csv present
+- ✅ SCRPA_Full_Export_Enhanced.csv present (if implemented)
+- ✅ ChatGPT prompt references Detailed CSV
+- ✅ ChatGPT generates both portrait and landscape HTML
+- ✅ HTML files print correctly to PDF
+- ✅ No data loss or truncation
+- ✅ Workflow runs without errors
+
+---
+
+### 4.5 Rollback Procedures
+
+**Emergency Rollback** (if critical issue discovered):
+1. **Restore backups** of modified files:
+   - `organize_report_files.py.backup`
+   - `prepare_briefing_csv.py.backup`
+   - `scrpa_7day_restructure.py.backup`
+2. **Re-run workflow** with backed-up files
+3. **Document issue** for future investigation
+
+**Partial Rollback** (if specific change causes issues):
+1. **Identify problematic change** from git history
+2. **Revert specific commit** or file section
+3. **Re-test workflow**
+
+**Version Control**:
+- Use git tags for major versions: `git tag -a v1.6.0 -m "Add full export and dual-orientation"`
+- Keep feature branches for each major change
+- Merge to main only after testing
+
+---
+
+## 5. Enhanced ChatGPT Prompt Template
+
+**Note**: The updated ChatGPT prompt will be generated by the modified `prepare_briefing_csv.py` script (Task 1.2). **Key Enhancements**:
+1. ✅ References SCRPA_7Day_Detailed.csv instead of SCRPA_Briefing_Ready_*.csv
+2. ✅ Includes all enhanced columns in embedded CSV data
+3. ✅ Narrative column preserved in full
+4. ✅ Instructions for generating BOTH portrait and landscape HTML
+5. ✅ CSS modifications for landscape orientation
+6. ✅ File naming conventions for both orientations
+
+**Sample Prompt Structure** (see Task 1.2 and 1.3 for full implementation):
+```markdown
+# SCRPA Strategic Crime Reduction Briefing - ChatGPT Prompt
+
+**CSV File**: SCRPA_7Day_Detailed.csv
+
+**Enhanced Columns Available**:
+- IsLagDay, LagDays - Backfill incident tracking
+- CycleStartDate, CycleEndDate - Cycle date boundaries
+- TimeOfDay, TimeOfDay_SortKey - Time-of-day categorization
+- Crime_Category - Category mapping
+- [... all enhanced columns ...]
+
+## Instructions
+
+**IMPORTANT: Generate TWO HTML Outputs**
+
+1. Portrait Orientation (8.5" x 11") - SCRPA_Briefing_Portrait_{date}.html
+2. Landscape Orientation (11" x 8.5") - SCRPA_Briefing_Landscape_{date}.html
+
+### Portrait HTML Template
+[... standard template ...]
+
+### Landscape HTML Template
+[... template with CSS modifications ...]
+```
+
+---
+
+## 6. Questions Answered
+
+### Q1: How are the CSV files currently exported from Power BI? Is it manual, automated, or scripted? **Answer**: **MANUAL** - User must export from Power BI Desktop. **Current Process**:
+1. User opens Power BI file with All_Crimes query
+2. M code loads latest Excel file from folder
+3. M code applies all transformations
+4. User manually exports All_Crimes table to CSV (Table → Export Data)
+5. User saves CSV with `*_ReportDate_Last7.csv` naming convention
+
+**Automation Status**:
+- ❌ Not automated
+- ⚠️ Manual step required for each report cycle
+- ⚠️ Prone to user error (wrong export, wrong file, forgotten step)
+
+**Recommendations**:
+- **Short-term**: Document export procedure clearly, add validation checks
+- **Long-term**: Consider Power BI Service API for automated export, or Python script to replicate M code logic
+
+---
+
+### Q2: Are all the enhanced columns listed in the requirements actually available in the M code output, or do some need to be added? **Answer**: ✅ **ALL enhanced columns are available** - No columns need to be added.

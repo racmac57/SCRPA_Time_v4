@@ -1,0 +1,39 @@
+{
+  "tags": [
+    "ai",
+    "code",
+    "conversation",
+    "data",
+    "docs",
+    "excel",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "null",
+        "then",
+        "else",
+        "text",
+        "table",
+        "type"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# CallTypeCategories processing speed\n_Exported on 1/7/2026 at 00:17:50 EST from Cursor (2.3.23)_\n\n---\n\n**User**\n\nI want to continue on updating according to Claude Codes recommendations. but first what can be done to speed up the proces...",
+      "first_line": "# CallTypeCategories processing speed"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-07T00:18:18.813792",
+  "department": "admin"
+}

@@ -1,0 +1,98 @@
+**Current (INCORRECT) Logic:**
+```m
+Period_Added = Table.AddColumn(
+    ...,
+    "Period",
+    each 
+        let
+            d = Duration.Days(DateTime.LocalNow() - [Report_Date])  // ❌ WRONG
+        in
+            if d <= 7 then "7-Day"
+            else if d <= 28 then "28-Day"
+            ...
+```
+
+**Fixed Logic:**
+```m
+Period_Added = Table.AddColumn(
+    Period_SortKey_Added,
+    "Period",
+    each 
+        let
+            IncidentDate = [Incident_Date_Date],
+            
+            // Get current cycle from calendar
+            Today = Date.From(DateTime.LocalNow()),
+            CurrentCycle = Table.SelectRows(
+                CycleCalendarTable,
+                each 
+                    let
+                        StartDate = Date.FromText([7_Day_Start]),
+                        EndDate = Date.FromText([7_Day_End])
+                    in Today >= StartDate and Today <= EndDate
+            ),
+            
+            // Extract cycle boundaries
+            HasCurrentCycle = not Table.IsEmpty(CurrentCycle),
+            Cycle7DayStart = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[7_Day_Start]) else null,
+            Cycle7DayEnd = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[7_Day_End]) else null,
+            Cycle28DayStart = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[28_Day_Start]) else null,
+            Cycle28DayEnd = if HasCurrentCycle then Date.FromText(CurrentCycle{0}[28_Day_End]) else null,
+            
+            // Period based on INCIDENT DATE vs CYCLE BOUNDARIES
+            Period = 
+                if IncidentDate = null then "Historical"
+                else if HasCurrentCycle then
+                    if IncidentDate >= Cycle7DayStart and IncidentDate <= Cycle7DayEnd then "7-Day"
+                    else if IncidentDate >= Cycle28DayStart and IncidentDate <= Cycle28DayEnd then "28-Day"
+                    else if Date.Year(IncidentDate) = Date.Year(DateTime.LocalNow()) then "YTD"
+                    else "Historical"
+                else if Date.Year(IncidentDate) = Date.Year(DateTime.LocalNow()) then "YTD"
+                else "Historical"
+        in Period,
+    type text
+),
+```
+
+---
+
+## 📊 **VALIDATION SCRIPT**
+
+I'll create a Python validation script you can run before each report:Now let me create the complete M Code solution:## 🎯 **KEY FINDINGS**
+
+**You're 100% correct** - your Burglary chart should show **0 incidents**, not 2. **Data Analysis Confirms:**
+- **IN_CYCLE** (incident within 12/23-12/29): **0 cases**
+- **BACKFILL** (incident before 12/23, reported during cycle): **2 cases**
+  - Case 25-111319: Inc 12/21, Rep 12/23, Lag 2 days
+  - Case 25-113076: Inc 12/20, Rep 12/28, Lag 8 days
+
+---
+
+## 🔧 **ROOT CAUSE**
+
+Your M Code calculates "Period" using **Report_Date** proximity to "Today" instead of checking if **Incident_Date** falls within cycle boundaries (12/23-12/29). **Result:** Backfill cases incorrectly appear in 7-Day charts when they should **only** be in lagday table. ---
+
+## ✅ **IMMEDIATE FIX (Before 12/30 Report)**
+
+1. **Apply M Code correction** from `m_code_period_fix.txt`
+   - Replaces Report_Date logic with Incident_Date vs cycle boundaries
+   - Takes 5 minutes in Power Query Editor
+
+2. **Run validation script:**
+   ```bash
+   python validate_7day_backfill.py 2025_12_29_18_46_24_SCRPA_RMS.csv 2025-12-23 2025-12-29
+   ```
+
+3. **Verify results:**
+   - Burglary chart: **0** in 7-Day (not 2)
+   - Lagday table: **2** burglary cases
+   - All counts match validation output@c:\Users\carucci_r\Downloads\validate_7day_backfill.py @c:\Users\carucci_r\Downloads\m_code_period_fix.txt @c:\Users\carucci_r\Downloads\period_classification_fix_summary.md 
+
+---
+
+**Cursor**
+
+Reviewing Claude's analysis and comparing it with our current implementation. There's a distinction between cycle definition (Report Date) and period classification for charts (should be Incident Date). Updating the Period calculation accordingly:
+
+
+Updating the Period calculation: it should be based on Incident_Date vs cycle boundaries, not Report_Date. The cycle definition (which incidents are in the report) uses Report_Date, but Period (for charts) should use Incident_Date.

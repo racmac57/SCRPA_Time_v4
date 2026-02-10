@@ -1,0 +1,185 @@
+---
+
+**User**
+
+lets keep it 
+I updated the Export_Formatting.m and refreshed the CycleCalendar
+Report_Due_Date	7_Day_Start	7_Day_End	28_Day_Start	28_Day_End	Report_Name	BiWeekly_Report_Name
+01/07/2025	12/31/2024	01/06/2025	12/10/2024	01/06/2025	25C01W01	
+01/14/2025	01/07/2025	01/13/2025	12/17/2024	01/13/2025	25C01W02	
+01/21/2025	01/14/2025	01/20/2025	12/24/2024	01/20/2025	25C01W03	
+01/28/2025	01/21/2025	01/27/2025	12/31/2024	01/27/2025	25C01W04	
+02/04/2025	01/28/2025	02/03/2025	01/07/2025	02/03/2025	25C02W05	
+02/11/2025	02/04/2025	02/10/2025	01/14/2025	02/10/2025	25C02W06	
+02/18/2025	02/11/2025	02/17/2025	01/21/2025	02/17/2025	25C02W07	
+02/25/2025	02/18/2025	02/24/2025	01/28/2025	02/24/2025	25C02W08	
+03/04/2025	02/25/2025	03/03/2025	02/04/2025	03/03/2025	25C03W09	
+03/11/2025	03/04/2025	03/10/2025	02/11/2025	03/10/2025	25C03W10	
+03/18/2025	03/11/2025	03/17/2025	02/18/2025	03/17/2025	25C03W11	
+03/25/2025	03/18/2025	03/24/2025	02/25/2025	03/24/2025	25C03W12	
+04/01/2025	03/25/2025	03/31/2025	03/04/2025	03/31/2025	25C04W13	
+04/08/2025	04/01/2025	04/07/2025	03/11/2025	04/07/2025	25C04W14	
+04/15/2025	04/08/2025	04/14/2025	03/18/2025	04/14/2025	25C04W15	
+04/22/2025	04/15/2025	04/21/2025	03/25/2025	04/21/2025	25C04W16	
+04/29/2025	04/22/2025	04/28/2025	04/01/2025	04/28/2025	25C05W17	
+05/06/2025	04/29/2025	05/05/2025	04/08/2025	05/05/2025	25C05W18	
+05/13/2025	05/06/2025	05/12/2025	04/15/2025	05/12/2025	25C05W19	
+05/20/2025	05/13/2025	05/19/2025	04/22/2025	05/19/2025	25C05W20	
+05/27/2025	05/20/2025	05/26/2025	04/29/2025	05/26/2025	25C06W21	
+06/03/2025	05/27/2025	06/02/2025	05/06/2025	06/02/2025	25C06W23	
+06/10/2025	06/03/2025	06/09/2025	05/13/2025	06/09/2025	25C06W23	
+06/17/2025	06/10/2025	06/16/2025	05/20/2025	06/16/2025	25C06W24	
+06/24/2025	06/17/2025	06/23/2025	05/27/2025	06/23/2025	25C07W25	
+07/01/2025	06/24/2025	06/30/2025	06/03/2025	06/30/2025	25C07W26	
+07/08/2025	07/01/2025	07/07/2025	06/10/2025	07/07/2025	25C07W27	
+07/15/2025	07/08/2025	07/14/2025	06/17/2025	07/14/2025	25C07W28	
+07/22/2025	07/15/2025	07/21/2025	06/24/2025	07/21/2025	25C08W29	
+07/29/2025	07/22/2025	07/28/2025	07/01/2025	07/28/2025	25C08W30	
+08/05/2025	07/29/2025	08/04/2025	07/08/2025	08/04/2025	25C08W31	
+08/12/2025	08/05/2025	08/11/2025	07/15/2025	08/11/2025	25C08W32	
+08/19/2025	08/12/2025	08/18/2025	07/22/2025	08/18/2025	25C09W33	
+08/26/2025	08/19/2025	08/25/2025	07/29/2025	08/25/2025	25C09W34	
+09/02/2025	08/26/2025	09/01/2025	08/05/2025	09/01/2025	25C09W35	
+09/09/2025	09/02/2025	09/08/2025	08/12/2025	09/08/2025	25C09W36	
+09/16/2025	09/09/2025	09/15/2025	08/19/2025	09/15/2025	25C10W37	
+09/23/2025	09/16/2025	09/22/2025	08/26/2025	09/22/2025	25C10W38	
+09/30/2025	09/23/2025	09/29/2025	09/02/2025	09/29/2025	25C10W39	
+10/07/2025	09/30/2025	10/06/2025	09/09/2025	10/06/2025	25C10W40	
+10/14/2025	10/07/2025	10/13/2025	09/16/2025	10/13/2025	25C11W41	
+10/21/2025	10/14/2025	10/20/2025	09/23/2025	10/20/2025	25C11W42	
+10/28/2025	10/21/2025	10/27/2025	09/30/2025	10/27/2025	25C11W43	
+11/04/2025	10/28/2025	11/03/2025	10/07/2025	11/03/2025	25C11W44	
+11/11/2025	11/04/2025	11/10/2025	10/14/2025	11/10/2025	25C12W45	
+11/18/2025	11/11/2025	11/17/2025	10/21/2025	11/17/2025	25C12W46	
+11/25/2025	11/18/2025	11/24/2025	10/28/2025	11/24/2025	25C12W47	
+12/02/2025	11/25/2025	12/01/2025	11/04/2025	12/01/2025	25C12W48	
+12/09/2025	12/02/2025	12/08/2025	11/11/2025	12/08/2025	25C13W49	
+12/16/2025	12/09/2025	12/15/2025	11/18/2025	12/15/2025	25C13W50	
+12/23/2025	12/16/2025	12/22/2025	11/25/2025	12/22/2025	25C13W51	
+12/30/2025	12/23/2025	12/29/2025	12/02/2025	12/29/2025	25C13W52	
+01/06/2026	12/30/2025	01/05/2026	12/09/2025	01/05/2026	26C01W01	
+01/13/2026	01/06/2026	01/12/2026	12/16/2025	01/12/2026	26C01W02	26BW01
+01/27/2026	01/20/2026	01/26/2026	12/30/2025	01/26/2026	26C01W04	26BW02
+02/10/2026	02/03/2026	02/09/2026	01/13/2026	02/09/2026	26C02W06	26BW03
+02/24/2026	02/17/2026	02/23/2026	01/27/2026	02/23/2026	26C02W08	26BW04
+03/10/2026	03/03/2026	03/09/2026	02/10/2026	03/09/2026	26C03W10	26BW05
+03/24/2026	03/17/2026	03/23/2026	02/24/2026	03/23/2026	26C03W12	26BW06
+04/07/2026	03/31/2026	04/06/2026	03/10/2026	04/06/2026	26C04W14	26BW07
+04/21/2026	04/14/2026	04/20/2026	03/24/2026	04/20/2026	26C04W16	26BW08
+05/05/2026	04/28/2026	05/04/2026	04/07/2026	05/04/2026	26C05W18	26BW09
+05/19/2026	05/12/2026	05/18/2026	04/21/2026	05/18/2026	26C05W20	26BW10
+06/02/2026	05/26/2026	06/01/2026	05/05/2026	06/01/2026	26C06W22	26BW11
+06/16/2026	06/09/2026	06/15/2026	05/19/2026	06/15/2026	26C06W24	26BW12
+06/30/2026	06/23/2026	06/29/2026	06/02/2026	06/29/2026	26C07W26	26BW13
+07/14/2026	07/07/2026	07/13/2026	06/16/2026	07/13/2026	26C07W28	26BW14
+07/28/2026	07/21/2026	07/27/2026	06/30/2026	07/27/2026	26C08W30	26BW15
+08/11/2026	08/04/2026	08/10/2026	07/14/2026	08/10/2026	26C08W32	26BW16
+08/25/2026	08/18/2026	08/24/2026	07/28/2026	08/24/2026	26C09W34	26BW17
+09/08/2026	09/01/2026	09/07/2026	08/11/2026	09/07/2026	26C09W36	26BW18
+09/22/2026	09/15/2026	09/21/2026	08/25/2026	09/21/2026	26C10W38	26BW19
+10/06/2026	09/29/2026	10/05/2026	09/08/2026	10/05/2026	26C10W40	26BW20
+10/20/2026	10/13/2026	10/19/2026	09/22/2026	10/19/2026	26C11W42	26BW21
+11/03/2026	10/27/2026	11/02/2026	10/06/2026	11/02/2026	26C11W44	26BW22
+11/17/2026	11/10/2026	11/16/2026	10/20/2026	11/16/2026	26C12W46	26BW23
+12/01/2026	11/24/2026	11/30/2026	11/03/2026	11/30/2026	26C12W48	26BW24
+12/15/2026	12/08/2026	12/14/2026	11/17/2026	12/14/2026	26C13W50	26BW25
+12/29/2026	12/22/2026	12/28/2026	12/01/2026	12/28/2026	26C13W52	26BW26
+
+can I save now? ---
+
+**Cursor**
+
+Data looks correct. Verifying everything is ready:
+
+
+## Verification status
+
+From your preview:
+- `q_CycleCalendar` refreshed successfully
+- `BiWeekly_Report_Name` column appears
+- 2025 rows have empty `BiWeekly_Report_Name` (expected)
+- 2026 entry for `01/06/2026` is present (fix applied)
+- 2026 bi-weekly entries show correct values (`26BW01`, `26BW02`, etc.) - `Export_Formatting.m` updated
+
+## Quick final checks before saving
+
+1. Refresh `all_crimes` query
+   - Right-click `all_crimes` → Refresh Preview
+   - Should complete without errors
+   - Verify no dependency errors
+
+2. Quick cycle detection test
+   - For today (01/26/26), it should find the cycle ending 01/26/26
+   - This confirms the gap fix works
+
+3. Optional: spot-check period classification
+   - Create a quick table with `Case Number`, `Incident_Date_Date`, `Period`
+   - Verify Period values look correct (7-Day, 28-Day, YTD, Prior Year)
+
+## Ready to save? If `all_crimes` refreshes without errors, you can save. Save steps:
+1. File → Save As
+2. Location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+3. Overwrite existing (or create backup first: `Base_Report_backup_weekly.pbix`)
+
+Did `all_crimes` refresh successfully? If yes, you're good to save. ---
+
+**User**
+
+its saved update git and docs if need be
+
+---
+
+**Cursor**
+
+Updating git and documentation. Checking what needs to be committed:
+
+
+Updating the CHANGELOG, then committing and pushing the fixes:
+
+
+Updating README and SUMMARY to reflect v1.9.1:
+
+
+All updates completed and pushed to GitHub. ## What was updated
+
+### Git commits
+1. v1.9.1: Fix cycle calendar gap and validation logic
+   - `ISSUE_FIXES_v1.9.1.md` (new documentation)
+   - `m_code/Export_Formatting.m` (validation fix)
+   - `CHANGELOG.md` (v1.9.1 entry)
+
+2. v1.9.1: Update version numbers
+   - `README.md` (version updated to 1.9.1)
+   - `SUMMARY.md` (version updated to 1.9.1)
+
+### Documentation updated
+- CHANGELOG.md — Added v1.9.1 entry with both fixes
+- README.md — Updated to v1.9.1 with fix summary
+- SUMMARY.md — Updated to v1.9.1 with fix summary
+- ISSUE_FIXES_v1.9.1.md — New documentation file
+
+### Status
+- All changes committed and pushed to GitHub
+- Version updated to 1.9.1 across all documentation
+- Power BI template saved with fixes applied
+- Cycle calendar CSV updated (outside git repo, in `09_Reference`)
+
+Everything is documented and synced. The bi-weekly reporting transition is complete with all issues fixed. ---
+
+**User**
+
+I'm preparing to export this chat. Please generate a descriptive filename that summarizes the main topic or task of this conversation. Requirements:
+• 4-8 words
+• Title Case (capitalize major words)
+• Replace spaces with underscores
+• Include .md extension
+• No dates or special characters
+
+Output only the filename, nothing else. After export, I'll process it using: scripts\quick_process_chatlog.bat
+
+---
+
+**Cursor**
+
+
+Bi_Weekly_Reporting_Transition_And_Validation_Fixes.md

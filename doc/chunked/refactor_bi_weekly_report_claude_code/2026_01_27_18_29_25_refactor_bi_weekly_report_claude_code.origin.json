@@ -1,0 +1,36 @@
+{
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "multi",
+      "department": "admin",
+      "key_terms": [
+        "scrpa",
+        "read",
+        "onedrive",
+        "city",
+        "hackensack",
+        "log"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "Microsoft Windows [Version 10.0.26200.7628]\n(c) Microsoft Corporation. All rights reserved.",
+      "first_line": "Microsoft Windows [Version 10.0.26200.7628]"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-27T18:29:25.373833",
+  "department": "admin"
+}

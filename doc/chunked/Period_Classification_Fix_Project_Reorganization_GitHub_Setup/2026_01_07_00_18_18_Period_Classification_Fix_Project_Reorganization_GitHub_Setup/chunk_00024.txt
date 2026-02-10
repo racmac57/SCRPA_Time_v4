@@ -1,0 +1,950 @@
+reports_folder = report_folder / "Reports"
+    if not reports_folder.exists():
+        print("⚠️  Reports folder not found, skipping removal")
+        return
+    
+    removed_count = 0
+    for pattern in ["*_rms_summary.html", "*_rms_summary.pdf"]:
+        for file in reports_folder.glob(pattern):
+            try:
+                file.unlink()
+                print(f"✅ Removed: {file.name}")
+                removed_count += 1
+            except Exception as e:
+                print(f"⚠️  Could not remove {file.name}: {e}")
+    
+    if removed_count == 0:
+        print("ℹ️  No rms_summary files found to remove")
+
+def create_email_template(report_folder, cycle_name, date_range, generation_date):
+    """Create email template as .txt file.""" email_template = f"""Subject: SCRPA Weekly Report - Cycle {cycle_name} | {date_range}
+
+Sir,
+
+Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for Cycle {cycle_name}. Report Period: {date_range}
+Date Generated: {generation_date}
+
+The report includes:
+7-Day Executive Summary with detailed incident summaries
+ArcGIS Map visuals showing incidents occurring in the last 7 days
+Statistical charts and visualizations by crime type
+28-Day Executive Summary (operational planning)
+YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information.
+""" # Save to Documentation folder
+    doc_folder = report_folder / "Documentation"
+    doc_folder.mkdir(exist_ok=True)
+    
+    email_file = doc_folder / "EMAIL_TEMPLATE.txt"
+    with open(email_file, 'w', encoding='utf-8') as f:
+        f.write(email_template)
+    
+    print(f"✅ Created email template: {email_file.name}")
+
+def main():
+    """Main execution.""" print("=" * 60)
+    print("SCRPA Enriched Data Export and Email Template Generator")
+    print("=" * 60)
+    
+    try:
+        # Find latest report folder
+        report_folder = find_latest_report_folder()
+        print(f"\n📁 Report folder: {report_folder.name}")
+        
+        # Find preview table CSV
+        preview_csv = find_preview_table_csv(report_folder)
+        print(f"📄 Preview table: {preview_csv.name}")
+        
+        # Export enriched data
+        cycle_name, date_range, generation_date = export_enriched_data(preview_csv, report_folder)
+        
+        # Remove rms_summary files
+        print("\n🗑️  Removing rms_summary files...")
+        remove_rms_summary_files(report_folder)
+        
+        # Create email template
+        print("\n📧 Creating email template...")
+        create_email_template(report_folder, cycle_name or "26C01W01", date_range or "12/30/2025 - 01/05/2026", generation_date)
+        
+        print("\n" + "=" * 60)
+        print("✅ All tasks completed successfully!") print("=" * 60)
+        
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return 1
+    
+    return 0
+
+if __name__ == "__main__":
+    exit(main())
+
+```
+
+
+## Summary
+
+Created a script that handles all your requirements:
+
+### What the script does
+
+1. Exports enriched data:
+   - `SCRPA_All_Incidents_Enriched_*.csv` - All incidents with enriched columns (like preview table)
+   - `SCRPA_7Day_LagDay_Enriched_*.csv` - Filtered to 7-Day period + LagDay incidents
+
+2. Removes rms_summary files:
+   - Deletes `*_rms_summary.html` and `*_rms_summary.pdf` from Reports folder
+
+3. Creates email template:
+   - `EMAIL_TEMPLATE.txt` in Documentation folder
+   - Pre-filled with cycle, date range, and generation date
+   - Ready to copy/paste into Outlook
+
+### How to use
+
+1. After Power BI refresh:
+   - Export `All_Crimes` query to CSV
+   - Save as `All_Crime_YYYYMMDD.csv` in the report folder
+
+2. Run the script:
+   ```powershell
+   cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA"
+   python export_enriched_data_and_email.py
+   ```
+   
+   Or double-click: `export_enriched_data.bat`
+
+3. Done:
+   - Enriched CSVs in `Data/` folder
+   - rms_summary files removed
+   - Email template in `Documentation/` folder
+
+### Files created
+
+- `export_enriched_data_and_email.py` - Main script
+- `export_enriched_data.bat` - Batch file wrapper
+- `ENRICHED_DATA_EXPORT_INSTRUCTIONS.md` - Detailed documentation
+
+The email template uses "Sir," as requested, and the "Date Generated" uses the folder creation date from when `Run_SCRPA_Report_Folder.bat` created it. Ready to test. After exporting the preview table from Power BI, run the script and it will handle the rest. ```powershell
+   cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA"
+   python export_enriched_data_and_email.py
+```
+
+---
+
+**User**
+
+we are keeping export_enriched_data.bat C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\export_enriched_data.bat
+Should the C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat be moved to the same directory? ---
+
+**Cursor**
+
+
+Checking the current structure and whether moving it makes sense:
+
+
+```markdown
+# Workflow Script Location Analysis
+
+## Current Structure
+
+### Script Locations
+- **Main Workflow**: `02_ETL_Scripts\Run_SCRPA_Report_Folder.bat`
+- **Enriched Data Export**: `16_Reports\SCRPA\export_enriched_data.bat`
+- **Other ETL Scripts**: `02_ETL_Scripts\SCRPA\` (generate_weekly_report.py, organize_report_files.py, etc.) ### Considerations
+
+#### Option 1: Keep Current Structure (Recommended)
+**Keep `Run_SCRPA_Report_Folder.bat` in `02_ETL_Scripts\`**
+
+**Pros**:
+- ✅ Logical separation: ETL/processing scripts in `02_ETL_Scripts\`, report outputs in `16_Reports\SCRPA\`
+- ✅ Matches existing structure where other workflow scripts are
+- ✅ `02_ETL_Scripts\` is the standard location for automation scripts
+- ✅ No need to update path references in the batch file
+- ✅ Clear separation between "processing" and "output" directories
+
+**Cons**:
+- ⚠️ Two different locations for related scripts (but this is actually good organization)
+
+#### Option 2: Move to `16_Reports\SCRPA\`
+**Move `Run_SCRPA_Report_Folder.bat` to `16_Reports\SCRPA\`**
+
+**Pros**:
+- ✅ All SCRPA-related scripts in one place
+- ✅ Easier to find everything SCRPA-related
+
+**Cons**:
+- ❌ Breaks logical separation (ETL scripts vs. report outputs)
+- ❌ Would need to update all path references in the batch file
+- ❌ `02_ETL_Scripts\` is the standard location for automation/workflow scripts
+- ❌ Other ETL scripts it calls are still in `02_ETL_Scripts\SCRPA\`
+
+---
+
+## Recommendation
+
+**Keep `Run_SCRPA_Report_Folder.bat` in `02_ETL_Scripts\`**
+
+### Reasoning:
+1. **Logical Organization**: 
+   - `02_ETL_Scripts\` = Processing/Automation scripts
+   - `16_Reports\SCRPA\` = Report outputs and report-specific utilities
+
+2. **Path References**: 
+   - The batch file likely references scripts in `02_ETL_Scripts\SCRPA\`
+   - Moving it would require updating all relative paths
+
+3. **Standard Practice**: 
+   - ETL/automation scripts typically live in a dedicated scripts directory
+   - Report outputs live in a reports directory
+
+4. **Separation of Concerns**:
+   - Workflow orchestration (ETL) ≠ Report utilities (output processing)
+   - `export_enriched_data.bat` is a post-processing utility for reports
+   - `Run_SCRPA_Report_Folder.bat` is the main workflow orchestrator
+
+---
+
+## Alternative: Create a Shortcut
+
+If you want easier access, create a shortcut in `16_Reports\SCRPA\` that points to the batch file:
+
+```batch
+REM Create shortcut script in 16_Reports\SCRPA\
+@echo off
+call "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat"
+```
+
+This gives you:
+- ✅ Easy access from report directory
+- ✅ Maintains logical file organization
+- ✅ No path updates needed
+
+---
+
+## Final Structure (Recommended)
+
+```
+02_ETL_Scripts\
+├── Run_SCRPA_Report_Folder.bat          ← Main workflow (stays here)
+└── SCRPA\
+    ├── generate_weekly_report.py
+    ├── organize_report_files.py
+    └── ...
+
+16_Reports\SCRPA\
+├── export_enriched_data.bat             ← Report utility (stays here)
+├── export_enriched_data_and_email.py
+└── Time_Based\
+    └── ...
+```
+
+---
+
+**Date**: 2026-01-06  
+**Recommendation**: Keep current structure, maintain logical separation
+
+```
+
+
+Recommendation: keep `Run_SCRPA_Report_Folder.bat` in `02_ETL_Scripts\`. Here's why:
+
+## Current structure
+
+- `02_ETL_Scripts\Run_SCRPA_Report_Folder.bat` — main workflow orchestrator
+- `02_ETL_Scripts\SCRPA\` — ETL scripts it calls (generate_weekly_report.py, organize_report_files.py, etc.) - `16_Reports\SCRPA\export_enriched_data.bat` — post-processing utility for reports
+
+## Why keep them separate
+
+1. Different purposes:
+   - `Run_SCRPA_Report_Folder.bat` = workflow/ETL orchestration
+   - `export_enriched_data.bat` = report post-processing utility
+
+2. Path dependencies:
+   - The batch file references `SCRPA_DIR=%WORK_ROOT%\SCRPA` (expects scripts in `02_ETL_Scripts\SCRPA\`)
+   - Moving it would require updating all path references
+
+3. Logical organization:
+   - `02_ETL_Scripts\` = processing/automation scripts
+   - `16_Reports\SCRPA\` = report outputs and report-specific utilities
+
+4. Standard practice:
+   - ETL scripts typically live in a dedicated scripts directory
+   - Report utilities can live with report outputs
+
+## Recommendation
+
+Keep the current structure. If you want easier access, create a shortcut script in `16_Reports\SCRPA\`:
+
+```batch
+@echo off
+REM Shortcut to main workflow script
+call "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat"
+```
+
+This gives you:
+- Easy access from the report directory
+- Maintains logical file organization
+- No path updates needed
+
+Should I create that shortcut script? ```bat
+@echo off
+REM Shortcut to main workflow script
+call "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat"
+```
+
+---
+
+**User**
+
+**Goal**
+- Update CHANGELOG.md, README.md, SUMMARY.md
+- Sync version fields
+- Commit and push to GitHub
+- Optional tag and PR
+
+**Auto-detect or infer**
+- repo_root: current working directory or git root
+- version: increment from last tag or VERSION file
+- change_scope: summarize recent commits
+- commit_to: default to new branch unless specified
+- tag_release: default no
+- open_pr: default yes if branch != main
+- docs_subdir: optional, auto-detect if present
+- dry_run: default no
+
+**Rules**
+- Work only inside repo_root
+- No edits outside repo_root
+- Short sentences. No em dashes
+- Conventional Commits
+- UTC dates in YYYY-MM-DD
+- Respect .editorconfig and existing style
+
+**Tasks**
+
+1. Preflight: Verify git repo, print branch/remote, git status (stop if unrelated changes), print user.name/email, confirm auth. If dry_run, print planned steps and wait for approval. 2. Branch: If commit_to=main, checkout main and `git pull --ff-only`. Else create and switch to `docs/update-{YYYYMMDD-HHMM}` from main. 3. Version sync: Update version in VERSION, package.json, pyproject.toml, setup.cfg, or `**/__init__.py`. List changed files. 4. CHANGELOG.md: Create if missing. Keep "Unreleased" at top. Move "Unreleased" to v{version} with today's UTC date. Auto-build notes from Conventional Commits since last tag. Group by feat, fix, docs, refactor, perf, chore. Add compare link last_tag…v{version}. Add fresh "Unreleased" stub at top. 5. README.md: Update commands, paths, badges, version pins. Add "What changed in v{version}" with changelog link. Rebuild TOC if marker exists. 6. SUMMARY.md: Ensure concise project summary. List key directories and entry points. Add 3–6 bullets for changes in v{version}. 7. Formatting and lint: Enforce LF endings. Run markdownlint if present (apply safe fixes). Run prettier or mdformat if present. 8. Links: Check internal links and anchors across the three files. Fix or report broken links. 9. Git commit: Stage only edited docs and version files. Commit message: `docs: update CHANGELOG, README, SUMMARY for v{version} - {change_scope}`. Add footer lines: Refs (issue/PR links if any), Affects (list of files/dirs). Sign commit if GPG configured. 10. Tag and push: If tag_release=yes, create annotated tag v{version} with release notes from changelog (sign if possible). Push current branch. Push tags. 11. Pull request: If open_pr=yes and branch != main, create PR with title `docs: v{version} docs update - {change_scope}`. PR body includes changelog excerpt and checklist. Print PR URL. 12. CI: Print CI run URL if available. Poll once. Report status. 13. Report: Print branch, commit hash, tag, PR URL, CI status. Print JSON block: `{ "version": "...", "branch": "...", "commit": "...", "tag": "...", "pr_url": "...", "ci_status": "...", "files_changed": [...] }`
+
+**Rollbacks**
+- If staged only: `git restore --staged .` and restore backups
+- If committed only: `git reset --soft HEAD~1`
+- If pushed on branch: force push only after approval
+
+Begin by auto-detecting parameters, then proceed with the workflow. lets clean the root of the directory
+
+---
+
+**Cursor**
+
+
+Checking the root directory contents to identify what to clean up:
+
+
+
+Organizing the root directory. Categorizing files and moving them to appropriate locations:
+
+
+```markdown
+# Documentation Directory
+
+This directory contains organized documentation for the SCRPA Reporting System. ## Directory Structure
+
+### `fixes/`
+Documentation related to bug fixes and troubleshooting:
+- Period classification fixes
+- Cycle detection fixes
+- Incident analysis and verification guides
+- Diagnostic documentation
+
+### `workflow/`
+Workflow and process documentation:
+- Email templates
+- Export instructions
+- Template update guides
+- Workflow analysis documents
+
+### `reference/`
+Reference materials and configuration:
+- VS Code settings
+- Color scheme recommendations
+- Code review prompts
+- Development notes
+
+### `raw/` and `chunked/`
+Archived documentation files (processed/raw formats)
+
+---
+
+**Last Updated**: 2026-01-06
+
+```
+
+
+Verifying the final root directory state:
+
+
+
+Checking for scripts:
+
+
+```markdown
+# Root Directory Cleanup - Summary
+
+**Date**: 2026-01-06
+
+## Cleanup Actions Completed
+
+### Files Moved to `doc/fixes/`
+Documentation related to bug fixes and troubleshooting:
+- `CYCLE_DETECTION_FIX.md`
+- `DEBUG_PERIOD_CLASSIFICATION.md`
+- `INCIDENT_ANALYSIS.md`
+- `PERIOD_CALCULATION_FIX.md`
+- `PERIOD_FIX_DIAGNOSTIC.md`
+- `PERIOD_PRIOR_YEAR_FIX.md`
+- `VERIFY_INCIDENT_CLASSIFICATION.md`
+- `YTD_VERIFICATION_EXPLANATION.md`
+
+### Files Moved to `doc/workflow/`
+Workflow and process documentation:
+- `COMPREHENSIVE_WORKFLOW_ANALYSIS.md`
+- `EMAIL_TEMPLATE_SCRPA_REPORT.md`
+- `ENRICHED_DATA_EXPORT_INSTRUCTIONS.md`
+- `SAVE_AS_TEMPLATE_INSTRUCTIONS.md`
+- `TEMPLATE_UPDATE_CHECKLIST.md`
+- `WORKFLOW_SCRIPT_LOCATION_ANALYSIS.md`
+
+### Files Moved to `doc/reference/`
+Reference materials and configuration:
+- `ACCESS_VS_CODE_SETTINGS.md`
+- `CLAUDE_CODE_REVIEW_PROMPT.md`
+- `claude_code_rework_cursor_burglary_data_visual_discrepancy.md`
+- `COLOR_SCHEME_RECOMMENDATIONS.md`
+
+## Files Remaining in Root
+
+### Core Documentation (Essential)
+- `README.md` - Main project documentation
+- `CHANGELOG.md` - Version history
+- `SUMMARY.md` - Project summary
+- `PROJECT_STRUCTURE.md` - Directory structure guide
+
+### Scripts (Utility)
+- `export_enriched_data_and_email.py` - Enriched data export script
+- `export_enriched_data.bat` - Batch wrapper for export script
+
+### Configuration
+- `16_Reports.code-workspace` - VS Code workspace file
+
+## Directory Structure After Cleanup
+
+```
+SCRPA/
+├── README.md                    ← Core documentation
+├── CHANGELOG.md                 ← Core documentation
+├── SUMMARY.md                   ← Core documentation
+├── PROJECT_STRUCTURE.md         ← Core documentation
+├── export_enriched_data_and_email.py  ← Utility script
+├── export_enriched_data.bat     ← Utility script
+├── 16_Reports.code-workspace    ← Workspace config
+├── doc/
+│   ├── fixes/                   ← Bug fix documentation
+│   ├── workflow/                ← Workflow documentation
+│   ├── reference/               ← Reference materials
+│   └── README.md                ← Documentation index
+├── m_code/                      ← M code queries
+├── preview_tables/              ← Preview exports
+└── Time_Based/                  ← Report folders
+```
+
+## Benefits
+
+1. **Cleaner Root**: Only essential files remain visible
+2. **Better Organization**: Related documentation grouped logically
+3. **Easier Navigation**: Clear separation of concerns
+4. **Maintainability**: Easier to find and update documentation
+
+---
+
+**Status**: ✅ Complete
+
+```
+
+
+Root directory cleanup complete. Summary:
+
+## Cleanup complete
+
+### Files moved to organized directories
+
+**`doc/fixes/`** (8 files) - Bug fix documentation:
+- Period classification fixes
+- Cycle detection fixes
+- Incident analysis guides
+- Diagnostic documentation
+
+**`doc/workflow/`** (6 files) - Workflow documentation:
+- Email templates
+- Export instructions
+- Template update guides
+- Workflow analysis
+
+**`doc/reference/`** (4 files) - Reference materials:
+- VS Code settings
+- Color scheme recommendations
+- Code review prompts
+
+### Files remaining in root (essential only)
+
+**Core documentation:**
+- `README.md`
+- `CHANGELOG.md`
+- `SUMMARY.md`
+- `PROJECT_STRUCTURE.md`
+
+**Utility scripts:**
+- `export_enriched_data_and_email.py`
+- `export_enriched_data.bat`
+
+**Configuration:**
+- `16_Reports.code-workspace`
+
+The root directory is now organized with only essential files visible. All other documentation has been moved to appropriate subdirectories in `doc/` for easier navigation and maintenance. ---
+
+**User**
+
+@export_enriched_data.bat @export_enriched_data_and_email.py do we need these in the root or can we make a scripts direcrtory
+
+---
+
+**Cursor**
+
+
+Creating a `scripts/` directory and moving the export scripts there:
+
+
+```bat
+@echo off
+REM Export Enriched Data and Create Email Template
+REM Run this after exporting Power BI preview table
+
+cd /d "%~dp0"
+python "%~dp0export_enriched_data_and_email.py"
+
+if %ERRORLEVEL% EQU 0 (
+    echo. echo ✅ Script completed successfully! pause
+) else (
+    echo. echo ❌ Script encountered an error. pause
+)
+
+```
+
+```markdown
+# Scripts Directory
+
+Utility scripts for SCRPA report processing and data export. ## Scripts
+
+### `export_enriched_data.bat`
+Batch wrapper for the enriched data export script. Double-click to run. **Usage**: Run after exporting Power BI preview table to CSV. ### `export_enriched_data_and_email.py`
+Python script that:
+1. Exports enriched All_Crimes data to CSV (all incidents)
+2. Creates filtered CSV for 7-Day + LagDay incidents
+3. Removes rms_summary.html files from Reports folder
+4. Creates email template as .txt file
+
+**Requirements**:
+- Python 3.x
+- pandas library
+
+**Usage**:
+```powershell
+cd scripts
+python export_enriched_data_and_email.py
+```
+
+Or use the batch file wrapper:
+```powershell
+.\scripts\export_enriched_data.bat
+```
+
+---
+
+**Last Updated**: 2026-01-06
+
+```
+
+
+Moved the scripts to a `scripts/` directory. Updating the cleanup summary:
+
+
+```markdown
+# Root Directory Cleanup - Summary
+
+**Date**: 2026-01-06
+
+## Cleanup Actions Completed
+
+### Files Moved to `doc/fixes/`
+Documentation related to bug fixes and troubleshooting:
+- `CYCLE_DETECTION_FIX.md`
+- `DEBUG_PERIOD_CLASSIFICATION.md`
+- `INCIDENT_ANALYSIS.md`
+- `PERIOD_CALCULATION_FIX.md`
+- `PERIOD_FIX_DIAGNOSTIC.md`
+- `PERIOD_PRIOR_YEAR_FIX.md`
+- `VERIFY_INCIDENT_CLASSIFICATION.md`
+- `YTD_VERIFICATION_EXPLANATION.md`
+
+### Files Moved to `doc/workflow/`
+Workflow and process documentation:
+- `COMPREHENSIVE_WORKFLOW_ANALYSIS.md`
+- `EMAIL_TEMPLATE_SCRPA_REPORT.md`
+- `ENRICHED_DATA_EXPORT_INSTRUCTIONS.md`
+- `SAVE_AS_TEMPLATE_INSTRUCTIONS.md`
+- `TEMPLATE_UPDATE_CHECKLIST.md`
+- `WORKFLOW_SCRIPT_LOCATION_ANALYSIS.md`
+
+### Files Moved to `doc/reference/`
+Reference materials and configuration:
+- `ACCESS_VS_CODE_SETTINGS.md`
+- `CLAUDE_CODE_REVIEW_PROMPT.md`
+- `claude_code_rework_cursor_burglary_data_visual_discrepancy.md`
+- `COLOR_SCHEME_RECOMMENDATIONS.md`
+
+## Files Remaining in Root
+
+### Core Documentation (Essential)
+- `README.md` - Main project documentation
+- `CHANGELOG.md` - Version history
+- `SUMMARY.md` - Project summary
+- `PROJECT_STRUCTURE.md` - Directory structure guide
+
+### Scripts (Moved to `scripts/` directory)
+- `scripts/export_enriched_data_and_email.py` - Enriched data export script
+- `scripts/export_enriched_data.bat` - Batch wrapper for export script
+
+### Configuration
+- `16_Reports.code-workspace` - VS Code workspace file
+
+## Directory Structure After Cleanup
+
+```
+SCRPA/
+├── README.md                    ← Core documentation
+├── CHANGELOG.md                 ← Core documentation
+├── SUMMARY.md                   ← Core documentation
+├── PROJECT_STRUCTURE.md         ← Core documentation
+├── export_enriched_data_and_email.py  ← Utility script
+├── export_enriched_data.bat     ← Utility script
+├── 16_Reports.code-workspace    ← Workspace config
+├── doc/
+│   ├── fixes/                   ← Bug fix documentation
+│   ├── workflow/                ← Workflow documentation
+│   ├── reference/               ← Reference materials
+│   └── README.md                ← Documentation index
+├── m_code/                      ← M code queries
+├── preview_tables/              ← Preview exports
+└── Time_Based/                  ← Report folders
+```
+
+## Benefits
+
+1. **Cleaner Root**: Only essential files remain visible
+2. **Better Organization**: Related documentation grouped logically
+3. **Easier Navigation**: Clear separation of concerns
+4. **Maintainability**: Easier to find and update documentation
+
+---
+
+**Status**: ✅ Complete
+
+```
+
+```markdown
+# Root Directory Cleanup - Summary
+
+**Date**: 2026-01-06
+
+## Cleanup Actions Completed
+
+### Files Moved to `doc/fixes/`
+Documentation related to bug fixes and troubleshooting:
+- `CYCLE_DETECTION_FIX.md`
+- `DEBUG_PERIOD_CLASSIFICATION.md`
+- `INCIDENT_ANALYSIS.md`
+- `PERIOD_CALCULATION_FIX.md`
+- `PERIOD_FIX_DIAGNOSTIC.md`
+- `PERIOD_PRIOR_YEAR_FIX.md`
+- `VERIFY_INCIDENT_CLASSIFICATION.md`
+- `YTD_VERIFICATION_EXPLANATION.md`
+
+### Files Moved to `doc/workflow/`
+Workflow and process documentation:
+- `COMPREHENSIVE_WORKFLOW_ANALYSIS.md`
+- `EMAIL_TEMPLATE_SCRPA_REPORT.md`
+- `ENRICHED_DATA_EXPORT_INSTRUCTIONS.md`
+- `SAVE_AS_TEMPLATE_INSTRUCTIONS.md`
+- `TEMPLATE_UPDATE_CHECKLIST.md`
+- `WORKFLOW_SCRIPT_LOCATION_ANALYSIS.md`
+
+### Files Moved to `doc/reference/`
+Reference materials and configuration:
+- `ACCESS_VS_CODE_SETTINGS.md`
+- `CLAUDE_CODE_REVIEW_PROMPT.md`
+- `claude_code_rework_cursor_burglary_data_visual_discrepancy.md`
+- `COLOR_SCHEME_RECOMMENDATIONS.md`
+
+## Files Remaining in Root
+
+### Core Documentation (Essential)
+- `README.md` - Main project documentation
+- `CHANGELOG.md` - Version history
+- `SUMMARY.md` - Project summary
+- `PROJECT_STRUCTURE.md` - Directory structure guide
+
+### Scripts (Moved to `scripts/` directory)
+- `scripts/export_enriched_data_and_email.py` - Enriched data export script
+- `scripts/export_enriched_data.bat` - Batch wrapper for export script
+
+### Configuration
+- `16_Reports.code-workspace` - VS Code workspace file
+
+## Directory Structure After Cleanup
+
+```
+SCRPA/
+├── README.md                    ← Core documentation
+├── CHANGELOG.md                 ← Core documentation
+├── SUMMARY.md                   ← Core documentation
+├── PROJECT_STRUCTURE.md         ← Core documentation
+├── 16_Reports.code-workspace    ← Workspace config
+├── scripts/                     ← Utility scripts
+│   ├── export_enriched_data_and_email.py
+│   ├── export_enriched_data.bat
+│   └── README.md
+├── doc/
+│   ├── fixes/                   ← Bug fix documentation
+│   ├── workflow/                ← Workflow documentation
+│   ├── reference/               ← Reference materials
+│   └── README.md                ← Documentation index
+├── m_code/                      ← M code queries
+├── preview_tables/              ← Preview exports
+└── Time_Based/                  ← Report folders
+```
+
+## Benefits
+
+1. **Cleaner Root**: Only essential files remain visible
+2. **Better Organization**: Related documentation grouped logically
+3. **Easier Navigation**: Clear separation of concerns
+4. **Maintainability**: Easier to find and update documentation
+
+---
+
+**Status**: ✅ Complete
+
+```
+
+
+Scripts moved to the `scripts/` directory. Summary:
+
+## Scripts moved
+
+**New location**: `scripts/`
+- `export_enriched_data_and_email.py`
+- `export_enriched_data.bat`
+- `scripts/README.md` (created)
+
+## Final root directory structure
+
+**Files in root** (6 files):
+- `README.md` - Main documentation
+- `CHANGELOG.md` - Version history
+- `SUMMARY.md` - Project summary
+- `PROJECT_STRUCTURE.md` - Structure guide
+- `ROOT_DIRECTORY_CLEANUP.md` - Cleanup summary
+- `16_Reports.code-workspace` - VS Code workspace
+
+**Directories**:
+- `scripts/` - Utility scripts
+- `doc/` - Documentation (organized)
+- `m_code/` - M code queries
+- `preview_tables/` - Preview exports
+- `Time_Based/` - Report folders
+
+## Usage
+
+To run the scripts from their new location:
+```powershell
+.\scripts\export_enriched_data.bat
+```
+
+Or:
+```powershell
+cd scripts
+python export_enriched_data_and_email.py
+```
+
+The batch file uses `%~dp0` so it works correctly from the `scripts/` directory. The Python script uses absolute paths, so it works from any location. Root directory is now organized. ```powershell
+.\scripts\export_enriched_data.bat
+```
+
+```powershell
+cd scripts
+python export_enriched_data_and_email.py
+```
+
+---
+
+**User**
+
+review C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\doc and C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\doc\doc we do not need both. which one will the DOpus add to? ---
+
+**Cursor**
+
+
+Checking both `doc` directories to determine which one DOpus uses and which to keep:
+
+
+
+Checking which directory DOpus uses and consolidating:
+
+
+
+Checking the DOpus script path to see which directory it uses:
+
+
+```markdown
+# Doc Directory Consolidation Plan
+
+## Current Structure
+
+- `doc/` - Main documentation directory (60 files)
+  - `fixes/` - Bug fix documentation (8 files)
+  - `workflow/` - Workflow documentation (6 files)
+  - `reference/` - Reference materials (4 files)
+  - `raw/` - Raw documentation (9 files)
+  - `chunked/` - Chunked documentation (20 files)
+  - `doc/doc/` - Nested directory (196 files) ⚠️ **DUPLICATE**
+
+- `doc/doc/` - Nested directory created by DOpus (196 files)
+  - `chunked/` - Processed chunked files
+  - `raw/` - Raw markdown files
+
+## Analysis
+
+**DOpus Process_UDD_Chatlog.bat** creates a `doc` directory when processing chat logs. Based on the structure:
+- DOpus likely creates `doc/` at the root level
+- The nested `doc/doc/` appears to be from an earlier run or different configuration
+
+## Recommendation
+
+**Consolidate into single `doc/` directory:**
+
+1. **Keep `doc/` as the main directory** (DOpus will use this)
+2. **Move `doc/doc/` contents to `doc/`**:
+   - Merge `doc/doc/chunked/` → `doc/chunked/` (or archive if old)
+   - Merge `doc/doc/raw/` → `doc/raw/` (or archive if old)
+3. **Remove empty `doc/doc/` directory**
+
+## Action Plan
+
+Since `doc/doc/` has 196 files (mostly from 2025-12-02), these appear to be older processed files. Options:
+
+**Option A: Archive and Remove** (Recommended if old)
+- Move `doc/doc/` to `doc/archive/doc_old/`
+- Keep current `doc/` structure
+
+**Option B: Merge** (If content is still needed)
+- Move `doc/doc/chunked/` contents to `doc/chunked/`
+- Move `doc/doc/raw/` contents to `doc/raw/`
+- Remove empty `doc/doc/`
+
+**Option C: Keep Separate** (If DOpus specifically uses `doc/doc/`)
+- Leave as-is but document which is which
+
+---
+
+**Question for User**: Which directory does DOpus actually create/write to? ```
+
+
+Findings:
+- `doc/doc/` has 196 files (last modified 01/06/2026 20:48:43) — likely from DOpus
+- `doc/` has organized subdirectories (fixes, workflow, reference, raw, chunked)
+
+DOpus likely creates `doc/` at the root. Consolidating by moving `doc/doc/` contents into `doc/` and removing the nested directory:
+
+
+
+DOpus creates `doc/` (singular) at the root, not `doc/doc/`. The nested `doc/doc/` is likely from an earlier run. Archiving `doc/doc/` and keeping the main `doc/` structure:
+
+
+```markdown
+# Documentation Directory
+
+This directory contains organized documentation for the SCRPA Reporting System. ## Directory Structure
+
+### `fixes/`
+Documentation related to bug fixes and troubleshooting:
+- Period classification fixes
+- Cycle detection fixes
+- Incident analysis and verification guides
+- Diagnostic documentation
+
+### `workflow/`
+Workflow and process documentation:
+- Email templates
+- Export instructions
+- Template update guides
+- Workflow analysis documents
+
+### `reference/`
+Reference materials and configuration:
+- VS Code settings
+- Color scheme recommendations
+- Code review prompts
+- Development notes
+
+### `raw/` and `chunked/`
+Archived documentation files (processed/raw formats)
+- DOpus Process_UDD_Chatlog.bat writes to `doc/raw/` and `doc/chunked/`
+
+### `archive/`
+Archived old documentation structures
+- `archive/doc_old/` - Previous nested doc/doc/ structure (consolidated)
+
+---
+
+**Last Updated**: 2026-01-06
+
+```
+
+
+Consolidation complete. ## Consolidation complete
+
+**DOpus creates**: `doc/` (singular) at the root level
+- DOpus script uses: `doc\raw\` and `doc\chunked\`
+- The nested `doc/doc/` was from an earlier run
+
+**Action taken**:
+- Moved `doc/doc/` → `doc/archive/doc_old/` (196 files archived)
+- Kept main `doc/` structure for DOpus to use
+
+## Final `doc/` structure
+
+```
+doc/
+├── fixes/          (9 files) - Bug fix documentation
+├── workflow/       (7 files) - Workflow documentation  
+├── reference/      (4 files) - Reference materials
+├── raw/            (9 files) - Raw documentation (DOpus writes here)
+├── chunked/        (20 files) - Chunked documentation (DOpus writes here)
+└── archive/
+    └── doc_old/    (196 files) - Archived old nested structure
+```
+
+**DOpus will now use**: `doc/raw/` and `doc/chunked/` (singular `doc/` at root)
+
+The structure is clean and ready for DOpus to process files.

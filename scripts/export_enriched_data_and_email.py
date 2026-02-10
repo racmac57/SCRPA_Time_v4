@@ -1,7 +1,12 @@
-# 🕒 2026_01_13_11_32_58
+# 2026_01_28
 # Project: scripts/export_enriched_data_and_email.py
 # Author: R. A. Carucci
-# Purpose: Export enriched All_Crimes data from Power BI preview table to CSV, create filtered 7-Day + LagDay CSV, remove rms_summary files, and generate email template with cycle name and date range
+# Purpose: Export enriched All_Crimes data from Power BI preview table to CSV, create filtered 7-Day + LagDay CSV, remove rms_summary files, and generate email template with cycle name and date range.
+#
+# Bi-Weekly Date Range Logic (VERIFIED 2026-01-28):
+# - For 26BW01 (01/13/2026 report): Period = 12/30/2025 - 01/12/2026
+# - For 26BW02 (01/27/2026 report): Period = 01/13/2026 - 01/26/2026
+# - Formula: bi_weekly_start = 7_Day_Start - 7 days, bi_weekly_end = 7_Day_End
 
 """
 SCRPA Enriched Data Export and Email Template Generator
@@ -49,22 +54,29 @@ def find_latest_report_folder():
     return latest_folder
 
 def find_preview_table_csv(report_folder):
-    """Find the All_Crime preview table CSV in the report folder."""
-    # Look for All_Crime_*.csv in the report folder root
-    pattern = "All_Crime_*.csv"
-    matches = list(report_folder.glob(pattern))
-    
-    if not matches:
-        # Try in Data subfolder
-        data_folder = report_folder / "Data"
-        if data_folder.exists():
-            matches = list(data_folder.glob(pattern))
-    
-    if not matches:
-        raise FileNotFoundError(f"All_Crime preview CSV not found in {report_folder}")
-    
+    """Find the All_Crime preview table or pipeline-enhanced CSV in the report folder.
+    Accepts: All_Crime_*.csv (Power BI preview) or SCRPA_All_Crimes_Enhanced.csv / SCRPA_All_Crimes_*.csv (Python pipeline).
+    """
+    data_folder = report_folder / "Data"
+    candidates = []
+
+    # 1. Power BI preview table: All_Crime_*.csv (report root or Data/)
+    for folder in (report_folder, data_folder):
+        if folder.exists():
+            candidates.extend(folder.glob("All_Crime_*.csv"))
+
+    # 2. Python pipeline output: SCRPA_All_Crimes_Enhanced.csv or SCRPA_All_Crimes_*.csv (Data/)
+    if data_folder.exists():
+        candidates.extend(data_folder.glob("SCRPA_All_Crimes_Enhanced.csv"))
+        candidates.extend(data_folder.glob("SCRPA_All_Crimes_*.csv"))
+
+    if not candidates:
+        raise FileNotFoundError(
+            f"All_Crime preview CSV or SCRPA_All_Crimes_Enhanced.csv not found in {report_folder}"
+        )
+
     # Return most recent if multiple
-    return max(matches, key=lambda x: x.stat().st_mtime)
+    return max(candidates, key=lambda x: x.stat().st_mtime)
 
 def extract_cycle_info(report_folder_name):
     """Extract cycle and date range from folder name or Power BI."""
@@ -79,29 +91,42 @@ def extract_cycle_info(report_folder_name):
     
     return None, None
 
-def get_date_range_from_cycle_calendar(cycle_name, report_date_str):
-    """Get date range from cycle calendar CSV."""
+def get_date_range_and_biweekly_from_calendar(cycle_name, report_date_str):
+    """Get date range and BiWeekly_Report_Name from cycle calendar CSV.
+    Returns (start_7, end_7, biweekly_name, start_bw, end_bw).
+    - start_7, end_7: 7-day window (7_Day_Start .. 7_Day_End).
+    - biweekly_name: e.g. 26BW01, or None when not a bi-weekly cycle.
+    - start_bw, end_bw: bi-weekly reporting period (start_7 - 7 days .. end_7) when bi-weekly; else None."""
     cycle_calendar_path = Path(
         r"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv"
     )
     
     if not cycle_calendar_path.exists():
-        return None, None
+        return None, None, None, None, None
     
     try:
         df = pd.read_csv(cycle_calendar_path)
-        # Find row matching cycle
-        if 'Report_Name' in df.columns:
-            match = df[df['Report_Name'] == cycle_name]
-            if not match.empty:
-                row = match.iloc[0]
-                start_date = pd.to_datetime(row['7_Day_Start']).strftime('%m/%d/%Y')
-                end_date = pd.to_datetime(row['7_Day_End']).strftime('%m/%d/%Y')
-                return start_date, end_date
+        if 'Report_Name' not in df.columns:
+            return None, None, None, None, None
+        match = df[df['Report_Name'] == cycle_name]
+        if match.empty:
+            return None, None, None, None, None
+        row = match.iloc[0]
+        start_7 = pd.to_datetime(row['7_Day_Start']).strftime('%m/%d/%Y')
+        end_7 = pd.to_datetime(row['7_Day_End']).strftime('%m/%d/%Y')
+        biweekly = None
+        start_bw = end_bw = None
+        if 'BiWeekly_Report_Name' in df.columns and pd.notna(row.get('BiWeekly_Report_Name')) and str(row['BiWeekly_Report_Name']).strip():
+            biweekly = str(row['BiWeekly_Report_Name']).strip()
+            # Bi-weekly reporting period = previous 7 days + current 7 days (e.g. 01/13–01/26 for 26BW02)
+            start_dt = pd.to_datetime(row['7_Day_Start'])
+            start_bw = (start_dt - pd.Timedelta(days=7)).strftime('%m/%d/%Y')
+            end_bw = end_7
+        return start_7, end_7, biweekly, start_bw, end_bw
     except Exception as e:
         print(f"Warning: Could not read cycle calendar: {e}")
     
-    return None, None
+    return None, None, None, None, None
 
 def export_enriched_data(preview_csv_path, report_folder):
     """Export enriched data to CSV files."""
@@ -114,20 +139,30 @@ def export_enriched_data(preview_csv_path, report_folder):
     # Get cycle and date info
     cycle_name, _ = extract_cycle_info(report_folder.name)
     report_date_str = REPORT_DATE_ENV or datetime.now().strftime('%m/%d/%Y')
-    start_date, end_date = get_date_range_from_cycle_calendar(cycle_name, report_date_str)
+    start_7, end_7, biweekly_name, start_bw, end_bw = get_date_range_and_biweekly_from_calendar(cycle_name, report_date_str)
     
-    if not start_date or not end_date:
-        # Fallback: try to get from folder name
+    if not start_7 or not end_7:
         print("Warning: Could not get date range from cycle calendar, using defaults")
-        start_date = "12/30/2025"
-        end_date = "01/05/2026"
+        start_7 = "12/30/2025"
+        end_7 = "01/05/2026"
+        biweekly_name = None
+        start_bw = end_bw = None
     
-    date_range = f"{start_date} - {end_date}"
+    # Email uses bi-weekly reporting period (01/13–01/26) when bi-weekly; else 7-day range
+    if biweekly_name and start_bw and end_bw:
+        date_range = f"{start_bw} - {end_bw}"
+    else:
+        date_range = f"{start_7} - {end_7}"
     
-    # 1. Export ALL enriched incidents
-    all_incidents_file = data_folder / f"SCRPA_All_Incidents_Enriched_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+    # 1. Export ALL enriched incidents (full dataset, preview-table structure)
+    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+    all_incidents_file = data_folder / f"SCRPA_All_Incidents_Enriched_{ts}.csv"
     df.to_csv(all_incidents_file, index=False)
     print(f"✅ Exported all enriched incidents: {all_incidents_file.name}")
+    # Stable-name copy for "entire dataset like preview" (Data folder standard)
+    full_stable = data_folder / "SCRPA_All_Crimes_Full.csv"
+    df.to_csv(full_stable, index=False)
+    print(f"✅ Exported full dataset (stable name): {full_stable.name}")
     
     # 2. Filter for 7-Day + LagDay incidents
     # 7-Day: Period = "7-Day"
@@ -151,7 +186,7 @@ def export_enriched_data(preview_csv_path, report_folder):
     folder_creation_time = datetime.fromtimestamp(report_folder.stat().st_ctime)
     generation_date = folder_creation_time.strftime('%B %d, %Y')
     
-    return cycle_name, date_range, generation_date
+    return cycle_name, date_range, generation_date, biweekly_name
 
 def remove_rms_summary_files(report_folder):
     """Remove rms_summary.html and .pdf files from Reports folder."""
@@ -173,22 +208,25 @@ def remove_rms_summary_files(report_folder):
     if removed_count == 0:
         print("ℹ️  No rms_summary files found to remove")
 
-def create_email_template(report_folder, cycle_name, date_range, generation_date):
-    """Create email template as .txt file with exact format specified."""
-    # Format date generated as MM/DD/YYYY
+def create_email_template(report_folder, cycle_name, date_range, generation_date, biweekly_name=None):
+    """Create email template as .txt file. Uses bi-weekly cycle (26BW01, etc.) when available."""
     try:
-        # Try to parse generation_date if it's in "Month Day, Year" format
         gen_date_obj = datetime.strptime(generation_date, '%B %d, %Y')
         date_generated = gen_date_obj.strftime('%m/%d/%Y')
-    except:
-        # If parsing fails, use current date
+    except Exception:
         date_generated = datetime.now().strftime('%m/%d/%Y')
     
-    email_template = f"""Subject: SCRPA Bi-Weekly Report - Cycle {cycle_name} | {date_range}
+    cycle_display = (biweekly_name or cycle_name)
+    if biweekly_name and cycle_name:
+        body_cycle = f"Bi-Weekly Cycle {biweekly_name} ({cycle_name})"
+    else:
+        body_cycle = f"Cycle {cycle_name}" if cycle_name else "this cycle"
+    
+    email_template = f"""Subject: SCRPA Bi-Weekly Report - Cycle {cycle_display} | {date_range}
 
 Sir,
 
-Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for Cycle {cycle_name}.
+Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for {body_cycle}.
 
 Report Period: {date_range}
 Date Generated: {date_generated}
@@ -229,7 +267,7 @@ def main():
         print(f"📄 Preview table: {preview_csv.name}")
         
         # Export enriched data
-        cycle_name, date_range, generation_date = export_enriched_data(preview_csv, report_folder)
+        cycle_name, date_range, generation_date, biweekly_name = export_enriched_data(preview_csv, report_folder)
         
         # Remove rms_summary files
         print("\n🗑️  Removing rms_summary files...")
@@ -237,7 +275,13 @@ def main():
         
         # Create email template
         print("\n📧 Creating email template...")
-        create_email_template(report_folder, cycle_name or "26C01W01", date_range or "12/30/2025 - 01/05/2026", generation_date)
+        create_email_template(
+            report_folder,
+            cycle_name or "26C01W01",
+            date_range or "12/30/2025 - 01/05/2026",
+            generation_date,
+            biweekly_name=biweekly_name,
+        )
         
         print("\n" + "=" * 60)
         print("✅ All tasks completed successfully!")

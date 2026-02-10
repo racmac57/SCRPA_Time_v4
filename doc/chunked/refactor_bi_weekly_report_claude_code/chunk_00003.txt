@@ -1,0 +1,334 @@
+"%BRIEFING_SCRIPT%" <nul
+      263  if errorlevel 1 (
+      264    echo [WARNING] Briefing CSV had issues
+      265    set "OVERALL_ERR=1"
+
+* Fixing root causes in scripts… (esc to interrupt · ctrl+t to show todos · 3m 55s · ↓ 1.1k tokens · thinking)
+  ⎿  Next: Clarify/remove REPORT_DATE format check log line
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+tab to cycle) · 50 files +14 -805
+
+╭─── Claude Code v2.1.15 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                                                                                                                       │
+│                  Welcome back RAC! │ Run /init to create a CLAUDE.md file with instructions for Claude                                                                                              │
+│                                                    │ ─────────────────────────────────────────────────────────────────                                                                                              │
+│                                                    │ Recent activity                                                                                                                                                │
+│                       ▐▛███▜▌                      │ No recent activity                                                                                                                                             │
+│                      ▝▜█████▛▘                     │                                                                                                                                                                │
+│                        ▘▘ ▝▝                       │                                                                                                                                                                │
+│  Opus 4.5 · Claude Pro · racarucci@icloud.com's    │                                                                                                                                                                │
+│  Organization                                      │                                                                                                                                                                │
+│  ~\OneDrive - City of Hackensack\16_Reports\SCRPA  │                                                                                                                                                                │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+> please read C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md I'm troubleshooting the SCRPA report workflow. The report folder is created but Data,
+  Reports, and Documentation stay empty. - Workspace root: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA (or 02_ETL_Scripts)
+  - Main batch: Run_SCRPA_Report_Folder.bat → report date 01/27/2026
+  - Report folder: 16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27
+  - Run log: 02_ETL_Scripts\SCRPA\logs\SCRPA_run_YYYY-MM-DD_HH-MM.log
+
+  Please read the full troubleshooting spec in CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md (this repo), then:
+  1) Inspect the latest run log for Step 2 (generate_all_reports) errors. 2) Verify paths (RMS exports scrpa vs SCRPA, 06_Output) and REPORT_DATE propagation. 3) Fix root causes, clarify/remove the "REPORT_DATE format check" log line, and improve Step 2 visibility. 4) Address WinError 5 Access denied on report subfolders if relevant. 5) Re-run and validate the report folder gets populated. ● Read(CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md)
+  ⎿  Read 143 lines
+
+● Let me create a task list and start investigating. ● Search(pattern: "**/SCRPA/logs/SCRPA_run_*.log", path: "~\OneDrive - City of Hackensack\02_ETL_Scripts")
+  ⎿  Found 83 files (ctrl+o to expand)
+
+● Let me read the most recent log file and key scripts in parallel. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\logs\SCRPA_run_2026-01-27_13-33.log)
+  ⎿  Read 516 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat)
+  ⎿  Read 296 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_all_reports.bat)
+  ⎿  Read 415 lines
+
+● I found the issue. The log shows Step 2 completed successfully but then ends with "Press Enter to exit..." - the briefing script has a pause that's hanging the workflow. Let me check the organize script and the
+  briefing script. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\organize_report_files.py)
+  ⎿  Read 850 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\prepare_briefing_csv.py)
+  ⎿  Read 1190 lines
+
+● I found the root cause. The log shows Step 2 completed but then hangs on "Press Enter to exit..." from the briefing script. The issue is in generate_all_reports.bat line 262 - it runs the briefing script without
+  <nul stdin redirection, so when the console is attached, safe_input() blocks waiting for input. Let me update my todo list and check the report folder state, then fix the issues. ● Bash(dir "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27" /s)
+  ⎿  Error: Exit code 2
+     dir: cannot access 'C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27': No such file or directory
+     dir: cannot access '/s': No such file or directory
+
+● Bash(ls -la "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026/")
+  ⎿  total 16
+     drwxr-xr-x 1 carucci_r 1049089 0 Jan 27 13:39 . drwxr-xr-x 1 carucci_r 1049089 0 Jan 26 17:35 ..
+     … +2 lines (ctrl+o to expand)
+
+● The report folder 26C01W04_26_01_27 doesn't exist. Let me check what happened in Step 1 and look at the weekly report script. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\generate_weekly_report.py)
+  ⎿  Read 376 lines
+
+● I need to check the cycle calendar to see if 01/27/2026 is configured correctly. ● Bash(grep "01/27/2026" "C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv" 2>/dev/null || echo "Date n…)
+  ⎿  01/27/2026,01/20/2026,01/26/2026,12/30/2025,01/26/2026,26C01W04,26BW02
+     02/24/2026,02/17/2026,02/23/2026,01/27/2026,02/23/2026,26C02W08,26BW04
+
+● Read(~\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv)
+  ⎿  Read 50 lines
+
+● Let me check the end of the log file more carefully to see what happened after the briefing script. ● Bash(tail -100 "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\logs\SCRPA_run_2026-01-27_13-33.log")
+  ⎿        DEBUG [HTML Gen]: Using cycle info from kwargs: Auto-Detected
+           DEBUG [HTML Gen]: About to write HTML file...
+           DEBUG [HTML Gen]: HTML content length = 24902 chars
+     … +97 lines (ctrl+o to expand)
+
+● Now I can see the issue clearly. The log ends at "Press Enter to exit..." and there's nothing after. The briefing script is blocking on safe_input() because stdin is a TTY (console attached). Root causes identified:
+  1. generate_all_reports.bat line 262 runs briefing script without <nul stdin redirection
+  2. Run_SCRPA_Report_Folder.bat line 181 doesn't capture Step 1 output to log
+  3. The "REPORT_DATE format check" log line is confusing
+  4. Path case inconsistency (SCRPA vs scrpa)
+
+  Let me fix these issues. ● Update(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_all_reports.bat)
+  ⎿  Added 2 lines, removed 2 lines
+      258    echo [WARNING] REPORT_DATE not set - briefing CSV will use today's date
+      259    echo [WARNING] This may result in incorrect cycle information
+      260  )
+      261 -REM Run with output visible so we can see if cycle info is correct
+      262 -"!PY_FULL!" "%BRIEFING_SCRIPT%"
+      261 +REM Run with stdin from NUL to prevent blocking on safe_input() when called from batch
+      262 +"!PY_FULL!" "%BRIEFING_SCRIPT%" <nul
+      263  if errorlevel 1 (
+      264    echo [WARNING] Briefing CSV had issues
+      265    set "OVERALL_ERR=1"
+
+✶ Fixing root causes in scripts… (esc to interrupt · ctrl+t to show todos · 3m 55s · ↓ 1.1k tokens · thinking)
+  ⎿  Next: Clarify/remove REPORT_DATE format check log line
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+tab to cycle) · 50 files +14 -805
+
+╭─── Claude Code v2.1.15 ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                                                                                                                         │
+│                  Welcome back RAC! │ Run /init to create a CLAUDE.md file with instructions for Claude                                                                                                │
+│                                                    │ ─────────────────────────────────────────────────────────────────                                                                                                │
+│                                                    │ Recent activity                                                                                                                                                  │
+│                       ▐▛███▜▌                      │ No recent activity                                                                                                                                               │
+│                      ▝▜█████▛▘                     │                                                                                                                                                                  │
+│                        ▘▘ ▝▝                       │                                                                                                                                                                  │
+│  Opus 4.5 · Claude Pro · racarucci@icloud.com's    │                                                                                                                                                                  │
+│  Organization                                      │                                                                                                                                                                  │
+│  ~\OneDrive - City of Hackensack\16_Reports\SCRPA  │                                                                                                                                                                  │
+╰───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+> please read C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md I'm troubleshooting the SCRPA report workflow. The report folder is created but Data,
+  Reports, and Documentation stay empty. - Workspace root: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA (or 02_ETL_Scripts)
+  - Main batch: Run_SCRPA_Report_Folder.bat → report date 01/27/2026
+  - Report folder: 16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27
+  - Run log: 02_ETL_Scripts\SCRPA\logs\SCRPA_run_YYYY-MM-DD_HH-MM.log
+
+  Please read the full troubleshooting spec in CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md (this repo), then:
+  1) Inspect the latest run log for Step 2 (generate_all_reports) errors. 2) Verify paths (RMS exports scrpa vs SCRPA, 06_Output) and REPORT_DATE propagation. 3) Fix root causes, clarify/remove the "REPORT_DATE format check" log line, and improve Step 2 visibility. 4) Address WinError 5 Access denied on report subfolders if relevant. 5) Re-run and validate the report folder gets populated. ● Read(CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md)
+  ⎿  Read 143 lines
+
+● Let me create a task list and start investigating. ● Search(pattern: "**/SCRPA/logs/SCRPA_run_*.log", path: "~\OneDrive - City of Hackensack\02_ETL_Scripts")
+  ⎿  Found 83 files (ctrl+o to expand)
+
+● Let me read the most recent log file and key scripts in parallel. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\logs\SCRPA_run_2026-01-27_13-33.log)
+  ⎿  Read 516 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat)
+  ⎿  Read 296 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_all_reports.bat)
+  ⎿  Read 415 lines
+
+● I found the issue. The log shows Step 2 completed successfully but then ends with "Press Enter to exit..." - the briefing script has a pause that's hanging the workflow. Let me check the organize script and the
+  briefing script. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\organize_report_files.py)
+  ⎿  Read 850 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\prepare_briefing_csv.py)
+  ⎿  Read 1190 lines
+
+● I found the root cause. The log shows Step 2 completed but then hangs on "Press Enter to exit..." from the briefing script. The issue is in generate_all_reports.bat line 262 - it runs the briefing script without
+  <nul stdin redirection, so when the console is attached, safe_input() blocks waiting for input. Let me update my todo list and check the report folder state, then fix the issues. ● Bash(dir "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27" /s)
+  ⎿  Error: Exit code 2
+     dir: cannot access 'C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27': No such file or directory
+     dir: cannot access '/s': No such file or directory
+
+● Bash(ls -la "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026/")
+  ⎿  total 16
+     drwxr-xr-x 1 carucci_r 1049089 0 Jan 27 13:39 . drwxr-xr-x 1 carucci_r 1049089 0 Jan 26 17:35 ..
+     … +2 lines (ctrl+o to expand)
+
+● The report folder 26C01W04_26_01_27 doesn't exist. Let me check what happened in Step 1 and look at the weekly report script. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\generate_weekly_report.py)
+  ⎿  Read 376 lines
+
+● I need to check the cycle calendar to see if 01/27/2026 is configured correctly. ● Bash(grep "01/27/2026" "C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv" 2>/dev/null || echo "Date n…)
+  ⎿  01/27/2026,01/20/2026,01/26/2026,12/30/2025,01/26/2026,26C01W04,26BW02
+     02/24/2026,02/17/2026,02/23/2026,01/27/2026,02/23/2026,26C02W08,26BW04
+
+● Read(~\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv)
+  ⎿  Read 50 lines
+
+● Let me check the end of the log file more carefully to see what happened after the briefing script. ● Bash(tail -100 "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\logs\SCRPA_run_2026-01-27_13-33.log")
+  ⎿        DEBUG [HTML Gen]: Using cycle info from kwargs: Auto-Detected
+           DEBUG [HTML Gen]: About to write HTML file...
+           DEBUG [HTML Gen]: HTML content length = 24902 chars
+     … +97 lines (ctrl+o to expand)
+
+● Now I can see the issue clearly. The log ends at "Press Enter to exit..." and there's nothing after. The briefing script is blocking on safe_input() because stdin is a TTY (console attached). Root causes identified:
+  1. generate_all_reports.bat line 262 runs briefing script without <nul stdin redirection
+  2. Run_SCRPA_Report_Folder.bat line 181 doesn't capture Step 1 output to log
+  3. The "REPORT_DATE format check" log line is confusing
+  4. Path case inconsistency (SCRPA vs scrpa)
+
+  Let me fix these issues. ● Update(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_all_reports.bat)
+  ⎿  Added 2 lines, removed 2 lines
+      258    echo [WARNING] REPORT_DATE not set - briefing CSV will use today's date
+      259    echo [WARNING] This may result in incorrect cycle information
+      260  )
+      261 -REM Run with output visible so we can see if cycle info is correct
+      262 -"!PY_FULL!" "%BRIEFING_SCRIPT%"
+      261 +REM Run with stdin from NUL to prevent blocking on safe_input() when called from batch
+      262 +"!PY_FULL!" "%BRIEFING_SCRIPT%" <nul
+      263  if errorlevel 1 (
+      264    echo [WARNING] Briefing CSV had issues
+      265    set "OVERALL_ERR=1"
+
+✶ Fixing root causes in scripts… (esc to interrupt · ctrl+t to show todos · 3m 55s · ↓ 1.1k tokens · thinking)
+  ⎿  Next: Clarify/remove REPORT_DATE format check log line
+
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> 
+─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+tab to cycle) · 50 files +14 -805
+
+╭─── Claude Code v2.1.15 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                                                                                                                          │
+│                  Welcome back RAC! │ Run /init to create a CLAUDE.md file with instructions for Claude                                                                                                 │
+│                                                    │ ─────────────────────────────────────────────────────────────────                                                                                                 │
+│                                                    │ Recent activity                                                                                                                                                   │
+│                       ▐▛███▜▌                      │ No recent activity                                                                                                                                                │
+│                      ▝▜█████▛▘                     │                                                                                                                                                                   │
+│                        ▘▘ ▝▝                       │                                                                                                                                                                   │
+│  Opus 4.5 · Claude Pro · racarucci@icloud.com's    │                                                                                                                                                                   │
+│  Organization                                      │                                                                                                                                                                   │
+│  ~\OneDrive - City of Hackensack\16_Reports\SCRPA  │                                                                                                                                                                   │
+╰────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+> please read C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md I'm troubleshooting the SCRPA report workflow. The report folder is created but Data,
+  Reports, and Documentation stay empty. - Workspace root: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA (or 02_ETL_Scripts)
+  - Main batch: Run_SCRPA_Report_Folder.bat → report date 01/27/2026
+  - Report folder: 16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27
+  - Run log: 02_ETL_Scripts\SCRPA\logs\SCRPA_run_YYYY-MM-DD_HH-MM.log
+
+  Please read the full troubleshooting spec in CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md (this repo), then:
+  1) Inspect the latest run log for Step 2 (generate_all_reports) errors. 2) Verify paths (RMS exports scrpa vs SCRPA, 06_Output) and REPORT_DATE propagation. 3) Fix root causes, clarify/remove the "REPORT_DATE format check" log line, and improve Step 2 visibility. 4) Address WinError 5 Access denied on report subfolders if relevant. 5) Re-run and validate the report folder gets populated. ● Read(CLAUDE_PROMPT_SCRPA_REPORT_FOLDER_EMPTY.md)
+  ⎿  Read 143 lines
+
+● Let me create a task list and start investigating. ● Search(pattern: "**/SCRPA/logs/SCRPA_run_*.log", path: "~\OneDrive - City of Hackensack\02_ETL_Scripts")
+  ⎿  Found 83 files (ctrl+o to expand)
+
+● Let me read the most recent log file and key scripts in parallel. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\logs\SCRPA_run_2026-01-27_13-33.log)
+  ⎿  Read 516 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat)
+  ⎿  Read 296 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_all_reports.bat)
+  ⎿  Read 415 lines
+
+● I found the issue. The log shows Step 2 completed successfully but then ends with "Press Enter to exit..." - the briefing script has a pause that's hanging the workflow. Let me check the organize script and the
+  briefing script. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\organize_report_files.py)
+  ⎿  Read 850 lines
+
+● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\prepare_briefing_csv.py)
+  ⎿  Read 1190 lines
+
+● I found the root cause. The log shows Step 2 completed but then hangs on "Press Enter to exit..." from the briefing script. The issue is in generate_all_reports.bat line 262 - it runs the briefing script without <nul
+   stdin redirection, so when the console is attached, safe_input() blocks waiting for input. Let me update my todo list and check the report folder state, then fix the issues. ● Bash(dir "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27" /s)
+  ⎿  Error: Exit code 2
+     dir: cannot access 'C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27': No such file or directory
+     dir: cannot access '/s': No such file or directory
+
+● Bash(ls -la "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026/")
+  ⎿  total 16
+     drwxr-xr-x 1 carucci_r 1049089 0 Jan 27 13:39 . drwxr-xr-x 1 carucci_r 1049089 0 Jan 26 17:35 ..
+     … +2 lines (ctrl+o to expand)
+
+● The report folder 26C01W04_26_01_27 doesn't exist. Let me check what happened in Step 1 and look at the weekly report script. ● Read(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\generate_weekly_report.py)
+  ⎿  Read 376 lines
+
+● I need to check the cycle calendar to see if 01/27/2026 is configured correctly. ● Bash(grep "01/27/2026" "C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv" 2>/dev/null || echo "Date n…)
+  ⎿  01/27/2026,01/20/2026,01/26/2026,12/30/2025,01/26/2026,26C01W04,26BW02
+     02/24/2026,02/17/2026,02/23/2026,01/27/2026,02/23/2026,26C02W08,26BW04
+
+● Read(~\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv)
+  ⎿  Read 50 lines
+
+● Let me check the end of the log file more carefully to see what happened after the briefing script. ● Bash(tail -100 "C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\logs\SCRPA_run_2026-01-27_13-33.log")
+  ⎿        DEBUG [HTML Gen]: Using cycle info from kwargs: Auto-Detected
+           DEBUG [HTML Gen]: About to write HTML file...
+           DEBUG [HTML Gen]: HTML content length = 24902 chars
+     … +97 lines (ctrl+o to expand)
+
+● Now I can see the issue clearly. The log ends at "Press Enter to exit..." and there's nothing after. The briefing script is blocking on safe_input() because stdin is a TTY (console attached). Root causes identified:
+  1. generate_all_reports.bat line 262 runs briefing script without <nul stdin redirection
+  2. Run_SCRPA_Report_Folder.bat line 181 doesn't capture Step 1 output to log
+  3. The "REPORT_DATE format check" log line is confusing
+  4. Path case inconsistency (SCRPA vs scrpa)
+
+  Let me fix these issues. ● Update(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_all_reports.bat)
+  ⎿  Added 2 lines, removed 2 lines
+      258    echo [WARNING] REPORT_DATE not set - briefing CSV will use today's date
+      259    echo [WARNING] This may result in incorrect cycle information
+      260  )
+      261 -REM Run with output visible so we can see if cycle info is correct
+      262 -"!PY_FULL!" "%BRIEFING_SCRIPT%"
+      261 +REM Run with stdin from NUL to prevent blocking on safe_input() when called from batch
+      262 +"!PY_FULL!" "%BRIEFING_SCRIPT%" <nul
+      263  if errorlevel 1 (
+      264    echo [WARNING] Briefing CSV had issues
+      265    set "OVERALL_ERR=1"
+
+● Update(~\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_all_reports.bat)
+  ⎿  Added 2 lines, removed 1 line
+      54  echo. 55
+      56  REM ---------------- Config ----------------
+      57 -set "RMS_EXPORT_DIR=C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\SCRPA"
+      57 +REM Use lowercase 'scrpa' to match actual folder name (Windows is case-insensitive but consistency helps)
+      58 +set "RMS_EXPORT_DIR=C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+      59  set "EXPORT_SCRIPT=%RMS_EXPORT_DIR%\export_excel_sheets_to_csv.py"
+      60  set "PROCESS_ALL_PDFS=0"
+      61  set "PS=powershell.exe -NoLogo -NoProfile -ExecutionPolicy Bypass -File"
+
+● Now let me fix the confusing "REPORT_DATE format check" message and improve Step 1 logging. ● Update(~\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat)
+  ⎿  Added 1 line, removed 1 line
+      198    REM Export REPORT_DATE to environment for child processes
+      199    REM CRITICAL: Ensure REPORT_DATE is in MM/DD/YYYY format and exported to child
+      200    set "REPORT_DATE=%REPORT_DATE%"
+      201 -  call :log "REPORT_DATE format check: %REPORT_DATE% (should be MM/DD/YYYY)"
+      201 +  call :log "Passing REPORT_DATE=%REPORT_DATE% to report generation scripts"
+      202    call "%GENERATE_BAT%" >>"%LOG%" 2>&1
+      203  ) else if exist "%GENERATE_PY%" (
+      204    call :log "Running Python fallback (env REPORT_DATE=%REPORT_DATE%): %GENERATE_PY%"
+
+● Now let me improve Step 1 logging to capture the weekly script output. ● Update(~\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat)
+  ⎿  Added 7 lines, removed 3 lines
+      178    call :log "Running weekly script with REPORT_DATE=%REPORT_DATE%"
+      179    REM Pass date as positional argument (script accepts sys.argv[1] in MM/DD/YYYY format)
+      180    REM Use full Python path (%PY_PATH%) instead of %PYEXE% to avoid command not found errors
+      181 -  "%PY_PATH%" "%WEEKLY_SCRIPT%" "%REPORT_DATE%"
+      182 -  if errorlevel 1 (
+      183 -    call :log "[WARN] Weekly script returned errorlevel !ERRORLEVEL!. Continuing..."
+      181 +  REM Redirect output to log file for visibility, and use <nul to prevent stdin blocking
+      182 +  call :log "--- STEP 1 OUTPUT START ---"
+      183 +  "%PY_PATH%" "%WEEKLY_SCRIPT%" "%REPORT_DATE%" <nul >>"%LOG%" 2>&1
+      184 +  set "STEP1_ERR=!ERRORLEVEL!" 185 +  call :log "--- STEP 1 OUTPUT END ---"
+      186 +  if !STEP1_ERR! neq 0 (
+      187 +    call :log "[WARN] Weekly script returned errorlevel !STEP1_ERR!. Continuing..."
+      188    ) else (
+      189      call :log "[OK] Weekly script completed"
+      190    )
+
+● Let me add Step 2 start/end markers and improve Step 3 logging.

@@ -1,0 +1,602 @@
+f.write("If Zone is a decimal (e.g., 5.0, 8.0), convert to whole number (5, 8).\n")
+            f.write("- `VictimVehicleMake` → Combine with Model and Plate\n")
+            f.write("- `VictimVehicleModel` → Combine with Make and Plate\n")
+            f.write("- `Plate` → Include with state\n")
+            f.write("- `PlateState` → Include with plate\n")
+            f.write("- `LossTotal` → Calculate by summing all individual loss item values from the Narrative.\n")
+            f.write("  If individual loss items are extracted, add their values together to get the total.\n")
+            f.write("  If LossTotal is provided in CSV, verify it matches the sum of individual items.\n")
+            f.write("- `Status` → Use directly\n")
+            f.write("- `CycleID` → Use in header and footer\n")
+            f.write("- `RangeStart` → Use in header\n")
+            f.write("- `RangeEnd` → Use in header\n\n")
+            f.write("**Extract from Narrative (AI Processing Required):**\n")
+            f.write("- `SuspectDesc` → Parse from Narrative column\n")
+            f.write("- `SuspectVehicle` → Parse from Narrative column\n")
+            f.write("- `LossItems` → Parse specific items and values from Narrative\n")
+            f.write("- `Method` → Extract method of theft (for MV Theft)\n")
+            f.write("- `PointOfEntry` → Extract entry point (for burglaries)\n")
+            f.write("- `MeansOfEntry` → Extract how entry was made (for burglaries)\n")
+            f.write("- `Allegation` → Extract nature of offense (for sexual offenses)\n")
+            f.write("- `VictimSex` → Extract from Narrative\n")
+            f.write("- `VictimAdultJuvenile` → Extract from Narrative\n")
+            f.write("- `ParkingLocation` → Extract context (driveway, street, lot, etc. )\n")
+            f.write("- `Context` → Extract location context\n\n")
+            f.write("---\n\n")
+            
+            # Data Processing Instructions
+            f.write("### Data Processing Instructions\n\n")
+            f.write("**From the CSV file, extract and process:**\n\n")
+            f.write("1. **Parse Narrative column** to extract:\n")
+            f.write("   - Suspect descriptions (clothing, physical traits, age, race, gender)\n")
+            f.write("   - Suspect vehicles (type, color, make/model if mentioned)\n")
+            f.write("   - Loss items (specific items stolen and their values)\n")
+            f.write("     **IMPORTANT**: Calculate Loss Total by summing all individual loss item values.\n")
+            f.write("   - Methods of entry (for burglaries)\n")
+            f.write("   - Point of entry (door, window, etc. )\n")
+            f.write("   - Means of entry (forced, unlocked, etc. )\n")
+            f.write("   - Allegations (for sexual offenses)\n")
+            f.write("   - Victim details (gender, adult/juvenile, relationship)\n")
+            f.write("   - Parking/location context (driveway, street, lot, garage, business)\n\n")
+            f.write("2. **Use pre-processed columns** directly:\n")
+            f.write("   - CaseNumber, IncidentDateTime, IncidentType, Statute\n")
+            f.write("   - FullAddress, Grid, Zone\n")
+            f.write("   - VictimVehicleMake, VictimVehicleModel, Plate, PlateState\n")
+            f.write("   - LossTotal, Status, Officer, Squad, Detective\n")
+            f.write("   - CycleID, RangeStart, RangeEnd\n\n")
+            f.write("3. **Format dates** as MM/DD/YY HH:mm\n\n")
+            f.write("4. **Format money** with commas and two decimals: $1,024.00\n")
+            f.write("   **Loss Total Calculation**: Loss Total must be calculated by adding the sum of all individual loss items.\n")
+            f.write("   Extract individual loss items and their values from the Narrative, then sum them to get the total.\n\n")
+            f.write("5. **Sort chronologically** within each section (oldest to newest)\n\n")
+            f.write("6. **Handle missing data**: Use \"Data Incomplete\" for blank suspect descriptions, ")
+            f.write("\"Unknown\" for missing vehicles, \"$0.00\" for missing loss values\n\n")
+            f.write("---\n\n")
+            
+            # Key Takeaways Section
+            f.write("### Key Takeaways\n\n")
+            f.write("At the end, include a **Key Takeaways** section with:\n\n")
+            f.write("* Total cases by type\n")
+            f.write("* Most common entry method (for burglaries)\n")
+            f.write("* Hot-spots (zones/grids with most activity)\n")
+            f.write("* Peak times/days\n\n")
+            f.write("---\n\n")
+            
+            # Final Instructions
+            f.write("## Final Instructions\n\n")
+            f.write("1. **Read the CSV file** I've uploaded\n")
+            f.write("2. **Process all cases** according to the instructions above\n")
+            f.write("3. **Generate HTML** using the template structure provided\n")
+            f.write("4. **Organize by category** (I-VI) with Roman numerals\n")
+            f.write("5. **Sort chronologically** within each section\n")
+            f.write("6. **Extract from Narrative** all missing details\n")
+            f.write("7. **Create summary table** with all cases\n")
+            f.write("8. **Add Key Takeaways** section\n")
+            f.write("9. **Output complete HTML** ready for PDF conversion\n\n")
+            f.write("**Important:** Use the exact HTML template structure provided above. ") f.write("Replace all placeholders with actual data from the CSV. ") f.write("Flag any missing data as \"Data Incomplete\". ") f.write("Ensure the output fits on a single page when printed.\n\n")
+            f.write("---\n\n")
+            f.write(f"**CSV File**: `{os.path.basename(csv_filename)}`\n")
+            f.write(f"**Total Cases**: {total_cases}\n")
+            f.write(f"**Cycle**: {cycle_id}\n")
+            f.write(f"**Date Range**: {range_start} to {range_end}\n")
+        
+        print(f"✅ ChatGPT prompt file created: {os.path.basename(prompt_file)}")
+        return prompt_file
+        
+    except Exception as e:
+        print(f"⚠️  Could not create ChatGPT prompt file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def create_instructions_file(output_folder, csv_filename):
+    """Create basic instruction file (legacy, kept for backward compatibility)"""
+    try:
+        instructions_file = os.path.join(output_folder, "BRIEFING_INSTRUCTIONS.txt")
+        
+        with open(instructions_file, 'w', encoding='utf-8') as f:
+            f.write("=" * 60 + "\n")
+            f.write("SCRPA BRIEFING GENERATION INSTRUCTIONS\n")
+            f.write("=" * 60 + "\n\n")
+            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("STEP 1: Upload CSV to ChatGPT\n")
+            f.write(f"File: {os.path.basename(csv_filename)}\n\n")
+            f.write("STEP 2: Use the ChatGPT Prompt File\n")
+            f.write("Open CHATGPT_BRIEFING_PROMPT.md and copy the entire prompt.\n")
+            f.write("Paste it into ChatGPT after uploading the CSV.\n\n")
+            f.write("STEP 3: ChatGPT Will Generate HTML\n")
+            f.write("ChatGPT will process the CSV and generate a complete HTML briefing\n")
+            f.write("matching the template structure provided in the prompt.\n\n")
+            f.write("OUTPUT:\n")
+            f.write("ChatGPT will return a complete HTML file ready for PDF conversion.\n")
+            f.write("=" * 60 + "\n")
+        
+        print(f"✅ Instructions file created: {os.path.basename(instructions_file)}")
+        
+    except Exception as e:
+        print(f"⚠️  Could not create instructions file: {e}")
+
+def main():
+    """Main execution"""
+    print("🚀 Starting SCRPA Briefing CSV Preparation\n")
+    
+    # Step 1: Find latest 7-day CSV
+    csv_path = find_latest_7day_csv()
+    if not csv_path:
+        print("\n❌ Cannot proceed without 7-day CSV file")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 2: Get cycle information
+    print("\n📅 Loading cycle information...")
+    # Check for REPORT_DATE environment variable (set by automation batch file)
+    report_date_str = os.environ.get('REPORT_DATE', None)
+    if report_date_str:
+        print(f"   Using Report Date from environment: {report_date_str}")
+        try:
+            report_date_obj = datetime.strptime(report_date_str, "%m/%d/%Y")
+            cycle_info = get_cycle_info_from_calendar(report_date_obj)
+        except ValueError:
+            print(f"   ⚠️  Invalid REPORT_DATE format: {report_date_str}, using today's date")
+            cycle_info = get_current_cycle_info()
+    else:
+        cycle_info = get_current_cycle_info()
+    
+    # Step 3: Transform CSV
+    print("\n🔄 Transforming CSV to briefing format...")
+    briefing_df = transform_to_briefing_format(csv_path, cycle_info)
+    
+    if briefing_df is None:
+        print("\n❌ Transformation failed")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 4: Save briefing CSV
+    print("\n💾 Saving briefing CSV...")
+    output_file = save_briefing_csv(briefing_df, OUTPUT_FOLDER)
+    
+    if not output_file:
+        print("\n❌ Failed to save CSV")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 5: Create ChatGPT prompt file
+    print("\n📝 Creating ChatGPT prompt file...")
+    prompt_file = create_chatgpt_prompt_file(OUTPUT_FOLDER, output_file, briefing_df, cycle_info)
+    
+    # Step 6: Create basic instructions file
+    print("\n📝 Creating instructions file...")
+    create_instructions_file(OUTPUT_FOLDER, output_file)
+    
+    # Success summary
+    print("\n" + "=" * 60)
+    print("✅ SUCCESS - BRIEFING CSV READY FOR CHATGPT")
+    print("=" * 60)
+    print(f"\n📂 Output Location: {OUTPUT_FOLDER}")
+    print(f"📄 CSV File: {os.path.basename(output_file)}")
+    print(f"📋 ChatGPT Prompt: CHATGPT_BRIEFING_PROMPT.md")
+    print(f"📋 Instructions: BRIEFING_INSTRUCTIONS.txt")
+    print("\n🤖 Next Steps:")
+    print("   1. Upload the CSV file to ChatGPT")
+    print("   2. Open CHATGPT_BRIEFING_PROMPT.md")
+    print("   3. Copy the entire prompt and paste it into ChatGPT")
+    print("   4. ChatGPT will generate the HTML briefing")
+    print("   5. Save the HTML output and convert to PDF")
+    print("\n" + "=" * 60)
+    
+    safe_input("\nPress Enter to exit...")
+    return True
+
+if __name__ == "__main__":
+    try:
+        success = main()
+        sys.exit(0 if success else 1)
+    except KeyboardInterrupt:
+        print("\n\n❌ Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        safe_input("\nPress Enter to exit...")
+        sys.exit(1)
+
+
+
+
+
+```
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SCRPA Briefing CSV Preparation Script
+Author: R. A. Carucci
+Date: 2025-10-28
+Purpose: Transform RMS CSV export into ChatGPT-ready briefing format
+
+This script handles structural transformations and column mapping. AI (ChatGPT) will handle intelligent narrative parsing for:
+- Suspect descriptions
+- Loss items extraction
+- Methods, allegations, etc.
+""" import os
+import sys
+import pandas as pd
+import csv
+from datetime import datetime, timedelta
+# Ensure console can print Unicode safely on Windows
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+print("=" * 60)
+print("SCRPA BRIEFING CSV PREPARATION")
+print("=" * 60)
+print()
+
+def safe_input(prompt=""):
+    """Handle input() calls in non-interactive mode (when called from batch)"""
+    try:
+        # Check if stdin is available and not redirected
+        if sys.stdin.isatty():
+            return input(prompt)
+        else:
+            # Non-interactive mode - just return empty string
+            return ""
+    except (EOFError, OSError):
+        # Handle EOFError when stdin is closed
+        return ""
+
+# Configuration
+RMS_FOLDER = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\SCRPA"
+CYCLE_CSV = r"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv"
+OUTPUT_FOLDER = r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output"
+
+def find_latest_7day_csv():
+    """Find the most recent *_ReportDate_Last7.csv file"""
+    try:
+        import glob
+        pattern = os.path.join(RMS_FOLDER, "*_ReportDate_Last7.csv")
+        files = glob.glob(pattern)
+        
+        if not files:
+            print(f"❌ No 7-day CSV files found matching: *_ReportDate_Last7.csv")
+            return None
+        
+        # Sort by modification time, newest first
+        latest_file = max(files, key=os.path.getmtime)
+        print(f"✅ Found 7-day CSV: {os.path.basename(latest_file)}")
+        return latest_file
+        
+    except Exception as e:
+        print(f"❌ Error finding CSV: {e}")
+        return None
+
+def get_cycle_info_from_calendar(report_due_date=None):
+    """
+    Get cycle information from cycle calendar based on Report_Due_Date. Args:
+        report_due_date: datetime object or date string (MM/DD/YYYY). If None, uses today's date. Returns:
+        dict with cycle_id, range_start, range_end, 28_day_start, 28_day_end
+        or None if not found
+    """
+    try:
+        if not os.path.exists(CYCLE_CSV):
+            print(f"⚠️  Cycle calendar not found: {CYCLE_CSV}")
+            return None
+        
+        cycle_df = pd.read_csv(CYCLE_CSV)
+        
+        # Determine the date to use for lookup
+        is_specific_report_date = report_due_date is not None
+        if report_due_date is None:
+            lookup_date = datetime.now().date()
+            lookup_date_str = datetime.now().strftime("%m/%d/%Y")
+        else:
+            if isinstance(report_due_date, str):
+                lookup_date = pd.to_datetime(report_due_date).date()
+                lookup_date_str = report_due_date
+            else:
+                lookup_date = report_due_date.date() if hasattr(report_due_date, 'date') else report_due_date
+                lookup_date_str = lookup_date.strftime("%m/%d/%Y")
+        
+        # First try to match by Report_Due_Date (exact match) - this is the primary method
+        matching_row = cycle_df[cycle_df['Report_Due_Date'] == lookup_date_str]
+        
+        if not matching_row.empty:
+            row = matching_row.iloc[0]
+            cycle_info = {
+                'cycle_id': row['Report_Name'],
+                'range_start': row['7_Day_Start'],
+                'range_end': row['7_Day_End'],
+                '28_day_start': row['28_Day_Start'],
+                '28_day_end': row['28_Day_End']
+            }
+            print(f"✅ Cycle from Report_Due_Date: {cycle_info['cycle_id']}")
+            print(f"   7-Day Range: {cycle_info['range_start']} to {cycle_info['range_end']}")
+            print(f"   28-Day Range: {cycle_info['28_day_start']} to {cycle_info['28_day_end']}")
+            return cycle_info
+        
+        # Fallback: Only use if exact match failed AND we're NOT using a specific Report_Due_Date
+        # When we have a Report_Due_Date, we MUST match exactly - no fallback to date ranges
+        if is_specific_report_date:
+            # If we have a specific report date, exact match should always work
+            print(f"⚠️  Exact match failed for Report_Due_Date: {lookup_date_str}")
+            print("   This may indicate a date format mismatch or missing cycle in calendar")
+            print(f"   Attempted lookup: {lookup_date_str}")
+            print(f"   Available Report_Due_Dates in calendar: {cycle_df['Report_Due_Date'].head(5).tolist()}")
+        else:
+            # Only use fallback when using today's date (not a specific Report_Due_Date)
+            # Find cycle where today falls within the 7-day range
+            for _, row in cycle_df.iterrows():
+                try:
+                    # Parse dates
+                    start_date = pd.to_datetime(row['7_Day_Start']).date()
+                    end_date = pd.to_datetime(row['7_Day_End']).date()
+                    
+                    if start_date <= lookup_date <= end_date:
+                        cycle_info = {
+                            'cycle_id': row['Report_Name'],
+                            'range_start': row['7_Day_Start'],
+                            'range_end': row['7_Day_End'],
+                            '28_day_start': row['28_Day_Start'],
+                            '28_day_end': row['28_Day_End']
+                        }
+                        print(f"✅ Cycle from date range: {cycle_info['cycle_id']}")
+                        print(f"   7-Day Range: {cycle_info['range_start']} to {cycle_info['range_end']}")
+                        print(f"   28-Day Range: {cycle_info['28_day_start']} to {cycle_info['28_day_end']}")
+                        return cycle_info
+                except:
+                    continue
+        
+        print(f"⚠️  No matching cycle found for date: {lookup_date_str}")
+        return None
+        
+    except Exception as e:
+        print(f"⚠️  Error loading cycle calendar: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def get_current_cycle_info():
+    """Get current cycle information from cycle calendar (uses today's date)"""
+    return get_cycle_info_from_calendar(None)
+
+def parse_statute(incident_type):
+    """Extract statute code from incident type string"""
+    if pd.isna(incident_type) or not incident_type:
+        return ""
+    
+    # Look for pattern like "2C:18-2" or "2C:20-3"
+    import re
+    match = re.search(r'(2C:\d+-\d+[A-Za-z]? )', incident_type)
+    if match:
+        return match.group(1)
+    return ""
+
+def clean_incident_type(incident_type):
+    """Remove statute from incident type to get clean name"""
+    if pd.isna(incident_type) or not incident_type:
+        return ""
+    
+    # Remove " - 2C:XX-X" pattern
+    import re
+    cleaned = re.sub(r'\s*-\s*2C:\d+-\d+[A-Za-z]? ', '', incident_type)
+    return cleaned.strip()
+
+def format_datetime(date_val, time_val):
+    """Combine date and time into MM/DD/YY HH:mm format"""
+    try:
+        if pd.isna(date_val) or pd.isna(time_val):
+            return "Data Incomplete"
+        
+        # Parse date
+        if isinstance(date_val, str):
+            date_obj = pd.to_datetime(date_val).date()
+        else:
+            date_obj = pd.to_datetime(date_val).date()
+        
+        # Parse time
+        if isinstance(time_val, str):
+            time_obj = pd.to_datetime(time_val).time()
+        else:
+            time_obj = pd.to_datetime(time_val).time()
+        
+        # Combine
+        dt = datetime.combine(date_obj, time_obj)
+        return dt.strftime('%m/%d/%y %H:%M')
+        
+    except Exception as e:
+        return "Data Incomplete"
+
+def format_money(value):
+    """Format money value with commas and two decimals"""
+    try:
+        if pd.isna(value) or value == "" or value is None:
+            return "$0.00"
+        
+        # Convert to float
+        amount = float(str(value).replace(',', '').replace('$', ''))
+        return f"${amount:,.2f}"
+        
+    except:
+        return "$0.00"
+
+def transform_to_briefing_format(csv_path, cycle_info):
+    """Transform RMS CSV to ChatGPT briefing format"""
+    try:
+        print(f"\n📊 Loading CSV: {os.path.basename(csv_path)}")
+        df = pd.read_csv(csv_path)
+        print(f"✅ Loaded {len(df)} records")
+        
+        # Create new dataframe with briefing columns
+        briefing_df = pd.DataFrame()
+        
+        # Direct mappings
+        briefing_df['CaseNumber'] = df['Case Number']
+        briefing_df['FullAddress'] = df['FullAddress']
+        briefing_df['Grid'] = df['Grid']
+        # Format Zone as whole number (remove decimal if present)
+        briefing_df['Zone'] = df['Zone'].apply(lambda x: int(float(x)) if pd.notna(x) and x != '' else x)
+        briefing_df['Narrative'] = df['Narrative']
+        
+        # Date/Time combination
+        briefing_df['IncidentDateTime'] = df.apply(
+            lambda row: format_datetime(row['Incident Date'], row['Incident Time']), 
+            axis=1
+        )
+        
+        # Incident type parsing
+        briefing_df['IncidentType'] = df['Incident Type_1'].apply(clean_incident_type)
+        briefing_df['Subtype'] = df['Incident Type_2'].fillna('')
+        briefing_df['Statute'] = df['Incident Type_1'].apply(parse_statute)
+        
+        # Vehicle information
+        briefing_df['VictimVehicleMake'] = df['Make1'].fillna('')
+        briefing_df['VictimVehicleModel'] = df['Model1'].fillna('')
+        briefing_df['Plate'] = df['Registration 1'].fillna('')
+        briefing_df['PlateState'] = df['Reg State 1'].fillna('')
+        
+        # Additional vehicle (if needed)
+        briefing_df['VictimVehicle2Make'] = df['Make2'].fillna('')
+        briefing_df['VictimVehicle2Model'] = df['Model2'].fillna('')
+        briefing_df['Plate2'] = df['Registration 2'].fillna('')
+        briefing_df['PlateState2'] = df['Reg State 2'].fillna('')
+        
+        # Loss information
+        briefing_df['LossTotal'] = df['Total Value Stolen'].apply(format_money)
+        briefing_df['RecoveredTotal'] = df['Total Value Recover'].apply(format_money)
+        
+        # Case information
+        briefing_df['Status'] = df['Case_Status'].fillna('Unknown')
+        briefing_df['Officer'] = df['Officer of Record'].fillna('')
+        briefing_df['Squad'] = df['Squad'].fillna('')
+        briefing_df['Detective'] = df['Det_Assigned'].fillna('')
+        
+        # Add cycle information
+        if cycle_info:
+            briefing_df['CycleID'] = cycle_info['cycle_id']
+            briefing_df['RangeStart'] = cycle_info['range_start']
+            briefing_df['RangeEnd'] = cycle_info['range_end']
+            
+            # Filter out incidents with Report Date before cycle start or after cycle end
+            # Convert cycle dates to datetime for comparison
+            try:
+                cycle_start = pd.to_datetime(cycle_info['range_start'], format='%m/%d/%Y').date()
+                cycle_end = pd.to_datetime(cycle_info['range_end'], format='%m/%d/%Y').date()
+                
+                # Parse Report Date from CSV (handle multiple date formats)
+                if 'Report Date' in df.columns:
+                    df['Report_Date_Parsed'] = pd.to_datetime(df['Report Date'], format='%m/%d/%Y', errors='coerce').dt.date
+                    
+                    # Filter to only include incidents with Report Date within cycle range
+                    valid_mask = (df['Report_Date_Parsed'] >= cycle_start) & (df['Report_Date_Parsed'] <= cycle_end)
+                    valid_mask = valid_mask.fillna(False)  # Treat NaT (invalid dates) as False
+                    
+                    briefing_df = briefing_df[valid_mask].copy()
+                    
+                    print(f"✅ Filtered to {len(briefing_df)} records within cycle date range ({cycle_info['range_start']} to {cycle_info['range_end']})")
+                    if len(briefing_df) < len(df):
+                        excluded_count = len(df) - len(briefing_df)
+                        print(f"   Excluded {excluded_count} records with Report Date outside cycle range")
+                else:
+                    print(f"⚠️  Warning: 'Report Date' column not found in CSV, cannot filter by cycle dates")
+            except Exception as e:
+                print(f"⚠️  Warning: Could not filter by cycle dates: {e}")
+                import traceback
+                traceback.print_exc()
+                print("   Proceeding with all records")
+        else:
+            # Fallback to auto-detection
+            briefing_df['CycleID'] = 'Auto-Detected'
+            today = datetime.now()
+            week_ago = today - timedelta(days=7)
+            briefing_df['RangeStart'] = week_ago.strftime('%m/%d/%y')
+            briefing_df['RangeEnd'] = today.strftime('%m/%d/%y')
+        
+        # Placeholder fields for AI to extract from narrative
+        briefing_df['SuspectDesc'] = 'Extract from Narrative'
+        briefing_df['SuspectVehicle'] = 'Extract from Narrative'
+        briefing_df['Method'] = 'Extract from Narrative'
+        briefing_df['PointOfEntry'] = 'Extract from Narrative'
+        briefing_df['MeansOfEntry'] = 'Extract from Narrative'
+        briefing_df['LossItems'] = 'Extract from Narrative (semicolon separated Item:$Amount)'
+        briefing_df['VictimSex'] = ''
+        briefing_df['VictimAdultJuvenile'] = ''
+        briefing_df['Allegation'] = ''
+        briefing_df['ParkingLocation'] = ''
+        briefing_df['Context'] = ''
+        
+        print(f"✅ Transformed to briefing format: {len(briefing_df)} records")
+        return briefing_df
+        
+    except Exception as e:
+        print(f"❌ Error transforming CSV: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def save_briefing_csv(df, output_folder):
+    """Save briefing CSV with timestamp"""
+    try:
+        os.makedirs(output_folder, exist_ok=True)
+        
+        timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        output_file = os.path.join(output_folder, f"SCRPA_Briefing_Ready_{timestamp}.csv")
+        
+        # Save with proper quoting for narrative fields
+        df.to_csv(output_file, index=False, quoting=csv.QUOTE_ALL, encoding='utf-8')
+        
+        print(f"\n✅ Briefing CSV saved: {os.path.basename(output_file)}")
+        print(f"📁 Location: {output_file}")
+        print(f"\n📋 Records by Crime Type:")
+        
+        # Show breakdown by crime type
+        crime_counts = df['IncidentType'].value_counts()
+        for crime_type, count in crime_counts.items():
+            print(f"   • {crime_type}: {count} cases")
+        
+        return output_file
+        
+    except Exception as e:
+        print(f"❌ Error saving CSV: {e}")
+        return None
+
+def find_raw_7day_csv(rms_export_dir=None):
+    """
+    Find the raw 7-day filtered CSV file. Args:
+        rms_export_dir: Path to RMS export directory. If None, uses default. Returns:
+        Path to the most recent *_ReportDate_Last7.csv file, or None if not found.
+    """ import glob
+    if rms_export_dir is None:
+        rms_export_dir = RMS_FOLDER
+    
+    pattern = os.path.join(rms_export_dir, "*_ReportDate_Last7.csv")
+    files = glob.glob(pattern)
+    
+    if not files:
+        return None
+    
+    # Get most recent file by modification time
+    latest = max(files, key=os.path.getmtime)
+    return latest
+
+def append_raw_7day_csv_section(f, rms_export_dir=None):
+    """
+    Append the raw 7-day CSV data section to the prompt file. Args:
+        f: Open file handle to write to
+        rms_export_dir: Path to RMS export directory
+    """
+    # Find the raw 7-day CSV file
+    raw_7day_csv_path = find_raw_7day_csv(rms_export_dir)
+    
+    if not raw_7day_csv_path or not os.path.exists(raw_7day_csv_path):
+        f.write("\n---\n\n")
+        f.write("## Raw 7-Day Filtered CSV Data (Source)\n\n")
+        f.write("*Note: Raw 7-day CSV file (`*_ReportDate_Last7.csv`) not found. *\n\n")
+        return
+    
+    f.write("\n---\n\n")
+    f.write("## Raw 7-Day Filtered CSV Data (Source)\n\n")
+    f.write("**IMPORTANT**: The following is the raw 7-day filtered CSV data with original column names. ")

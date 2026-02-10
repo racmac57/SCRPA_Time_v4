@@ -838,13 +838,35 @@ def build_all_crimes_enhanced(
 
     has_current_cycle = cycle is not None
 
+    def _to_date(v):
+        """Normalize to Python date for reliable comparisons (handles pandas Timestamp/NaT)."""
+        if v is None or pd.isna(v):
+            return None
+        if isinstance(v, date) and not hasattr(v, 'date'):
+            return v
+        if hasattr(v, 'date') and callable(getattr(v, 'date')):
+            try:
+                return v.date()
+            except Exception:
+                return None
+        return None
+
     if has_current_cycle:
-        current_cycle_report_due = cycle['Report_Due_Date']
-        current_cycle_start = cycle['7_Day_Start']
-        current_cycle_end = cycle['7_Day_End']
-        current_cycle_28_start = cycle['28_Day_Start']
-        current_cycle_28_end = cycle['28_Day_End']
-        current_cycle_name = cycle['Report_Name']
+        current_cycle_report_due = _to_date(cycle.get('Report_Due_Date'))
+        current_cycle_start = _to_date(cycle.get('7_Day_Start'))
+        current_cycle_end = _to_date(cycle.get('7_Day_End'))
+        current_cycle_28_start = _to_date(cycle.get('28_Day_Start'))
+        current_cycle_28_end = _to_date(cycle.get('28_Day_End'))
+        # Fallback: if 28-day window missing or same as 7-day (calendar error), use 28 days ending on 7_Day_End
+        if current_cycle_end:
+            if current_cycle_28_start is None or current_cycle_28_end is None:
+                current_cycle_28_end = current_cycle_end
+                current_cycle_28_start = current_cycle_end - timedelta(days=27)
+            elif current_cycle_28_start == current_cycle_start and current_cycle_28_end == current_cycle_end:
+                # Calendar has 28-day same as 7-day; use proper 28-day window (27 days before 7_Day_End through 7_Day_End)
+                current_cycle_28_start = current_cycle_end - timedelta(days=27)
+                current_cycle_28_end = current_cycle_end
+        current_cycle_name = cycle.get('Report_Name')
         # Extract BiWeekly_Report_Name if available (e.g., 26BW01, 26BW02)
         current_biweekly_name = None
         if 'BiWeekly_Report_Name' in cycle.index:

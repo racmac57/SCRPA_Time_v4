@@ -155,12 +155,13 @@ def generate_lagday_summary(
         # Filter to only actual 7-Day period incidents (not backfill)
         df_7day_period_only = df_7day[df_7day['Period'] == '7-Day'].copy() if 'Period' in df_7day.columns else df_7day.copy()
         
-        has_lag = 'LagDays' in df_7day_period_only.columns
+        # Use IncidentToReportDays for reporting delay lag (not cycle-based LagDays)
+        has_reporting_lag = 'IncidentToReportDays' in df_7day_period_only.columns
         for cat, grp in df_7day_period_only.groupby('Crime_Category', dropna=False):
             cat_name = str(cat) if pd.notna(cat) else 'Unknown'
             total = len(grp)
-            # Count incidents with lag days (LagDays > 0)
-            lag_count = int((grp['LagDays'] > 0).sum()) if has_lag else 0
+            # Count incidents with reporting delay (IncidentToReportDays > 0)
+            lag_count = int((grp['IncidentToReportDays'] > 0).sum()) if has_reporting_lag else 0
             by_crime_category.append({
                 'Crime_Category': cat_name,
                 'LagDayCount': lag_count,
@@ -177,12 +178,13 @@ def generate_lagday_summary(
 
     # LagDays distribution (for actual 7-Day period incidents only, not backfill)
     lagdays_distribution = {}
-    if 'Period' in df_7day.columns and 'LagDays' in df_7day.columns and len(df_7day) > 0:
-        # Filter to only 7-Day period incidents that have lag days
+    if 'Period' in df_7day.columns and 'IncidentToReportDays' in df_7day.columns and len(df_7day) > 0:
+        # Filter to only 7-Day period incidents that have reporting delay
         df_7day_period_only = df_7day[df_7day['Period'] == '7-Day'].copy()
         if len(df_7day_period_only) > 0:
-            lag_values = df_7day_period_only['LagDays'].dropna()
-            lag_values = lag_values[lag_values > 0]  # Only incidents with actual lag
+            # Use IncidentToReportDays for reporting delay (not cycle-based LagDays)
+            lag_values = df_7day_period_only['IncidentToReportDays'].dropna()
+            lag_values = lag_values[lag_values > 0]  # Only incidents with actual reporting delay
             if len(lag_values) > 0:
                 lagdays_distribution = {
                     'min': int(lag_values.min()),

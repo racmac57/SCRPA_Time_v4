@@ -1,0 +1,667 @@
+out = pd.DataFrame({
+            "Crime_Category": [],
+            "LagDayCount": [],
+            "TotalCount": []
+        })
+        return out
+    
+    grp = df_filtered.groupby("Crime_Category", dropna=False)
+    out = pd.DataFrame({
+        "Crime_Category": grp.size().index,
+        "LagDayCount": grp["IsLagDay"].sum().astype(int).values,
+        "TotalCount": grp.size().values,
+    })
+    
+    # Sort by TotalCount descending, then by Crime_Category ascending
+    out = out.sort_values(["TotalCount", "Crime_Category"], ascending=[False, True], ignore_index=True)
+    
+    # Add total row at bottom
+    total_row = pd.DataFrame({
+        "Crime_Category": ["TOTAL"],
+        "LagDayCount": [int(df_filtered["IsLagDay"].sum())],
+        "TotalCount": [len(df_filtered)]
+    })
+    out = pd.concat([out, total_row], ignore_index=True)
+    
+    category_count = len(out) - 1  # Exclude total row
+    print(f"Summary: {category_count} crime categories (plus total row)")
+    
+    # Validation: Check for expected categories
+    expected_categories = ["Burglary Auto", "Motor Vehicle Theft", "Burglary - Comm & Res", 
+                          "Robbery", "Sexual Offenses"]
+    found_categories = set(out[out["Crime_Category"] != "TOTAL"]["Crime_Category"].tolist())
+    missing_expected = set(expected_categories) - found_categories
+    
+    if missing_expected:
+        print(f"   ℹ️  Note: Expected categories not present in this cycle: {', '.join(sorted(missing_expected))}")
+    
+    return out
+
+def write_data_dictionary(df_original: pd.DataFrame, path: Path, reference_path: Path = None) -> None:
+    """Write data dictionary markdown file. If reference_path exists, copy from there instead of regenerating.""" # Check if reference dictionary already exists
+    if reference_path and reference_path.exists():
+        # Copy from reference location instead of regenerating
+        import shutil
+        shutil.copy2(reference_path, path)
+        print(f"Data dictionary copied from reference location: {reference_path}")
+        print(f"  → {path}")
+        return
+    
+    # Generate new dictionary (only if reference doesn't exist)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines = []
+    lines.append(f"# SCRPA 7-Day Outputs — Data Dictionary\n\n**Generated:** {now}\n")
+    lines.append("## Overview\nThis dictionary documents the new 7-Day outputs replacing `SCRPA_7Day_Filtered.csv`:\n")
+    lines.append("- **Detailed:** `SCRPA_7Day_Detailed.csv`")
+    lines.append("- **Summary:** `SCRPA_7Day_Summary.csv`\n")
+    lines.append("### Cycle Logic\n- The 7-Day cycle is defined by **Report Date** values present in the file.") lines.append("- `CycleStartDate` = minimum `Report Date` in the dataset.") lines.append("- `CycleEndDate` = maximum `Report Date` in the dataset.") lines.append("- **LagDay**: incidents with `Incident Date` **before** `CycleStartDate`.\n")
+    lines.append("### Key Definitions")
+    lines.append("- `IsLagDay` *(boolean)*: `true` when `Incident Date` < `CycleStartDate`.") lines.append("- `LagDays` *(integer)*: days incident precedes `CycleStartDate` (0 if not lagday).") lines.append("- `IncidentToReportDays` *(integer)*: days between `Report Date` and `Incident Date` (QA metric).") lines.append("- `IncidentType` *(text)*: normalized from `Incident Type_1` by removing statute suffix and replacing 'Attempted Burglary' with 'Burglary' (e.g., `\"Burglary - 2C:18-2\"` → `\"Burglary\"`).") lines.append("- `Crime_Category` *(text)*: crime category matching `all_crimes.m` logic. Only tracked categories (excluding 'Other') appear in Summary.\n")
+
+    lines.append("## Detailed Dataset — `SCRPA_7Day_Detailed.csv`\n")
+    lines.append("| Column | Type | Description |")
+    lines.append("|---|---|---|")
+    for col in df_original.columns:
+        dtype_str = str(df_original[col].dtype)
+        lines.append(f"| {col} | {dtype_str} | **Source**: original 7-Day export. |")
+    lines.extend([
+        "| CycleStartDate | date | Start date of the current 7-Day cycle (by Report Date). |",
+        "| CycleEndDate | date | End date of the current 7-Day cycle (by Report Date). |",
+        "| IsLagDay | boolean | True if Incident Date precedes CycleStartDate. |",
+        "| LagDays | integer | Days Incident Date precedes CycleStartDate (0 if not lagday). |",
+        "| IncidentToReportDays | integer | Days between Report Date and Incident Date. |",
+        "| IncidentType | text | Normalized incident type from `Incident Type_1` (for reference). |",
+        "| Crime_Category | text | Crime category matching `all_crimes.m` logic: 'Burglary Auto', 'Motor Vehicle Theft', 'Burglary - Comm & Res', 'Robbery', 'Sexual Offenses', or 'Other'. |",
+        "",
+        "## Summary Dataset — `SCRPA_7Day_Summary.csv`",
+        "",
+        "| Column | Type | Description |",
+        "|---|---|---|",
+        "| Crime_Category | text | Crime category aligned with `all_crimes.m` logic (excludes 'Other'). |",
+        "| LagDayCount | integer | Count of those incidents where `IsLagDay = true`. |",
+        "| TotalCount | integer | Number of incidents in the 7-Day cycle (by Report Date). |",
+        "",
+        "## Reconciliation",
+        "- `sum(Summary.TotalCount excluding TOTAL row) = rowcount(Detailed where Crime_Category != 'Other')`",
+        "- `sum(Summary.LagDayCount excluding TOTAL row) = count(Detailed.IsLagDay = true where Crime_Category != 'Other')`",
+        "- Summary includes a TOTAL row at the bottom with aggregated counts",
+        "",
+        "## Backward Compatibility",
+        "- All original columns from `SCRPA_7Day_Filtered.csv` are preserved in **Detailed**. ",
+        "- The previous file is **deprecated** in favor of the two new outputs. ",
+        ""
+    ])
+    # Write to reference location first (if it doesn't exist)
+    if reference_path and not reference_path.exists():
+        reference_path.parent.mkdir(parents=True, exist_ok=True)
+        reference_path.write_text("\n".join(lines), encoding="utf-8")
+        print(f"✅ Data dictionary created in reference location: {reference_path}")
+        print(f"   (This will be reused for all future reports)")
+    
+    # Always write to local path for current report
+    path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"Data dictionary written: {path}")
+
+def write_readme(path: Path) -> None:
+    """Write migration README"""
+    text = """# SCRPA 7-Day Outputs — Migration Notes
+
+**Changes**
+- Deprecated: `SCRPA_7Day_Filtered.csv`
+- New: `SCRPA_7Day_Detailed.csv`, `SCRPA_7Day_Summary.csv`
+
+**Consumers**
+- Update any references to use `SCRPA_7Day_Detailed.csv` for incident-level reporting. - Use `SCRPA_7Day_Summary.csv` for high-level counts, no further Power BI transforms required. **Lagday Visibility**
+- `IsLagDay` and `LagDays` make backfilled incidents explicit. - Cycle bounds carried in each row: `CycleStartDate`, `CycleEndDate`. **Derivation**
+- IncidentType = `Incident Type_1` with statute suffix removed (e.g., `" - 2C:..."`). **Validation**
+- Ensure summary counts match Detailed. - Run reconciliation checks: `sum(Summary.TotalCount) = rowcount(Detailed)`
+- Run lagday check: `sum(Summary.LagDayCount) = count(Detailed.IsLagDay = true)`
+"""
+    path.write_text(text, encoding="utf-8")
+    print(f"README written: {path}")
+
+def main() -> None:
+    """Main execution function"""
+    print("=" * 60)
+    print("SCRPA 7-Day Export Restructure")
+    print("=" * 60)
+    print()
+    
+    if not INPUT_CSV:
+        print("ERROR: Could not find input CSV file.") print(f"  Looked in current dir: {Path.cwd()}")
+        print(f"  Looked in: {ROOT}")
+        print(f"  Looked in: {RMS_EXPORT_DIR}")
+        print("  Expected: SCRPA_7Day_Filtered.csv or *_ReportDate_Last7.csv")
+        sys.exit(1)
+    
+    try:
+        df_orig = load_input(INPUT_CSV)
+        incident_col, report_col, summary_key = pick_columns(df_orig)
+        print(f"Using columns: Incident={incident_col}, Report={report_col}, SummaryKey={summary_key}")
+        
+        df_detailed = build_detailed(df_orig, incident_col, report_col, summary_key)
+        df_summary = build_summary(df_detailed)
+
+        # Write outputs
+        output_dir = Path.cwd()
+        print(f"\nWriting outputs to: {output_dir}")
+        df_detailed.to_csv(OUT_DETAILED, index=False)
+        print(f"  ✓ Detailed CSV: {OUT_DETAILED.name} ({len(df_detailed)} rows)")
+        
+        df_summary.to_csv(OUT_SUMMARY, index=False)
+        print(f"  ✓ Summary CSV: {OUT_SUMMARY.name} ({len(df_summary)} rows)")
+        
+        write_data_dictionary(df_orig, OUT_DICT, REFERENCE_DICT)
+        write_readme(OUT_README)
+
+        # Basic reconciliation check (exclude total row and "Other" category)
+        df_summary_no_total = df_summary[df_summary["Crime_Category"] != "TOTAL"]
+        total_count_sum = df_summary_no_total["TotalCount"].sum()
+        # Only count non-"Other" incidents in detailed
+        detailed_filtered = df_detailed[df_detailed["Crime_Category"] != "Other"]
+        detailed_count = len(detailed_filtered)
+        lagday_summary = df_summary_no_total["LagDayCount"].sum()
+        lagday_detailed = int(detailed_filtered["IsLagDay"].sum())
+        
+        print(f"\n=== Reconciliation ===")
+        print(f"Detailed rows (tracked categories only): {detailed_count}")
+        print(f"Summary TotalCount sum (excluding total row): {total_count_sum}")
+        print(f"Detailed IsLagDay count (tracked only): {lagday_detailed}")
+        print(f"Summary LagDayCount sum (excluding total row): {lagday_summary}")
+        
+        if detailed_count != total_count_sum:
+            print(f"⚠️  WARNING: TotalCount mismatch! {detailed_count} != {total_count_sum}")
+            print(f"   This indicates a data integrity issue. Check category filtering logic.") else:
+            print("✓ TotalCount reconciliation: PASS")
+            
+        if lagday_detailed != lagday_summary:
+            print(f"⚠️  WARNING: LagDayCount mismatch! {lagday_detailed} != {lagday_summary}")
+            print(f"   This indicates a data integrity issue. Check lagday calculation logic.") else:
+            print("✓ LagDayCount reconciliation: PASS")
+        
+        # Additional validation: Check total row matches
+        if len(df_summary) > 0 and df_summary.iloc[-1]["Crime_Category"] == "TOTAL":
+            total_row_total = df_summary.iloc[-1]["TotalCount"]
+            total_row_lag = df_summary.iloc[-1]["LagDayCount"]
+            if total_row_total != detailed_count:
+                print(f"⚠️  WARNING: TOTAL row TotalCount ({total_row_total}) != filtered detailed count ({detailed_count})")
+            if total_row_lag != lagday_detailed:
+                print(f"⚠️  WARNING: TOTAL row LagDayCount ({total_row_lag}) != filtered lagday count ({lagday_detailed})")
+            if total_row_total == detailed_count and total_row_lag == lagday_detailed:
+                print("✓ TOTAL row validation: PASS")
+        
+        print("\n✅ Restructure complete!") except Exception as e:
+        print(f"\n❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
+
+```
+
+The Data Dictionary is now generated once and stored in the reference location. Creating a summary document explaining which files are needed:
+
+
+```markdown
+# SCRPA Documentation Files - What's Needed vs Historical Notes
+
+## Summary
+
+**Only ONE file is needed for ChatGPT:**
+- `CHATGPT_BRIEFING_PROMPT.md` - Complete prompt with embedded CSV data
+
+**Data Dictionary is now stored once in reference location:**
+- `C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md`
+- Generated only once, then referenced for all future reports
+
+---
+
+## Files in Documentation Folder
+
+### ✅ **NEEDED - Active Use**
+
+1. **`CHATGPT_BRIEFING_PROMPT.md`**
+   - **Purpose**: Complete prompt file for ChatGPT with embedded CSV data
+   - **Usage**: Copy entire file and paste into ChatGPT with message: "I need you to generate an HTML tactical briefing report from the crime data below. Please read the complete prompt and CSV data in this file, then generate the HTML output as specified." - **Contains**: CSV data summary, complete prompt text, HTML template, column mapping guide
+   - **Status**: ✅ **KEEP** - This is the only file you need for ChatGPT
+
+2. **`SCRPA_Report_Summary.md`**
+   - **Purpose**: Consolidated summary of the report with CSV file listings and prompt content
+   - **Usage**: Quick reference for what files are in this report
+   - **Status**: ✅ **KEEP** - Useful for documentation
+
+3. **`SCRPA_7Day_Data_Dictionary.md`** (if copied to Documentation/)
+   - **Purpose**: Data dictionary for 7-Day outputs
+   - **Usage**: Reference documentation (now stored in `09_Reference\Standards\RMS\SCRPA`)
+   - **Status**: ⚠️ **OPTIONAL** - Can be removed from Documentation/ since it's in reference location
+   - **Note**: This file is now generated once and stored in the reference location. Future reports will copy from there instead of regenerating. 4. **`README_7day_outputs.md`** (if copied to Documentation/)
+   - **Purpose**: Migration notes for 7-Day output changes
+   - **Usage**: Reference documentation
+   - **Status**: ⚠️ **OPTIONAL** - Can be removed from Documentation/ if not needed
+
+### ❌ **NOT NEEDED - Historical/Development Notes**
+
+These files are historical development notes and can be removed from Documentation/ folder:
+
+1. **`CHATGPT_PROMPT_UPDATE_REVIEW.md`**
+   - **Purpose**: Review of ChatGPT prompt updates (December 9, 2025)
+   - **Status**: ❌ **REMOVE** - Historical development note
+
+2. **`CYCLE_FIX_PROMPT.md`**
+   - **Purpose**: Documentation of cycle fix implementation
+   - **Status**: ❌ **REMOVE** - Historical development note
+
+3. **`FIX_PROMPT_AND_REPORTS_FOLDER.md`**
+   - **Purpose**: Documentation of fixes to prompt and reports folder issues
+   - **Status**: ❌ **REMOVE** - Historical development note
+
+4. **`CSV_RETENTION_AND_PROMPT_FIX.md`**
+   - **Purpose**: Documentation of CSV retention and prompt fixes
+   - **Status**: ❌ **REMOVE** - Historical development note
+
+5. **`SCRPA_WORKFLOW_USER_GUIDE.md`**
+   - **Purpose**: User guide for SCRPA workflow
+   - **Status**: ⚠️ **OPTIONAL** - Can be kept if useful, but not needed for report generation
+   - **Note**: This is general documentation, not report-specific
+
+6. **`CHATGPT_PROMPT_GUIDE.md`**
+   - **Purpose**: Guide for using ChatGPT prompts
+   - **Status**: ⚠️ **OPTIONAL** - Can be kept if useful, but not needed for report generation
+   - **Note**: This is general documentation, not report-specific
+
+---
+
+## Recommended Documentation Folder Contents
+
+**Minimum (Essential):**
+- `CHATGPT_BRIEFING_PROMPT.md` ✅
+- `SCRPA_Report_Summary.md` ✅
+
+**Optional (Reference):**
+- `SCRPA_7Day_Data_Dictionary.md` (or reference from `09_Reference\Standards\RMS\SCRPA`)
+- `README_7day_outputs.md`
+
+**Remove (Historical):**
+- `CHATGPT_PROMPT_UPDATE_REVIEW.md`
+- `CYCLE_FIX_PROMPT.md`
+- `FIX_PROMPT_AND_REPORTS_FOLDER.md`
+- `CSV_RETENTION_AND_PROMPT_FIX.md`
+- `SCRPA_WORKFLOW_USER_GUIDE.md` (unless you want to keep it)
+- `CHATGPT_PROMPT_GUIDE.md` (unless you want to keep it)
+
+---
+
+## Data Dictionary Location
+
+The Data Dictionary is now stored in a reference location and only generated once:
+
+**Reference Location:**
+```
+C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md
+```
+
+**How It Works:**
+1. First time: Script generates the dictionary and saves it to the reference location
+2. Future runs: Script copies from reference location instead of regenerating
+3. Report folder: Dictionary is copied to Documentation/ folder for reference (optional)
+
+This ensures the dictionary is consistent across all reports and doesn't need to be regenerated each time. ---
+
+## ChatGPT Usage
+
+**Simple Workflow:**
+1. Open `CHATGPT_BRIEFING_PROMPT.md` from the Documentation/ folder
+2. Copy the entire file content
+3. Paste into ChatGPT with this message:
+   ```
+   I need you to generate an HTML tactical briefing report from the crime data below. Please read the complete prompt and CSV data in this file, then generate the HTML output as specified. ```
+4. ChatGPT will generate the HTML briefing
+
+**That's it! ** No need for other files. ```
+
+## Summary
+
+### Completed
+
+1. Data Dictionary — generated once and stored in reference location
+   - Location: `C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md`
+   - Behavior: Generated on first run, then copied from reference for all future reports
+   - Updated: `scrpa_7day_restructure.py` to check for reference file first
+
+2. Documentation guide created
+   - File: `DOCUMENTATION_FILES_EXPLAINED.md` in the SCRPA reports folder
+   - Explains which files are needed vs historical notes
+
+### Still needed
+
+1. Archive old output files in `06_Output` directory (keep current and previous only)
+2. Update `organize_report_files.py` to exclude unnecessary documentation files
+
+### Answers to your questions
+
+- Data Dictionary: Now stored once in `09_Reference\Standards\RMS\SCRPA` and referenced for all future reports
+- ChatGPT usage: Only need `CHATGPT_BRIEFING_PROMPT.md` with the message you provided
+- Historical files: The following can be removed from Documentation/:
+  - `CHATGPT_PROMPT_UPDATE_REVIEW.md` - Historical development note
+  - `CYCLE_FIX_PROMPT.md` - Historical development note
+  - `FIX_PROMPT_AND_REPORTS_FOLDER.md` - Historical development note
+  - `CSV_RETENTION_AND_PROMPT_FIX.md` - Historical development note
+  - `SCRPA_WORKFLOW_USER_GUIDE.md` - Optional (general documentation)
+  - `CHATGPT_PROMPT_GUIDE.md` - Optional (general documentation)
+
+Should I continue with:
+1. Adding archiving logic for `06_Output` directory? 2. Updating `organize_report_files.py` to exclude unnecessary documentation files? ---
+
+**User**
+
+**Goal**
+- Update CHANGELOG.md, README.md, SUMMARY.md
+- and update local git
+
+---
+
+**Cursor**
+
+Updating CHANGELOG.md, README.md, and SUMMARY.md, then committing the changes to git. Checking for a git repository in the parent directory:
+
+
+Updating CHANGELOG.md, README.md, and SUMMARY.md with the recent changes:
+
+
+```markdown
+# SCRPA Reporting System - Changelog
+
+All notable changes to the SCRPA Reporting System will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). ---
+
+## [1.4.0] - 2025-12-29
+
+### Fixed
+- **Zone Formatting Issue**
+  - Fixed Zone values displaying as decimals (5.0, 8.0) instead of whole numbers (5, 8)
+  - Updated `generate_briefing_html.py` to convert Zone values to integers before display
+  - Updated `prepare_briefing_csv.py` to format Zone as whole number during CSV transformation
+  - Added instructions to ChatGPT prompt to format Zone as whole number
+
+- **Date Filtering Issue**
+  - Fixed incidents with Report Date outside cycle range being included in reports
+  - Added filtering logic in `prepare_briefing_csv.py` to exclude incidents with Report Date before cycle start or after cycle end
+  - Script now correctly filters to only include incidents within the 7-day cycle date range
+  - Reports how many records were excluded if any fall outside the cycle range
+
+### Changed
+- **Data Dictionary Storage**
+  - Data Dictionary now stored once in reference location: `09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md`
+  - Script checks for existing reference dictionary and copies from there instead of regenerating
+  - Ensures consistency across all reports and eliminates redundant generation
+  - First run creates the dictionary in reference location, all future runs copy from there
+
+- **ChatGPT Prompt Enhancement**
+  - Enhanced narrative extraction instructions with explicit "CRITICAL - NARRATIVE EXTRACTION" section
+  - Added detailed list of what to extract from Narrative column (suspect descriptions, vehicles, loss items, methods, etc.) - Emphasized that Narrative column contains more complete information than structured fields
+  - Added note: "DO NOT rely solely on pre-processed columns"
+
+### Added
+- **Documentation Guide**
+  - Created `DOCUMENTATION_FILES_EXPLAINED.md` explaining which files are needed vs historical notes
+  - Clarified that only `CHATGPT_BRIEFING_PROMPT.md` is needed for ChatGPT usage
+  - Documented which historical development files can be removed from Documentation/ folder
+
+---
+
+## [1.3.0] - 2025-12-09
+
+### Added
+- **ChatGPT Prompt Enhancements (Based on ChatGPT Recommendations)**
+  - Added "Reporting Parameters For This Run" section with Cycle ID, Date Range (ISO format), Version, Prepared By, Submitted To
+  - Added "Loss And Monetary Rules" section with 5-step process for calculating Loss Total
+  - Added "Cycle And Date Rules" section ensuring consistency across HTML output
+  - Added "Summary Table Rules" section ensuring Loss Total matches between bullets and table
+  - Created `CHATGPT_USAGE_INSTRUCTIONS.md` quick reference guide
+  - Clarified that CSV data is embedded in prompt file (no separate upload required)
+
+### Changed
+- **CHATGPT_BRIEFING_PROMPT Instructions**
+  - Updated instructions to clarify CSV data is already embedded
+  - Added Option 1 (recommended): Copy entire prompt file
+  - Added Option 2 (alternative): Upload CSV separately
+  - Improved clarity on what to provide to ChatGPT
+
+### Fixed
+- **Date Format Handling**
+  - Reporting Parameters section uses ISO format (YYYY-MM-DD) as recommended by ChatGPT
+  - HTML template continues to use MM/DD/YYYY format for display
+  - Date conversion function handles edge cases gracefully
+
+---
+
+## [1.2.0] - 2025-12-09
+
+### Fixed
+- **Path Case Sensitivity**
+  - Fixed case mismatch in config paths (`SCRPA` vs `scrpa`)
+  - Updated `config.py` to use lowercase `scrpa` folder name
+  - Updated fallback paths in `RMS_Statistical_Export_FINAL_COMPLETE.py`
+  - Scripts now correctly find Excel/CSV files in exports folder
+
+- **CSV File Support**
+  - Added CSV file fallback when Excel files not found
+  - Updated `get_latest_rms_file()` to search for CSV files if Excel unavailable
+  - Updated `load_and_analyze_rms_data()` to handle both Excel and CSV formats
+  - Added case-insensitive file search for better compatibility
+
+- **Archive Timing**
+  - Moved archive function to run AFTER HTML generation (was running before)
+  - Prevents archiving newly generated HTML files
+  - Archive now runs after all reports are generated
+
+- **Batch File Syntax Error**
+  - Fixed "may was unexpected at this time" error in `generate_all_reports.bat`
+  - Escaped parentheses in echo statements for proper batch parsing
+  - Improved error message formatting
+
+- **Enhanced Debugging**
+  - Added extensive DEBUG logging throughout HTML generation process
+  - Added file path verification and existence checks
+  - Added file size verification after write operations
+  - Improved error messages with full tracebacks
+
+### Changed
+- **CHATGPT_BRIEFING_PROMPT Generation**
+  - Removed em dashes (—) and replaced with regular hyphens (-)
+  - Updated HTML template to use standard ASCII characters
+  - Added explicit Loss Total calculation instructions
+  - Loss Total now clearly documented as sum of individual loss items
+  - Updated all HTML template sections with Loss Total calculation guidance
+
+### Added
+- **Loss Total Calculation Logic**
+  - Added instructions that Loss Total = sum of all individual loss items
+  - Updated all HTML template sections with calculation guidance
+  - Added verification instructions in data processing section
+
+---
+
+## [1.1.0] - 2025-12-09
+
+### Changed
+- **Project Reorganization**
+  - Moved scripts to `SCRPA\scripts\` folder
+  - Moved logs to `SCRPA\logs\` folder
+  - Moved documentation to `SCRPA\docs\` folder
+  - Created archive folder for old/broken scripts
+
+- **Cycle Lookup System**
+  - Updated scripts to use cycle calendar CSV (`7Day_28Day_Cycle_20250414.csv`)
+  - Replaced calculated cycle names with calendar-based lookup
+  - Added REPORT_DATE environment variable support
+
+- **Version Numbering**
+  - Updated Combined Executive Summary HTML version from v1.0 to v1.1
+
+### Fixed
+- **Folder Overwrite Prompt**
+  - Fixed prompt to always appear when folder exists
+  - Improved handling of non-interactive mode
+
+- **Path References**
+  - Updated batch file paths after script reorganization
+  - Fixed PowerShell script path references
+  - Updated log file location to `SCRPA\logs\`
+
+### Fixed (by Claude AI)
+- **✅ Cycle/Range Data Issue - Root Cause Fixed**
+  - **Root Cause**: Output suppression (`>nul 2>&1`) hid all errors - script reported success even when HTML wasn't created
+  - **Fix Applied**: Added output capture to temporary log file with error display
+  - **Fix Applied**: Added extensive DEBUG logging throughout HTML generation
+  - **Fix Applied**: Added file creation verification with size check
+  - **Status**: Fixes applied - Testing required to verify HTML generation works correctly
+  - **See**: `docs/CYCLE_FIX_SOLUTION.md` and `docs/CLAUDE_FIX_SUMMARY.md` for details
+
+---
+
+## [1.0.0] - 2025-12-09
+
+### Added
+- **Complete Automation Workflow**
+  - `Run_SCRPA_Report_Folder.bat` - Comprehensive automation script
+  - Handles all 4 steps: folder creation, report generation, file organization
+  - Date-aware workflow with user prompts
+
+- **Folder Structure Generation**
+  - `generate_weekly_report.py` - Creates report folders with naming convention
+  - Automatic Power BI template copying
+  - Subfolder creation (Data/, Reports/, Documentation/)
+
+- **File Organization System**
+  - `organize_report_files.py` - Automatically organizes all report files
+  - Copies CSV files, reports, and documentation to appropriate folders
+  - Creates consolidated markdown summaries
+
+- **Excel to CSV Conversion**
+  - `convert_all_xlsx.bat` - Batch conversion script
+  - `export_excel_sheets_to_csv.py` - Excel processing engine
+  - Support for 7-day filtered exports (`--report-last7`)
+
+- **Briefing Preparation**
+  - `prepare_briefing_csv.py` - Transforms CSV for ChatGPT processing
+  - Automatic prompt generation (`CHATGPT_BRIEFING_PROMPT.md`)
+  - Cycle-aware data processing
+
+- **Report Generation**
+  - HTML and PDF report generation
+  - Tactical summaries (`*_rms_summary.html/pdf`)
+  - Strategic executive summaries (`SCRPA_Combined_Executive_Summary_*.html/pdf`)
+
+- **Documentation**
+  - README.md - System overview and quick start guide
+  - CHANGELOG.md - Version history
+  - SUMMARY.md - System summary
+  - In-folder documentation (CHATGPT_PROMPT_GUIDE.md, etc.) ### Changed
+- **Report Folder Structure**
+  - Moved from `SCRPA_ArcPy` to `16_Reports\SCRPA\Time_Based\`
+  - Organized by year and date-based folders
+  - Standardized subfolder structure
+
+- **Naming Convention**
+  - Implemented `YYCMMWww_YY_MM_DD` format
+  - Week offset adjustment (-1) for SCRPA cycle alignment
+
+- **Workflow Integration**
+  - Consolidated multiple scripts into single automation
+  - Reduced manual steps from 5+ to 1 batch file execution
+
+### Fixed
+- **File Archiving**
+  - Fixed archive step running before conversion
+  - Improved error handling for archived files
+
+- **OneDrive Sync Issues**
+  - Added handling for "Access Denied" errors during folder operations
+  - Improved folder clearing logic
+
+- **Python Detection**
+  - Enhanced Python path detection in batch files
+  - Support for multiple Python installations
+
+### Security
+- **Path Validation**
+  - Ensures output stays within OneDrive directory
+  - Prevents accidental file system access outside workspace
+
+---
+
+## [0.9.0] - 2025-12-02
+
+### Added
+- Initial folder structure creation
+- Power BI template copying
+- Basic CSV file organization
+
+### Changed
+- Reorganized ETL scripts structure
+- Separated SCRPA scripts from SCRPA_ArcPy production folder
+
+---
+
+## [0.8.0] - 2025-12-01
+
+### Added
+- Excel to CSV conversion scripts
+- Briefing CSV preparation
+- ChatGPT prompt generation
+
+---
+
+## [0.7.0] - 2025-11-25
+
+### Added
+- Initial report generation scripts
+- HTML/PDF report templates
+- Basic file organization
+
+---
+
+## Future Enhancements
+
+### Planned
+- [ ] Dry-run mode for archiving
+- [ ] Config file for path management
+- [ ] Log rotation for better log management
+- [ ] ProcessPoolExecutor for CPU-bound operations
+- [ ] Airflow pipeline orchestration
+- [ ] Automated email distribution
+- [ ] Report scheduling
+
+### Under Consideration
+- [ ] Multi-user support
+- [ ] Web-based interface
+- [ ] Database integration
+- [ ] Real-time data updates
+- [ ] Advanced analytics features
+
+---
+
+## Notes
+
+- Version numbers follow Semantic Versioning (MAJOR.MINOR.PATCH)
+- Dates follow ISO 8601 format (YYYY-MM-DD)
+- All changes are documented with clear descriptions
+
+---
+
+**Last Updated**: 2025-12-09  
+**Current Version**: 1.3.0  
+**Maintained By**: R. A. Carucci
+
+
+```
+
+```markdown
+# SCRPA Reporting System - Changelog
+
+All notable changes to the SCRPA Reporting System will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).

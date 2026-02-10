@@ -1,0 +1,599 @@
+SCRIPT_DIR = Path(__file__).resolve().parent
+ROOT = SCRIPT_DIR.parent if "__file__" in globals() else Path.cwd()
+
+# Input: look for SCRPA_7Day_Filtered.csv in current directory or RMS_EXPORT_DIR
+RMS_EXPORT_DIR = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+_scrpa_export_lower = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+_scrpa_export_upper = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\SCRPA"
+RMS_EXPORT_DIR = _scrpa_export_lower if os.path.exists(_scrpa_export_lower) else _scrpa_export_upper
+
+# Try to find input CSV - check current dir first, then RMS_EXPORT_DIR
+# When called from organize_report_files.py, we're in the data folder
+INPUT_CSV = None
+current_dir = Path.cwd()
+if (current_dir / "SCRPA_7Day_Filtered.csv").exists():
+    INPUT_CSV = current_dir / "SCRPA_7Day_Filtered.csv"
+elif (ROOT / "SCRPA_7Day_Filtered.csv").exists():
+    INPUT_CSV = ROOT / "SCRPA_7Day_Filtered.csv"
+elif os.path.exists(os.path.join(RMS_EXPORT_DIR, "SCRPA_7Day_Filtered.csv")):
+    INPUT_CSV = Path(os.path.join(RMS_EXPORT_DIR, "SCRPA_7Day_Filtered.csv"))
+else:
+    # Try to find *_ReportDate_Last7.csv as fallback
+    import glob
+    pattern = os.path.join(RMS_EXPORT_DIR, "*_ReportDate_Last7.csv")
+    files = glob.glob(pattern)
+    if files:
+        INPUT_CSV = Path(max(files, key=os.path.getmtime))
+
+# Outputs go to current directory (data folder when called from organize script)
+current_dir = Path.cwd()
+OUT_DETAILED = current_dir / "SCRPA_7Day_Detailed.csv"
+OUT_SUMMARY = current_dir / "SCRPA_7Day_Summary.csv"
+# Note: Data Dictionary is NOT written to Data folder - only to reference location
+OUT_README = current_dir / "README_7day_outputs.md"
+# Optional: all_crimes.m path (informational only; no parsing dependency)
+ALL_CRIMES_M = ROOT / "all_crimes.m"
+
+# Reference location for Data Dictionary (create once, reference always)
+REFERENCE_DIR = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Standards\RMS\SCRPA")
+REFERENCE_DICT = REFERENCE_DIR / "SCRPA_7Day_Data_Dictionary.md"
+
+# Cycle calendar path
+CYCLE_CSV = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv")
+# ------------------------------
+
+def load_input(path: Path) -> pd.DataFrame:
+    """Load input CSV file"""
+    if not path or not path.exists():
+        raise FileNotFoundError(f"Input not found: {path}")
+    print(f"Loading input CSV: {path}")
+    df = pd.read_csv(path, low_memory=False)
+    print(f"Loaded {len(df)} rows, {len(df.columns)} columns")
+    return df
+
+def get_cycle_info_from_calendar(report_due_date=None):
+    """
+    Get cycle information from cycle calendar based on Report_Due_Date. Args:
+        report_due_date: datetime object or date string (MM/DD/YYYY). If None, tries to get from REPORT_DATE environment variable. Returns:
+        dict with cycle_id, range_start, range_end
+        or None if not found
+    """
+    try:
+        if not CYCLE_CSV.exists():
+            print(f"⚠️  Cycle calendar not found: {CYCLE_CSV}")
+            return None
+        
+        cycle_df = pd.read_csv(CYCLE_CSV)
+        
+        # Determine the date to use for lookup
+        if report_due_date is None:
+            # Try to get from environment variable
+            report_due_date = os.environ.get("REPORT_DATE")
+        
+        if report_due_date is None:
+            print("⚠️  No report date provided and REPORT_DATE environment variable not set")
+            print("   Will use min/max Report Date from data (may include out-of-cycle incidents)")
+            return None
+        
+        if isinstance(report_due_date, str):
+            lookup_date_str = report_due_date
+        else:
+            lookup_date_str = report_due_date.strftime("%m/%d/%Y") if hasattr(report_due_date, 'strftime') else str(report_due_date)
+        
+        # Match by Report_Due_Date (exact match)
+        matching_row = cycle_df[cycle_df['Report_Due_Date'] == lookup_date_str]
+        
+        if not matching_row.empty:
+            row = matching_row.iloc[0]
+            cycle_info = {
+                'cycle_id': row['Report_Name'],
+                'range_start': row['7_Day_Start'],
+                'range_end': row['7_Day_End']
+            }
+            print(f"✅ Cycle from calendar: {cycle_info['cycle_id']}")
+            print(f"   7-Day Range: {cycle_info['range_start']} to {cycle_info['range_end']}")
+            return cycle_info
+        
+        print(f"⚠️  Exact match failed for Report_Due_Date: {lookup_date_str}")
+        print("   Will use min/max Report Date from data (may include out-of-cycle incidents)")
+        return None
+        
+    except Exception as e:
+        print(f"⚠️  Error reading cycle calendar: {e}")
+        return None
+
+def pick_columns(df: pd.DataFrame) -> tuple[str, str, str | None]:
+    """Identify required columns for processing"""
+    # Required fields
+    incident_col = None
+    report_col = None
+    
+    for col in df.columns:
+        col_lower = col.strip().lower()
+        if col_lower == "incident date":
+            incident_col = col
+        elif col_lower == "report date":
+            report_col = col
+    
+    if not incident_col or not report_col:
+        raise KeyError(f"Expected 'Incident Date' and 'Report Date' columns. Found: {list(df.columns)}")
+    
+    # Preferred for summary key
+    summary_key = None
+    if "Incident Type_1" in df.columns:
+        summary_key = "Incident Type_1"
+    elif "NIBRS Classification" in df.columns:
+        summary_key = "NIBRS Classification"
+    
+    return incident_col, report_col, summary_key
+
+def to_datetime_safe(s: pd.Series) -> pd.Series:
+    """Convert series to datetime with error handling"""
+    return pd.to_datetime(s, errors="coerce")
+
+def normalize_incident_type(v: str) -> str:
+    """
+    Normalize incident type matching all_crimes.m logic:
+    1. Strip statute suffix (" - 2C" or " - 2C:*")
+    2. Replace "Attempted Burglary" with "Burglary"
+    """
+    if pd.isna(v) or not isinstance(v, str) or v.strip() == "":
+        return ""
+    x = v.strip()
+    # Remove statute suffix patterns like: " - 2C:18-2" or " - 2C:*"
+    if " - 2C" in x:
+        x = x.split(" - 2C")[0]
+    # Normalize "Attempted Burglary" to "Burglary" (matches M code)
+    x = x.replace("Attempted Burglary", "Burglary")
+    x = " ".join(x.split())  # Normalize whitespace
+    return x
+
+def get_crime_category(row: pd.Series, all_incidents_col: str = None, narrative_col: str = None, verbose: bool = False) -> str:
+    """
+    Map incident to Crime_Category matching all_crimes.m logic. Returns one of: "Burglary Auto", "Motor Vehicle Theft", "Burglary - Comm & Res", 
+                    "Robbery", "Sexual Offenses", or "Other"
+    
+    Matches M code exactly:
+    - Uses ALL_INCIDENTS (Type_1, Type_2, Type_3 concatenated) BEFORE normalization
+    - Uses Narrative field for special Motor Vehicle Theft cases
+    - Applies Text.Upper() for case-insensitive matching
+    """
+    # Build ALL_INCIDENTS string from Type_1, Type_2, Type_3 (matches M code line 535-538)
+    all_incidents_parts = []
+    if "Incident Type_1" in row and pd.notna(row["Incident Type_1"]):
+        all_incidents_parts.append(str(row["Incident Type_1"]))
+    if "Incident Type_2" in row and pd.notna(row["Incident Type_2"]):
+        all_incidents_parts.append(str(row["Incident Type_2"]))
+    if "Incident Type_3" in row and pd.notna(row["Incident Type_3"]):
+        all_incidents_parts.append(str(row["Incident Type_3"]))
+    
+    all_incidents = ", ".join(all_incidents_parts) if all_incidents_parts else ""
+    
+    # Get narrative if available (matches M code line 547: [Narrative] ? ? "") narrative = ""
+    if narrative_col and narrative_col in row:
+        narrative = str(row[narrative_col]) if pd.notna(row[narrative_col]) else ""
+    elif "Narrative" in row:
+        narrative = str(row["Narrative"]) if pd.notna(row["Narrative"]) else ""
+    
+    # Convert to uppercase for matching (matches M code: Text.Upper)
+    L = all_incidents.upper() if all_incidents else ""
+    N = narrative.upper() if narrative else ""
+    
+    # Edge case: empty ALL_INCIDENTS
+    if not L or L.strip() == "":
+        if verbose:
+            print(f"  ⚠️  Warning: Empty ALL_INCIDENTS for row (Case: {row.get('Case Number', 'Unknown')})")
+        return "Other"
+    
+    # Apply M code logic (lines 549-555) - ORDER MATTERS (most specific first)
+    # Check 1: Motor Vehicle Theft with narrative indicators (most specific)
+    if "MOTOR VEHICLE THEFT" in L and ("THEFT OF HIS PROPERTY" in N or "THEFT FROM MOTOR VEHICLE" in N):
+        if verbose and not N:
+            print(f"  ⚠️  Warning: Motor Vehicle Theft without Narrative - may misclassify as Burglary Auto")
+        return "Burglary Auto"
+    
+    # Check 2: Motor Vehicle Theft (general case)
+    elif "MOTOR VEHICLE THEFT" in L:
+        return "Motor Vehicle Theft"
+    
+    # Check 3: Burglary Auto patterns (includes attempted)
+    elif any(x in L for x in ["BURGLARY - AUTO", "ATTEMPTED BURGLARY - AUTO", "THEFT FROM MOTOR VEHICLE"]):
+        return "Burglary Auto"
+    
+    # Check 4: Burglary Commercial/Residence (includes attempted)
+    elif any(x in L for x in ["BURGLARY - COMMERCIAL", "ATTEMPTED BURGLARY - COMMERCIAL", 
+                               "BURGLARY - RESIDENCE", "ATTEMPTED BURGLARY - RESIDENCE"]):
+        return "Burglary - Comm & Res"
+    
+    # Check 5: Robbery
+    elif "ROBBERY" in L:
+        return "Robbery"
+    
+    # Check 6: Sexual offenses
+    elif "SEXUAL" in L or "RAPE" in L:
+        return "Sexual Offenses"
+    
+    # Default: Other
+    else:
+        return "Other"
+
+def build_detailed(df: pd.DataFrame, incident_col: str, report_col: str, summary_key: str | None, cycle_info: dict | None = None) -> pd.DataFrame:
+    """Build detailed CSV with lagday fields and cycle bounds"""
+    dfw = df.copy()
+    
+    # Convert date columns
+    dfw["_IncidentDate"] = to_datetime_safe(dfw[incident_col])
+    dfw["_ReportDate"] = to_datetime_safe(dfw[report_col])
+
+    # Get cycle bounds from calendar if available, otherwise use min/max from data
+    if cycle_info and 'range_start' in cycle_info and 'range_end' in cycle_info:
+        # Use cycle calendar dates
+        cycle_start_date = pd.to_datetime(cycle_info['range_start']).date()
+        cycle_end_date = pd.to_datetime(cycle_info['range_end']).date()
+        
+        # Filter data to only include incidents within the cycle range
+        initial_count = len(dfw)
+        dfw['_ReportDate_Date'] = dfw["_ReportDate"].dt.date
+        dfw = dfw[
+            (dfw['_ReportDate_Date'] >= cycle_start_date) & 
+            (dfw['_ReportDate_Date'] <= cycle_end_date)
+        ].copy()
+        excluded_count = initial_count - len(dfw)
+        
+        if excluded_count > 0:
+            print(f"   ⚠️  Excluded {excluded_count} incident(s) outside the 7-day cycle ({cycle_info['range_start']} to {cycle_info['range_end']})")
+        
+        # Convert to datetime for calculations
+        cycle_start_dt = pd.to_datetime(cycle_start_date)
+        cycle_end_dt = pd.to_datetime(cycle_end_date)
+    else:
+        # Fallback: Calculate cycle bounds from Report Date in data
+        cycle_start_dt = dfw["_ReportDate"].min()
+        cycle_end_dt = dfw["_ReportDate"].max()
+        
+        if pd.isna(cycle_start_dt) or pd.isna(cycle_end_dt):
+            raise ValueError("Unable to determine cycle bounds from Report Date.") cycle_start_date = cycle_start_dt.date()
+        cycle_end_date = cycle_end_dt.date()
+        print(f"   ⚠️  Using min/max Report Date from data (cycle calendar not available)")
+
+    print(f"Cycle Start: {cycle_start_date}")
+    print(f"Cycle End: {cycle_end_date}")
+
+    # Calculate lagday fields (use datetime version for calculations)
+    is_lag = dfw["_IncidentDate"] < cycle_start_dt
+    lag_days_cycle = (cycle_start_dt - dfw["_IncidentDate"]).dt.days
+    lag_days_cycle = lag_days_cycle.where(is_lag, 0).astype("Int64")
+
+    # QA field (kept because downstream analysts use it to spot report delays)
+    incident_to_report_days = (dfw["_ReportDate"] - dfw["_IncidentDate"]).dt.days.astype("Int64")
+
+    # Add derived + cycle bounds (preserve all original columns)
+    dfw["CycleStartDate"] = cycle_start_date
+    dfw["CycleEndDate"] = cycle_end_date
+    dfw["IsLagDay"] = is_lag.fillna(False)
+    dfw["LagDays"] = lag_days_cycle
+    dfw["IncidentToReportDays"] = incident_to_report_days
+
+    # Normalize incident type (for display)
+    if summary_key:
+        dfw["IncidentType"] = dfw[summary_key].apply(normalize_incident_type)
+    else:
+        dfw["IncidentType"] = ""
+    
+    # Add Crime_Category (matches all_crimes.m logic)
+    # Note: Category mapping happens BEFORE normalization in M code, so we use original incident types
+    print("   Mapping Crime_Category (using original incident types, before normalization)...")
+    dfw["Crime_Category"] = dfw.apply(get_crime_category, axis=1, verbose=False)
+    
+    # Validation: Check for potential issues
+    category_counts = dfw["Crime_Category"].value_counts()
+    other_count = category_counts.get("Other", 0)
+    tracked_count = len(dfw) - other_count
+    
+    print(f"   Crime_Category distribution: {tracked_count} tracked, {other_count} 'Other'")
+    
+    # Warn if high percentage of "Other"
+    if len(dfw) > 0 and (other_count / len(dfw)) > 0.5:
+        print(f"   ⚠️  Warning: {other_count/len(dfw)*100:.1f}% of incidents classified as 'Other'")
+        print(f"      This may indicate missing incident types or category mapping issues")
+    
+    # Warn if Narrative is missing for Motor Vehicle Theft cases
+    mvt_rows = dfw[dfw["Crime_Category"].isin(["Burglary Auto", "Motor Vehicle Theft"])]
+    if len(mvt_rows) > 0:
+        missing_narrative = mvt_rows[mvt_rows["Narrative"].isna() | (mvt_rows["Narrative"] == "")]
+        if len(missing_narrative) > 0:
+            print(f"   ⚠️  Warning: {len(missing_narrative)} Motor Vehicle Theft cases missing Narrative")
+            print(f"      May affect classification accuracy (needed for 'Burglary Auto' vs 'Motor Vehicle Theft')")
+
+    # Drop helper tmp cols
+    dfw = dfw.drop(columns=[c for c in dfw.columns if c.startswith("_")], errors="ignore")
+    
+    # Ensure cycle dates are date objects (not datetime) for CSV output
+    # Only process if dataframe is not empty
+    if len(dfw) > 0:
+        if 'CycleStartDate' in dfw.columns:
+            if isinstance(dfw['CycleStartDate'].iloc[0], pd.Timestamp):
+                dfw['CycleStartDate'] = pd.to_datetime(dfw['CycleStartDate']).dt.date
+        if 'CycleEndDate' in dfw.columns:
+            if isinstance(dfw['CycleEndDate'].iloc[0], pd.Timestamp):
+                dfw['CycleEndDate'] = pd.to_datetime(dfw['CycleEndDate']).dt.date
+    
+    # Check if dataframe is empty after filtering
+    if len(dfw) == 0:
+        print("⚠️  Warning: All incidents were filtered out. No data to process.") print("   This may indicate:")
+        print("   - Incorrect cycle date range")
+        print("   - All incidents have Report Date outside the cycle range")
+        print("   - Cycle calendar lookup found wrong cycle")
+        # Return empty dataframe with expected columns
+        return dfw
+    
+    lagday_count = int(dfw["IsLagDay"].sum())
+    print(f"LagDay incidents: {lagday_count} of {len(dfw)} total")
+    
+    return dfw
+
+def build_summary(df_detailed: pd.DataFrame) -> pd.DataFrame:
+    """
+    Build summary CSV with 3 columns: Crime_Category, LagDayCount, TotalCount
+    - Only includes Crime_Category values (excludes "Other")
+    - Only includes categories that appear in the filtered data
+    - Column order: Crime_Category, LagDayCount, TotalCount
+    - Includes total row at bottom
+    """
+    if "Crime_Category" not in df_detailed.columns:
+        raise KeyError("Detailed dataset missing Crime_Category.") if "IsLagDay" not in df_detailed.columns:
+        raise KeyError("Detailed dataset missing IsLagDay.") # Filter out "Other" category and group by Crime_Category
+    df_filtered = df_detailed[df_detailed["Crime_Category"] != "Other"].copy()
+    
+    if len(df_filtered) == 0:
+        # No tracked incidents found
+        other_count = len(df_detailed[df_detailed["Crime_Category"] == "Other"])
+        print(f"⚠️  Warning: No tracked incidents found (all {other_count} incidents classified as 'Other')")
+        print("   Summary will be empty. Check incident type data and category mapping logic.") out = pd.DataFrame({
+            "Crime_Category": [],
+            "LagDayCount": [],
+            "TotalCount": []
+        })
+        return out
+    
+    grp = df_filtered.groupby("Crime_Category", dropna=False)
+    out = pd.DataFrame({
+        "Crime_Category": grp.size().index,
+        "LagDayCount": grp["IsLagDay"].sum().astype(int).values,
+        "TotalCount": grp.size().values,
+    })
+    
+    # Sort by TotalCount descending, then by Crime_Category ascending
+    out = out.sort_values(["TotalCount", "Crime_Category"], ascending=[False, True], ignore_index=True)
+    
+    # Add total row at bottom
+    total_row = pd.DataFrame({
+        "Crime_Category": ["TOTAL"],
+        "LagDayCount": [int(df_filtered["IsLagDay"].sum())],
+        "TotalCount": [len(df_filtered)]
+    })
+    out = pd.concat([out, total_row], ignore_index=True)
+    
+    category_count = len(out) - 1  # Exclude total row
+    print(f"Summary: {category_count} crime categories (plus total row)")
+    
+    # Validation: Check for expected categories
+    expected_categories = ["Burglary Auto", "Motor Vehicle Theft", "Burglary - Comm & Res", 
+                          "Robbery", "Sexual Offenses"]
+    found_categories = set(out[out["Crime_Category"] != "TOTAL"]["Crime_Category"].tolist())
+    missing_expected = set(expected_categories) - found_categories
+    
+    if missing_expected:
+        print(f"   ℹ️  Note: Expected categories not present in this cycle: {', '.join(sorted(missing_expected))}")
+    
+    return out
+
+def write_data_dictionary(df_original: pd.DataFrame, path: Path, reference_path: Path = None) -> None:
+    """Write data dictionary markdown file. If reference_path exists, copy from there instead of regenerating.""" # Check if reference dictionary already exists
+    if reference_path and reference_path.exists():
+        print(f"✅ Data dictionary already exists in reference location: {reference_path}")
+        print(f"   (Not copying to Data folder - reference location is sufficient)")
+        return
+    
+    # Generate new dictionary (only if reference doesn't exist)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines = []
+    lines.append(f"# SCRPA 7-Day Outputs — Data Dictionary\n\n**Generated:** {now}\n")
+    lines.append("## Overview\nThis dictionary documents the new 7-Day outputs replacing `SCRPA_7Day_Filtered.csv`:\n")
+    lines.append("- **Detailed:** `SCRPA_7Day_Detailed.csv`")
+    lines.append("- **Summary:** `SCRPA_7Day_Summary.csv`\n")
+    lines.append("### Cycle Logic\n- The 7-Day cycle is defined by **Report Date** values present in the file.") lines.append("- `CycleStartDate` = minimum `Report Date` in the dataset.") lines.append("- `CycleEndDate` = maximum `Report Date` in the dataset.") lines.append("- **LagDay**: incidents with `Incident Date` **before** `CycleStartDate`.\n")
+    lines.append("### Key Definitions")
+    lines.append("- `IsLagDay` *(boolean)*: `true` when `Incident Date` < `CycleStartDate`.") lines.append("- `LagDays` *(integer)*: days incident precedes `CycleStartDate` (0 if not lagday).") lines.append("- `IncidentToReportDays` *(integer)*: days between `Report Date` and `Incident Date` (QA metric).") lines.append("- `IncidentType` *(text)*: normalized from `Incident Type_1` by removing statute suffix and replacing 'Attempted Burglary' with 'Burglary' (e.g., `\"Burglary - 2C:18-2\"` → `\"Burglary\"`).") lines.append("- `Crime_Category` *(text)*: crime category matching `all_crimes.m` logic. Only tracked categories (excluding 'Other') appear in Summary.\n")
+
+    lines.append("## Detailed Dataset — `SCRPA_7Day_Detailed.csv`\n")
+    lines.append("| Column | Type | Description |")
+    lines.append("|---|---|---|")
+    for col in df_original.columns:
+        dtype_str = str(df_original[col].dtype)
+        lines.append(f"| {col} | {dtype_str} | **Source**: original 7-Day export. |")
+    lines.extend([
+        "| CycleStartDate | date | Start date of the current 7-Day cycle (by Report Date). |",
+        "| CycleEndDate | date | End date of the current 7-Day cycle (by Report Date). |",
+        "| IsLagDay | boolean | True if Incident Date precedes CycleStartDate. |",
+        "| LagDays | integer | Days Incident Date precedes CycleStartDate (0 if not lagday). |",
+        "| IncidentToReportDays | integer | Days between Report Date and Incident Date. |",
+        "| IncidentType | text | Normalized incident type from `Incident Type_1` (for reference). |",
+        "| Crime_Category | text | Crime category matching `all_crimes.m` logic: 'Burglary Auto', 'Motor Vehicle Theft', 'Burglary - Comm & Res', 'Robbery', 'Sexual Offenses', or 'Other'. |",
+        "",
+        "## Summary Dataset — `SCRPA_7Day_Summary.csv`",
+        "",
+        "| Column | Type | Description |",
+        "|---|---|---|",
+        "| Crime_Category | text | Crime category aligned with `all_crimes.m` logic (excludes 'Other'). |",
+        "| LagDayCount | integer | Count of those incidents where `IsLagDay = true`. |",
+        "| TotalCount | integer | Number of incidents in the 7-Day cycle (by Report Date). |",
+        "",
+        "## Reconciliation",
+        "- `sum(Summary.TotalCount excluding TOTAL row) = rowcount(Detailed where Crime_Category != 'Other')`",
+        "- `sum(Summary.LagDayCount excluding TOTAL row) = count(Detailed.IsLagDay = true where Crime_Category != 'Other')`",
+        "- Summary includes a TOTAL row at the bottom with aggregated counts",
+        "",
+        "## Backward Compatibility",
+        "- All original columns from `SCRPA_7Day_Filtered.csv` are preserved in **Detailed**. ",
+        "- The previous file is **deprecated** in favor of the two new outputs. ",
+        ""
+    ])
+    # Write to reference location only (if it doesn't exist)
+    if reference_path and not reference_path.exists():
+        reference_path.parent.mkdir(parents=True, exist_ok=True)
+        reference_path.write_text("\n".join(lines), encoding="utf-8")
+        print(f"✅ Data dictionary created in reference location: {reference_path}")
+        print(f"   (This will be reused for all future reports)")
+        print(f"   (Not copying to Data folder - reference location is sufficient)")
+    elif not reference_path:
+        print(f"⚠️  Warning: No reference path provided. Data dictionary not saved.") def write_readme(path: Path) -> None:
+    """Write migration README"""
+    text = """# SCRPA 7-Day Outputs — Migration Notes
+
+**Changes**
+- Deprecated: `SCRPA_7Day_Filtered.csv`
+- New: `SCRPA_7Day_Detailed.csv`, `SCRPA_7Day_Summary.csv`
+
+**Consumers**
+- Update any references to use `SCRPA_7Day_Detailed.csv` for incident-level reporting. - Use `SCRPA_7Day_Summary.csv` for high-level counts, no further Power BI transforms required. **Lagday Visibility**
+- `IsLagDay` and `LagDays` make backfilled incidents explicit. - Cycle bounds carried in each row: `CycleStartDate`, `CycleEndDate`. **Derivation**
+- IncidentType = `Incident Type_1` with statute suffix removed (e.g., `" - 2C:..."`). **Validation**
+- Ensure summary counts match Detailed. - Run reconciliation checks: `sum(Summary.TotalCount) = rowcount(Detailed)`
+- Run lagday check: `sum(Summary.LagDayCount) = count(Detailed.IsLagDay = true)`
+"""
+    path.write_text(text, encoding="utf-8")
+    print(f"README written: {path}")
+
+def main() -> None:
+    """Main execution function"""
+    print("=" * 60)
+    print("SCRPA 7-Day Export Restructure")
+    print("=" * 60)
+    print()
+    
+    if not INPUT_CSV:
+        print("ERROR: Could not find input CSV file.") print(f"  Looked in current dir: {Path.cwd()}")
+        print(f"  Looked in: {ROOT}")
+        print(f"  Looked in: {RMS_EXPORT_DIR}")
+        print("  Expected: SCRPA_7Day_Filtered.csv or *_ReportDate_Last7.csv")
+        sys.exit(1)
+    
+    try:
+        df_orig = load_input(INPUT_CSV)
+        incident_col, report_col, summary_key = pick_columns(df_orig)
+        print(f"Using columns: Incident={incident_col}, Report={report_col}, SummaryKey={summary_key}")
+        
+        # Get cycle info from calendar
+        cycle_info = get_cycle_info_from_calendar()
+        
+        df_detailed = build_detailed(df_orig, incident_col, report_col, summary_key, cycle_info)
+        df_summary = build_summary(df_detailed)
+
+        # Write outputs
+        output_dir = Path.cwd()
+        print(f"\nWriting outputs to: {output_dir}")
+        df_detailed.to_csv(OUT_DETAILED, index=False)
+        print(f"  ✓ Detailed CSV: {OUT_DETAILED.name} ({len(df_detailed)} rows)")
+        
+        df_summary.to_csv(OUT_SUMMARY, index=False)
+        print(f"  ✓ Summary CSV: {OUT_SUMMARY.name} ({len(df_summary)} rows)")
+        
+        # Write data dictionary to reference location only (not to Data folder)
+        write_data_dictionary(df_orig, None, REFERENCE_DICT)
+        write_readme(OUT_README)
+
+        # Basic reconciliation check (exclude total row and "Other" category)
+        df_summary_no_total = df_summary[df_summary["Crime_Category"] != "TOTAL"]
+        total_count_sum = df_summary_no_total["TotalCount"].sum()
+        # Only count non-"Other" incidents in detailed
+        detailed_filtered = df_detailed[df_detailed["Crime_Category"] != "Other"]
+        detailed_count = len(detailed_filtered)
+        lagday_summary = df_summary_no_total["LagDayCount"].sum()
+        lagday_detailed = int(detailed_filtered["IsLagDay"].sum())
+        
+        print(f"\n=== Reconciliation ===")
+        print(f"Detailed rows (tracked categories only): {detailed_count}")
+        print(f"Summary TotalCount sum (excluding total row): {total_count_sum}")
+        print(f"Detailed IsLagDay count (tracked only): {lagday_detailed}")
+        print(f"Summary LagDayCount sum (excluding total row): {lagday_summary}")
+        
+        if detailed_count != total_count_sum:
+            print(f"⚠️  WARNING: TotalCount mismatch! {detailed_count} != {total_count_sum}")
+            print(f"   This indicates a data integrity issue. Check category filtering logic.") else:
+            print("✓ TotalCount reconciliation: PASS")
+            
+        if lagday_detailed != lagday_summary:
+            print(f"⚠️  WARNING: LagDayCount mismatch! {lagday_detailed} != {lagday_summary}")
+            print(f"   This indicates a data integrity issue. Check lagday calculation logic.") else:
+            print("✓ LagDayCount reconciliation: PASS")
+        
+        # Additional validation: Check total row matches
+        if len(df_summary) > 0 and df_summary.iloc[-1]["Crime_Category"] == "TOTAL":
+            total_row_total = df_summary.iloc[-1]["TotalCount"]
+            total_row_lag = df_summary.iloc[-1]["LagDayCount"]
+            if total_row_total != detailed_count:
+                print(f"⚠️  WARNING: TOTAL row TotalCount ({total_row_total}) != filtered detailed count ({detailed_count})")
+            if total_row_lag != lagday_detailed:
+                print(f"⚠️  WARNING: TOTAL row LagDayCount ({total_row_lag}) != filtered lagday count ({lagday_detailed})")
+            if total_row_total == detailed_count and total_row_lag == lagday_detailed:
+                print("✓ TOTAL row validation: PASS")
+        
+        print("\n✅ Restructure complete!") except Exception as e:
+        print(f"\n❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
+
+```
+
+Updating the function signature to make `path` optional:
+
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SCRPA 7-Day export restructure
+- Replaces SCRPA_7Day_Filtered.csv with:
+  1) SCRPA_7Day_Detailed.csv  (adds lagday fields + cycle bounds + Crime_Category)
+  2) SCRPA_7Day_Summary.csv   (3 columns: Crime_Category, LagDayCount, TotalCount + TOTAL row)
+  3) SCRPA_7Day_Data_Dictionary.md
+  4) README_7day_outputs.md
+
+Key Features:
+- Crime_Category mapping matches all_crimes.m logic exactly
+- Only tracked categories (excludes "Other") appear in Summary
+- Summary includes TOTAL row at bottom
+- Column order: Crime_Category, LagDayCount, TotalCount
+
+Assumptions:
+- Input CSV has columns: "Incident Date", "Report Date", "Incident Type_1", and optionally "Narrative". - Cycle is defined by Report Date within the 7-day file (backfill-aware). - Category mapping uses original incident types (before normalization) to match M code order. Blindspot Mitigations:
+- Validates Narrative availability for Motor Vehicle Theft cases
+- Warns on high "Other" percentage (>50%)
+- Validates TOTAL row reconciliation
+- Handles empty data gracefully
+- See BLINDSPOT_MITIGATIONS.md for details
+"""
+
+from __future__ import annotations
+import os
+import sys
+from pathlib import Path
+from datetime import datetime
+import pandas as pd
+import numpy as np
+
+# Ensure console can print Unicode safely on Windows
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+
+# ----------- CONFIG -----------
+# Root of SCRPA automation repo or working dir where the 7-Day CSV lives. # Adjust if you keep inputs/outputs elsewhere.

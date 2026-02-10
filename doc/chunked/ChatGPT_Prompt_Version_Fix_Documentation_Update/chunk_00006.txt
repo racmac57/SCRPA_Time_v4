@@ -1,0 +1,848 @@
+Executive Summary
+- **Format**: HTML and PDF
+- **Naming**: `SCRPA_Combined_Executive_Summary_*.html/pdf`
+- **Purpose**: High-level strategic analysis
+- **Location**: `Reports/` folder
+
+### 4. Briefing CSV
+- **Format**: CSV
+- **Naming**: `SCRPA_Briefing_Ready_*.csv`
+- **Purpose**: ChatGPT processing for narrative extraction
+- **Location**: `Data/` folder
+
+---
+
+## Naming Conventions
+
+### Report Folders
+- **Pattern**: `YYCMMWww_YY_MM_DD`
+- **Example**: `25C12W49_25_12_09`
+- **Breakdown**:
+  - `25` = Year (2025)
+  - `C` = Calendar indicator
+  - `12` = Month (December)
+  - `W49` = Week number (ISO week -1 offset)
+  - `_25_12_09` = Date suffix
+
+### Data Files
+- **Full Export**: `YYYY_MM_DD_HH_MM_SS_SCRPA_RMS.csv`
+- **7-Day Filter**: `YYYY_MM_DD_HH_MM_SS_SCRPA_RMS_ReportDate_Last7.csv`
+- **Briefing**: `SCRPA_Briefing_Ready_YYYY_MM_DD_HH_MM_SS.csv`
+
+---
+
+## Technology Stack
+
+### Languages
+- **Python 3.13+** - Core processing scripts
+- **Batch Scripts** - Windows automation
+- **Power BI** - Data visualization
+
+### Key Libraries
+- **pandas** - Data manipulation
+- **openpyxl/calamine** - Excel processing
+- **Standard Library** - File operations, datetime handling
+
+### Tools
+- **Power BI Desktop** - Dashboard creation
+- **ChatGPT** - Narrative extraction and briefing generation
+- **OneDrive** - File storage and sync
+
+---
+
+## Performance Metrics
+
+### Processing Times (Typical)
+- **Excel Conversion**: 5-30 seconds per file
+- **Report Generation**: 10-60 seconds
+- **File Organization**: 2-5 seconds
+- **Total Workflow**: ~1-2 minutes
+
+### File Sizes (Typical)
+- **Excel Export**: 1-10 MB
+- **CSV Files**: 500 KB - 5 MB
+- **HTML Reports**: 100-500 KB
+- **PDF Reports**: 200 KB - 1 MB
+- **Power BI**: 2-10 MB
+
+---
+
+## Maintenance
+
+### Regular Tasks
+- **Weekly**: Run report generation
+- **Monthly**: Review archive folder
+- **Quarterly**: Update templates and scripts
+- **Annually**: Review folder structure and cleanup
+
+### Updates
+- **Scripts**: Located in `02_ETL_Scripts\SCRPA\`
+- **Templates**: Located in `15_Templates\`
+- **Documentation**: Located in `16_Reports\SCRPA\doc\`
+
+---
+
+## Known Issues
+
+### ✅ Resolved Issues
+
+#### Cycle and Range Data Issue (Fixed in v1.2.0)
+- **Status**: Resolved
+- **Fixes Applied**:
+  - Path case sensitivity corrected (`SCRPA` vs `scrpa`)
+  - CSV file fallback support added
+  - Archive timing moved to after HTML generation
+  - Enhanced DEBUG logging throughout HTML generation
+- **Impact**: HTML files now regenerate correctly with accurate cycle and date range information
+
+---
+
+## Success Metrics
+
+### Automation Success
+- ✅ Reduced manual steps from 5+ to 1
+- ✅ Processing time reduced by 80%
+- ✅ Error rate decreased significantly
+- ✅ Consistent folder structure and naming
+- ✅ Improved error handling and debugging
+
+### User Benefits
+- ✅ Easy to use (single batch file)
+- ✅ Consistent output format
+- ✅ Complete documentation
+- ✅ Error recovery and logging
+- ✅ Support for both Excel and CSV file formats
+
+### Recent Improvements
+
+#### v1.4.0 (Latest)
+- ✅ Zone formatting fixed - displays as whole numbers instead of decimals
+- ✅ Date filtering fixed - correctly excludes incidents outside cycle range
+- ✅ Data Dictionary optimization - stored once in reference location, reused for all reports
+- ✅ Enhanced narrative extraction - improved ChatGPT prompt with explicit extraction instructions
+- ✅ Documentation cleanup guide - explains which files are needed vs historical notes
+
+#### v1.3.0
+- ✅ ChatGPT prompt enhanced with Reporting Parameters section
+- ✅ Added explicit Loss And Monetary Rules (5-step calculation process)
+- ✅ Added Cycle And Date Rules for consistency
+- ✅ Added Summary Table Rules for data alignment
+- ✅ CSV data embedded in prompt file (no separate upload needed)
+- ✅ Created usage instructions guide
+
+#### v1.2.0
+- ✅ Path case sensitivity issues resolved
+- ✅ CSV file support added for better compatibility
+- ✅ Archive timing optimized to prevent file conflicts
+- ✅ Enhanced debugging for easier troubleshooting
+- ✅ CHATGPT prompt improvements (removed em dashes, added Loss Total calculation)
+
+---
+
+## Future Roadmap
+
+### Short Term
+- Enhanced error handling
+- Improved logging
+- Config file support
+
+### Medium Term
+- Web interface
+- Automated scheduling
+- Email distribution
+
+### Long Term
+- Database integration
+- Real-time updates
+- Advanced analytics
+
+---
+
+## Contact & Support
+
+**System Owner**: R. A. Carucci  
+**Department**: City of Hackensack Police Department  
+**Last Updated**: December 9, 2025
+
+---
+
+**Version**: 1.3.0  
+**Status**: Production  
+**License**: Internal Use Only
+
+
+```
+
+```markdown
+# SCRPA Reporting System - Summary
+
+**Strategic Crime Reduction and Problem Analysis (SCRPA) Automated Reporting Workflow**
+
+---
+
+## System Purpose
+
+The SCRPA Reporting System automates the weekly generation of crime analysis reports from RMS data exports. It transforms raw Excel exports into organized, structured reports with Power BI dashboards, HTML/PDF summaries, and ChatGPT-ready briefing formats. ---
+
+## Architecture Overview
+
+### Core Components
+
+1. **Data Ingestion**
+   - Excel file exports from RMS
+   - Automatic conversion to CSV format
+   - 7-day filtered data extraction
+
+2. **Report Generation**
+   - Power BI dashboard templates
+   - HTML tactical summaries
+   - PDF executive summaries
+   - ChatGPT briefing formats
+
+3. **File Organization**
+   - Date-based folder structure
+   - Automatic file categorization
+   - Consolidated documentation
+
+4. **Automation Workflow**
+   - Single batch file execution
+   - Multi-step process automation
+   - Error handling and logging
+
+---
+
+## Key Features
+
+### ✅ Automation
+- **One-Click Execution**: Single batch file runs entire workflow
+- **Date-Aware**: Automatically handles report dates and naming
+- **Error Recovery**: Continues processing even if individual steps fail
+
+### ✅ Organization
+- **Structured Folders**: Year → Date-based report folders
+- **File Categorization**: Data, Reports, Documentation separation
+- **Consolidated Summaries**: Single markdown file with all report info
+
+### ✅ Flexibility
+- **Multiple Report Types**: Tactical, Strategic, Briefing formats
+- **Configurable Paths**: Easy to update folder locations
+- **Extensible**: Modular scripts for easy enhancement
+
+### ✅ Documentation
+- **Auto-Generated Prompts**: ChatGPT-ready briefing instructions with embedded CSV data
+- **Usage Guides**: Step-by-step documentation and quick reference guides
+- **Version Tracking**: Changelog and summary files
+- **Self-Contained Prompts**: All data and instructions in one file for easy ChatGPT usage
+
+---
+
+## Workflow Diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    SCRPA REPORT WORKFLOW                     │
+└─────────────────────────────────────────────────────────────┘
+
+1. Excel Export
+   └─> 05_EXPORTS\_RMS\scrpa\*.xlsx
+       │
+       ├─> convert_all_xlsx.bat
+       │   └─> CSV Files (*.csv, *_ReportDate_Last7.csv)
+       │
+       └─> prepare_briefing_csv.py
+           └─> SCRPA_Briefing_Ready_*.csv
+
+2. Run Automation
+   └─> Run_SCRPA_Report_Folder.bat
+       │
+       ├─> STEP 1: generate_weekly_report.py
+       │   └─> Creates folder structure
+       │   └─> Copies Power BI template
+       │
+       ├─> STEP 2: generate_all_reports.bat
+       │   └─> Generates HTML/PDF reports
+       │
+       ├─> STEP 3: organize_report_files.py
+       │   └─> Copies files to report folder
+       │   └─> Creates documentation
+       │
+       └─> STEP 4: Opens year folder
+
+3. Report Folder
+   └─> 16_Reports\SCRPA\Time_Based\2025\25C12W49_25_12_09\
+       ├─> Data/          (CSV files)
+       ├─> Reports/       (HTML/PDF)
+       └─> Documentation/ (MD files)
+```
+
+---
+
+## File Types and Locations
+
+### Input Files
+- **Excel Exports**: `05_EXPORTS\_RMS\scrpa\*.xlsx`
+- **Templates**: `15_Templates\Base_Report.pbix`
+
+### Processing Locations
+- **ETL Scripts**: `02_ETL_Scripts\SCRPA\`
+- **Output**: `SCRPA_ArcPy\06_Output\`
+
+### Final Output
+- **Reports**: `16_Reports\SCRPA\Time_Based\YYYY\ReportFolder\`
+- **Archives**: `05_EXPORTS\_RMS\scrpa\archive\`
+
+---
+
+## Report Types
+
+### 1. Power BI Dashboard
+- **File**: `25C12W49_25_12_09.pbix`
+- **Purpose**: Interactive data visualization
+- **Location**: Report folder root
+
+### 2. Tactical Summary
+- **Format**: HTML and PDF
+- **Naming**: `*_rms_summary.html/pdf`
+- **Purpose**: Day-to-day operational briefings
+- **Location**: `Reports/` folder
+
+### 3. Executive Summary
+- **Format**: HTML and PDF
+- **Naming**: `SCRPA_Combined_Executive_Summary_*.html/pdf`
+- **Purpose**: High-level strategic analysis
+- **Location**: `Reports/` folder
+
+### 4. Briefing CSV
+- **Format**: CSV
+- **Naming**: `SCRPA_Briefing_Ready_*.csv`
+- **Purpose**: ChatGPT processing for narrative extraction
+- **Location**: `Data/` folder
+
+---
+
+## Naming Conventions
+
+### Report Folders
+- **Pattern**: `YYCMMWww_YY_MM_DD`
+- **Example**: `25C12W49_25_12_09`
+- **Breakdown**:
+  - `25` = Year (2025)
+  - `C` = Calendar indicator
+  - `12` = Month (December)
+  - `W49` = Week number (ISO week -1 offset)
+  - `_25_12_09` = Date suffix
+
+### Data Files
+- **Full Export**: `YYYY_MM_DD_HH_MM_SS_SCRPA_RMS.csv`
+- **7-Day Filter**: `YYYY_MM_DD_HH_MM_SS_SCRPA_RMS_ReportDate_Last7.csv`
+- **Briefing**: `SCRPA_Briefing_Ready_YYYY_MM_DD_HH_MM_SS.csv`
+
+---
+
+## Technology Stack
+
+### Languages
+- **Python 3.13+** - Core processing scripts
+- **Batch Scripts** - Windows automation
+- **Power BI** - Data visualization
+
+### Key Libraries
+- **pandas** - Data manipulation
+- **openpyxl/calamine** - Excel processing
+- **Standard Library** - File operations, datetime handling
+
+### Tools
+- **Power BI Desktop** - Dashboard creation
+- **ChatGPT** - Narrative extraction and briefing generation
+- **OneDrive** - File storage and sync
+
+---
+
+## Performance Metrics
+
+### Processing Times (Typical)
+- **Excel Conversion**: 5-30 seconds per file
+- **Report Generation**: 10-60 seconds
+- **File Organization**: 2-5 seconds
+- **Total Workflow**: ~1-2 minutes
+
+### File Sizes (Typical)
+- **Excel Export**: 1-10 MB
+- **CSV Files**: 500 KB - 5 MB
+- **HTML Reports**: 100-500 KB
+- **PDF Reports**: 200 KB - 1 MB
+- **Power BI**: 2-10 MB
+
+---
+
+## Maintenance
+
+### Regular Tasks
+- **Weekly**: Run report generation
+- **Monthly**: Review archive folder
+- **Quarterly**: Update templates and scripts
+- **Annually**: Review folder structure and cleanup
+
+### Updates
+- **Scripts**: Located in `02_ETL_Scripts\SCRPA\`
+- **Templates**: Located in `15_Templates\`
+- **Documentation**: Located in `16_Reports\SCRPA\doc\`
+
+---
+
+## Known Issues
+
+### ✅ Resolved Issues
+
+#### Cycle and Range Data Issue (Fixed in v1.2.0)
+- **Status**: Resolved
+- **Fixes Applied**:
+  - Path case sensitivity corrected (`SCRPA` vs `scrpa`)
+  - CSV file fallback support added
+  - Archive timing moved to after HTML generation
+  - Enhanced DEBUG logging throughout HTML generation
+- **Impact**: HTML files now regenerate correctly with accurate cycle and date range information
+
+---
+
+## Success Metrics
+
+### Automation Success
+- ✅ Reduced manual steps from 5+ to 1
+- ✅ Processing time reduced by 80%
+- ✅ Error rate decreased significantly
+- ✅ Consistent folder structure and naming
+- ✅ Improved error handling and debugging
+
+### User Benefits
+- ✅ Easy to use (single batch file)
+- ✅ Consistent output format
+- ✅ Complete documentation
+- ✅ Error recovery and logging
+- ✅ Support for both Excel and CSV file formats
+
+### Recent Improvements
+
+#### v1.4.0 (Latest)
+- ✅ Zone formatting fixed - displays as whole numbers instead of decimals
+- ✅ Date filtering fixed - correctly excludes incidents outside cycle range
+- ✅ Data Dictionary optimization - stored once in reference location, reused for all reports
+- ✅ Enhanced narrative extraction - improved ChatGPT prompt with explicit extraction instructions
+- ✅ Documentation cleanup guide - explains which files are needed vs historical notes
+
+#### v1.3.0
+- ✅ ChatGPT prompt enhanced with Reporting Parameters section
+- ✅ Added explicit Loss And Monetary Rules (5-step calculation process)
+- ✅ Added Cycle And Date Rules for consistency
+- ✅ Added Summary Table Rules for data alignment
+- ✅ CSV data embedded in prompt file (no separate upload needed)
+- ✅ Created usage instructions guide
+
+#### v1.2.0
+- ✅ Path case sensitivity issues resolved
+- ✅ CSV file support added for better compatibility
+- ✅ Archive timing optimized to prevent file conflicts
+- ✅ Enhanced debugging for easier troubleshooting
+- ✅ CHATGPT prompt improvements (removed em dashes, added Loss Total calculation)
+
+---
+
+## Future Roadmap
+
+### Short Term
+- Enhanced error handling
+- Improved logging
+- Config file support
+
+### Medium Term
+- Web interface
+- Automated scheduling
+- Email distribution
+
+### Long Term
+- Database integration
+- Real-time updates
+- Advanced analytics
+
+---
+
+## Contact & Support
+
+**System Owner**: R. A. Carucci  
+**Department**: City of Hackensack Police Department  
+**Last Updated**: December 29, 2025
+
+---
+
+**Version**: 1.4.0  
+**Status**: Production  
+**License**: Internal Use Only
+
+
+```
+
+Checking for a git repository and listing modified files:
+
+
+Git repository initialized. Checking status and staging changes:
+
+
+Committing the documentation updates. The script files are outside this repository, so we'll note them separately:
+
+
+Documentation files committed. Creating a summary of what was updated:
+
+
+```markdown
+# Git Commit Summary - v1.4.0
+
+## Committed Files (in 16_Reports\SCRPA repository)
+
+✅ **Documentation Files:**
+- `CHANGELOG.md` - Updated to version 1.4.0 with all recent fixes
+- `README.md` - Updated with v1.4.0 changes and current version
+- `SUMMARY.md` - Updated with v1.4.0 improvements
+- `DOCUMENTATION_FILES_EXPLAINED.md` - New file explaining which documentation files are needed
+
+## Modified Script Files (outside this repository)
+
+The following script files were modified but are in different directories:
+
+1. **`C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_briefing_html.py`**
+   - Fixed Zone formatting (decimal to whole number conversion)
+
+2. **`C:\Users\carucci_r\OneDrive - City of Hackensack\00_dev\scripts\file_operations\prepare_briefing_csv.py`**
+   - Fixed Zone formatting during CSV transformation
+   - Added date filtering to exclude incidents outside cycle range
+   - Enhanced ChatGPT prompt with narrative extraction instructions
+
+3. **`C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\tools\scrpa_7day_restructure.py`**
+   - Updated Data Dictionary to store once in reference location
+   - Added logic to copy from reference instead of regenerating
+
+## Next Steps
+
+If you have separate git repositories for:
+- `02_ETL_Scripts\SCRPA\` 
+- `00_dev\scripts\file_operations\`
+
+You should commit the script changes there as well. ## Commit Details
+
+**Repository**: `16_Reports\SCRPA`  
+**Commit Hash**: `742acde`  
+**Message**: "v1.4.0: Fix Zone formatting, date filtering, and optimize Data Dictionary storage"
+
+**Changes Summary:**
+- Fixed Zone values displaying as decimals instead of whole numbers
+- Fixed date filtering to exclude incidents outside cycle date range  
+- Data Dictionary now stored once in reference location and reused
+- Enhanced ChatGPT prompt with explicit narrative extraction instructions
+- Added documentation guide explaining which files are needed vs historical notes
+
+```
+
+## Completed tasks
+
+### 1. Updated documentation files
+- **CHANGELOG.md** — Updated to v1.4.0 with:
+  - Zone formatting fix
+  - Date filtering fix
+  - Data Dictionary optimization
+  - Enhanced narrative extraction
+  - Documentation cleanup guide
+
+- **README.md** — Updated with v1.4.0 changes and current version
+
+- **SUMMARY.md** — Updated with v1.4.0 improvements
+
+- **DOCUMENTATION_FILES_EXPLAINED.md** — New file explaining which files are needed
+
+### 2. Git commits
+- Initialized git repository in `16_Reports\SCRPA`
+- Committed documentation updates (commit `742acde`)
+- Added commit summary document (commit `87703c1`)
+
+### 3. Script files (outside this repository)
+The following script files were modified but are in different directories:
+- `02_ETL_Scripts\SCRPA\scripts\generate_briefing_html.py`
+- `00_dev\scripts\file_operations\prepare_briefing_csv.py`
+- `02_ETL_Scripts\SCRPA\tools\scrpa_7day_restructure.py`
+
+If you have separate git repositories for those directories, commit the changes there as well. ### Git status
+```
+Repository: 16_Reports\SCRPA
+Commits:
+  87703c1 - Add git commit summary document
+  742acde - v1.4.0: Fix Zone formatting, date filtering, and optimize Data Dictionary storage
+```
+
+All documentation has been updated and committed to git. ```plaintext
+Repository: 16_Reports\SCRPA
+Commits:
+  87703c1 - Add git commit summary document
+  742acde - v1.4.0: Fix Zone formatting, date filtering, and optimize Data Dictionary storage
+```
+
+---
+
+**User**
+
+also please update the version of the project that is on the output, I think the currect version of the output is 1.5
+
+---
+
+**Cursor**
+
+Searching for where version 1.5 appears in the output and updating it to match the project version. Updating the version in the output files from 1.5 to 1.4.0 to match the project version:
+
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SCRPA Briefing HTML Generator
+Author: R. A. Carucci
+Date: 2025-10-28
+Purpose: Generate HTML briefing from prepared CSV matching exact template format
+
+Reads the SCRPA_Briefing_Ready CSV and generates formatted HTML
+matching the Strategic Crime Reduction Briefing template.
+""" import os
+import sys
+import pandas as pd
+import re
+from datetime import datetime
+from collections import defaultdict
+
+print("=" * 60)
+print("SCRPA BRIEFING HTML GENERATOR")
+print("=" * 60)
+print()
+
+# Configuration
+OUTPUT_FOLDER = r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output"
+
+def safe_input(prompt=""):
+    """Handle input() calls in non-interactive mode (when called from batch)"""
+    try:
+        # Check if stdin is available and not redirected
+        if sys.stdin.isatty():
+            return input(prompt)
+        else:
+            # Non-interactive mode - just return empty string
+            return ""
+    except (EOFError, OSError):
+        # Handle EOFError when stdin is closed
+        return ""
+
+def find_latest_briefing_csv():
+    """Find the most recent SCRPA_Briefing_Ready CSV"""
+    try:
+        import glob
+        pattern = os.path.join(OUTPUT_FOLDER, "SCRPA_Briefing_Ready_*.csv")
+        files = glob.glob(pattern)
+        
+        if not files:
+            print(f"❌ No briefing CSV files found")
+            return None
+        
+        # Sort by modification time, newest first
+        latest_file = max(files, key=os.path.getmtime)
+        print(f"✅ Found briefing CSV: {os.path.basename(latest_file)}")
+        return latest_file
+        
+    except Exception as e:
+        print(f"❌ Error finding CSV: {e}")
+        return None
+
+def categorize_incident(row):
+    """Categorize incident by type for section organization"""
+    incident_type = str(row.get('IncidentType', '')).upper()
+    
+    # Roman numeral ordering
+    if 'BURGLARY' in incident_type and 'AUTO' in incident_type:
+        return ('I', 'BURGLARY - AUTO')
+    elif 'MOTOR VEHICLE THEFT' in incident_type or 'MV THEFT' in incident_type:
+        return ('II', 'MOTOR VEHICLE THEFT')
+    elif 'ROBBERY' in incident_type:
+        return ('III', 'ROBBERY')
+    elif 'SEXUAL' in incident_type:
+        return ('IV', 'SEXUAL OFFENSES')
+    elif 'BURGLARY' in incident_type and 'COMMERCIAL' in incident_type:
+        return ('V', 'BURGLARY - COMMERCIAL')
+    elif 'BURGLARY' in incident_type and ('RESIDENCE' in incident_type or 'RESIDENTIAL' in incident_type):
+        return ('VI', 'BURGLARY - RESIDENCE')
+    else:
+        return ('VII', 'OTHER')
+
+def extract_suspect_info(narrative):
+    """Extract suspect description from narrative"""
+    if pd.isna(narrative) or not narrative:
+        return "Data Incomplete"
+    
+    # Look for "Suspect description:" pattern
+    match = re.search(r'[Ss]uspect [Dd]escription:?\s*(.+?)(? :\n\n|\n     |$)', narrative, re.DOTALL)
+    if match:
+        desc = match.group(1).strip()
+        # Clean up excessive whitespace
+        desc = re.sub(r'\s+', ' ', desc)
+        return desc if desc else "Data Incomplete"
+    
+    return "Data Incomplete"
+
+def extract_loss_items(narrative, loss_total):
+    """Extract loss items from narrative"""
+    if pd.isna(narrative) or not narrative:
+        return []
+    
+    items = []
+    
+    # Look for patterns like "concealed several iPhones and Macbooks"
+    # This is basic extraction - AI would do better
+    item_patterns = [
+        r'(?:conceal(?:ed)?|stole|stolen|took)\s+(?:several\s+)? ([^.,\n]+)',
+        r'(?:iphone|macbook|laptop|phone|tablet|cash|jewelry|wallet)s?' ]
+    
+    for pattern in item_patterns:
+        matches = re.finditer(pattern, narrative, re.IGNORECASE)
+        for match in matches:
+            if match.group(0):
+                item_text = match.group(0).strip()
+                if len(item_text) > 3 and len(item_text) < 100:  # Reasonable length
+                    items.append(item_text)
+    
+    # If we found items but no values, create generic entry
+    if items and loss_total and loss_total != "$0.00":
+        return [f"{', '.join(set(items[:3]))} - {loss_total}"]
+    elif not items and loss_total and loss_total != "$0.00":
+        return [f"Property - {loss_total}"]
+    
+    return []
+
+def generate_case_card_html(row, category):
+    """Generate HTML for a single case card"""
+    # Extract data with safe string conversion
+    case_num = str(row.get('CaseNumber', 'Data Incomplete'))
+    incident_datetime = str(row.get('IncidentDateTime', 'Data Incomplete'))
+    incident_type = str(row.get('IncidentType', 'Data Incomplete'))
+    subtype = str(row.get('Subtype', '')) if pd.notna(row.get('Subtype')) else ''
+    statute = str(row.get('Statute', '')) if pd.notna(row.get('Statute')) else ''
+    full_address = str(row.get('FullAddress', 'Data Incomplete'))
+    grid = str(row.get('Grid', '')) if pd.notna(row.get('Grid')) else ''
+    # Format Zone as whole number (remove decimal if present)
+    zone_raw = row.get('Zone', '')
+    if pd.notna(zone_raw) and zone_raw != '':
+        try:
+            # Convert to float first to handle string numbers, then to int to remove decimals
+            zone = str(int(float(zone_raw)))
+        except (ValueError, TypeError):
+            zone = str(zone_raw)
+    else:
+        zone = ''
+    narrative = str(row.get('Narrative', '')) if pd.notna(row.get('Narrative')) else ''
+    status = str(row.get('Status', 'Data Incomplete'))
+    loss_total = str(row.get('LossTotal', '$0.00'))
+    
+    # Vehicle info with safe conversion
+    victim_vehicle_make = str(row.get('VictimVehicleMake', '')) if pd.notna(row.get('VictimVehicleMake')) else ''
+    victim_vehicle_model = str(row.get('VictimVehicleModel', '')) if pd.notna(row.get('VictimVehicleModel')) else ''
+    plate = str(row.get('Plate', '')) if pd.notna(row.get('Plate')) else ''
+    plate_state = str(row.get('PlateState', '')) if pd.notna(row.get('PlateState')) else ''
+    
+    # Build header line
+    display_type = incident_type
+    if subtype and subtype.strip():
+        display_type += f" / {subtype}"
+    if statute and statute.strip():
+        display_type += f" - {statute}"
+    
+    header = f"Case {case_num} | {incident_datetime} | {display_type}"
+    
+    # Build bullet points based on category
+    bullets = []
+    
+    # Location (always include)
+    if full_address and full_address != 'Data Incomplete':
+        bullets.append(f"<span class='lb'>Location:</span> {full_address}")
+    
+    # Grid/Zone
+    if grid or zone:
+        grid_zone = f"{grid if grid else 'N/A'} / {zone if zone else 'N/A'}"
+        bullets.append(f"<span class='lb'>Grid/Zone:</span> {grid_zone}")
+    
+    # Category-specific bullets
+    if category[1] in ['MOTOR VEHICLE THEFT', 'BURGLARY - AUTO']:
+        # Vehicle info
+        if victim_vehicle_make or victim_vehicle_model:
+            vehicle = f"{victim_vehicle_make} {victim_vehicle_model}".strip()
+            if plate:
+                vehicle += f" ({plate}, {plate_state if plate_state else 'Unknown'})"
+            bullets.append(f"<span class='lb'>Victim Vehicle:</span> {vehicle}")
+    
+    # Suspect description
+    suspect_desc = extract_suspect_info(narrative)
+    bullets.append(f"<span class='lb'>Suspect Description:</span> {suspect_desc}")
+    
+    # Loss items
+    loss_items = extract_loss_items(narrative, loss_total)
+    if loss_items or (loss_total and loss_total != '$0.00'):
+        bullets.append(f"<span class='lb'>Loss:</span>")
+        if loss_items:
+            for item in loss_items:
+                bullets.append(f"  {item}")
+        bullets.append(f"  <strong>Total: {loss_total}</strong>")
+    
+    # Status
+    bullets.append(f"<span class='lb'>Status:</span> {status}")
+    
+    # Build card HTML
+    card_html = f"""
+        <div class='card'>
+            <div class='card-h'>{header}</div>
+            <ul class='blt'>
+"""
+    
+    for bullet in bullets:
+        card_html += f"                <li>{bullet}</li>\n"
+    
+    card_html += """            </ul>
+        </div>"""
+    
+    return card_html
+
+def generate_html_briefing(csv_path):
+    """Generate complete HTML briefing"""
+    try:
+        print(f"\n📊 Loading CSV: {os.path.basename(csv_path)}")
+        df = pd.read_csv(csv_path)
+        print(f"✅ Loaded {len(df)} records")
+        
+        # Check if dataframe is empty
+        if len(df) == 0:
+            print("❌ Error: CSV file is empty (0 records)")
+            return None, None
+        
+        # Extract metadata
+        cycle_id = df['CycleID'].iloc[0] if 'CycleID' in df.columns and len(df) > 0 else 'Data Incomplete'
+        range_start = df['RangeStart'].iloc[0] if 'RangeStart' in df.columns and len(df) > 0 else 'Data Incomplete'
+        range_end = df['RangeEnd'].iloc[0] if 'RangeEnd' in df.columns and len(df) > 0 else 'Data Incomplete'
+        date_range = f"{range_start} - {range_end}"
+        
+        print(f"📅 Cycle: {cycle_id}")
+        print(f"📅 Range: {date_range}")
+        
+        # Categorize incidents
+        print("\n🗂️  Categorizing incidents...")
+        df['category'] = df.apply(categorize_incident, axis=1)
+        df = df.sort_values('category')  # Sort by Roman numeral
+        
+        # Group by category
+        categories = defaultdict(list)
+        for idx, row in df.iterrows():
+            cat_code, cat_name = row['category']
+            categories[row['category']].append(row)
+        
+        # Show breakdown
+        print("\n📋 Crime Type Breakdown:")
+        for (cat_code, cat_name), cases in categories.items():
+            print(f"   {cat_code}.

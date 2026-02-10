@@ -1,0 +1,82 @@
+```plaintext
+FirstTable = Table.Buffer(q_RMS_Source),
+CycleCalendar = q_CycleCalendar,
+CallTypeCategories = q_CallTypeCategories,
+```
+
+---
+
+**User**
+
+Why do you keep on adding quotes that breat the m code the corrected caal type m code is let CallTypeCategoriesRaw = Csv.Document(
+        File.Contents(
+            "C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv"),
+
+---
+
+**Cursor**
+
+Fixing all three staging queries to use single-line paths without quote splitting:
+
+
+Fixing `q_CallTypeCategories.m` to use a single-line path:
+
+
+```objective-c
+// ===========================================
+// STAGING QUERY: Call Type Categories
+// Purpose: Load and buffer call type mapping CSV
+// Disable Load: Yes (referenced by Updated_All_Crimes)
+// ===========================================
+let
+    CallTypeCategoriesRaw = Csv.Document(
+        File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv"),
+        [Encoding = 65001, Delimiter = ",", QuoteStyle = QuoteStyle.Csv]
+    ),
+    CallTypeCategories0 =
+        Table.PromoteHeaders(CallTypeCategoriesRaw, [PromoteAllScalars = true]),
+    CallTypeCategories = Table.Buffer(Table.TransformColumnTypes(
+        CallTypeCategories0, {{"Incident", type text},
+                              {"Incident_Norm", type text},
+                              {"Category_Type", type text},
+                              {"Response_Type", type text}}))
+                             in CallTypeCategories
+
+```
+
+```objective-c
+// ===========================================
+// STAGING QUERY: Call Type Categories
+// Purpose: Load and buffer call type mapping CSV
+// Disable Load: Yes (referenced by Updated_All_Crimes)
+// ===========================================
+let
+    CallTypeCategoriesRaw = Csv.Document(
+        File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv"),
+        [Encoding = 65001, Delimiter = ",", QuoteStyle = QuoteStyle.Csv]
+    ),
+    CallTypeCategories0 = Table.PromoteHeaders(CallTypeCategoriesRaw, [PromoteAllScalars = true]),
+    CallTypeCategories =
+        Table.Buffer(
+            Table.TransformColumnTypes(
+                CallTypeCategories0,
+                {{"Incident", type text}, {"Incident_Norm", type text}, {"Category_Type", type text}, {"Response_Type", type text}}
+            )
+        )
+in
+    CallTypeCategories
+
+```
+
+Fixed. The path is now a single string on line 8:
+
+```m
+File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv"),
+```
+
+No quote splitting. All three staging queries now use single-line paths:
+- `q_RMS_Source.m` — single path
+- `q_CycleCalendar.m` — single path
+- `q_CallTypeCategories.m` — fixed to single path
+
+The M code should work correctly now. Sorry for the earlier split paths.

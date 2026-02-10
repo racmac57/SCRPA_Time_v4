@@ -1,0 +1,910 @@
+f.write("Ensure the output fits on a single page when printed.\n\n")
+            f.write("---\n\n")
+            f.write(f"**CSV File**: `{os.path.basename(csv_filename)}`\n")
+            f.write(f"**Total Cases**: {total_cases}\n")
+            f.write(f"**Cycle**: {cycle_id}\n")
+            f.write(f"**Date Range**: {range_start} to {range_end}\n")
+        
+        print(f"✅ ChatGPT prompt file created: {os.path.basename(prompt_file)}")
+        return prompt_file
+        
+    except Exception as e:
+        print(f"⚠️  Could not create ChatGPT prompt file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def create_instructions_file(output_folder, csv_filename):
+    """Create basic instruction file (legacy, kept for backward compatibility)"""
+    try:
+        instructions_file = os.path.join(output_folder, "BRIEFING_INSTRUCTIONS.txt")
+        
+        with open(instructions_file, 'w', encoding='utf-8') as f:
+            f.write("=" * 60 + "\n")
+            f.write("SCRPA BRIEFING GENERATION INSTRUCTIONS\n")
+            f.write("=" * 60 + "\n\n")
+            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("STEP 1: Upload CSV to ChatGPT\n")
+            f.write(f"File: {os.path.basename(csv_filename)}\n\n")
+            f.write("STEP 2: Use the ChatGPT Prompt File\n")
+            f.write("Open CHATGPT_BRIEFING_PROMPT.md and copy the entire prompt.\n")
+            f.write("Paste it into ChatGPT after uploading the CSV.\n\n")
+            f.write("STEP 3: ChatGPT Will Generate HTML\n")
+            f.write("ChatGPT will process the CSV and generate a complete HTML briefing\n")
+            f.write("matching the template structure provided in the prompt.\n\n")
+            f.write("OUTPUT:\n")
+            f.write("ChatGPT will return a complete HTML file ready for PDF conversion.\n")
+            f.write("=" * 60 + "\n")
+        
+        print(f"✅ Instructions file created: {os.path.basename(instructions_file)}")
+        
+    except Exception as e:
+        print(f"⚠️  Could not create instructions file: {e}")
+
+def main():
+    """Main execution"""
+    print("🚀 Starting SCRPA Briefing CSV Preparation\n")
+    
+    # Step 1: Find latest 7-day CSV
+    csv_path = find_latest_7day_csv()
+    if not csv_path:
+        print("\n❌ Cannot proceed without 7-day CSV file")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 2: Get cycle information
+    print("\n📅 Loading cycle information...")
+    # Check for REPORT_DATE environment variable (set by automation batch file)
+    report_date_str = os.environ.get('REPORT_DATE', None)
+    if report_date_str:
+        print(f"   Using Report Date from environment: {report_date_str}")
+        try:
+            report_date_obj = datetime.strptime(report_date_str, "%m/%d/%Y")
+            cycle_info = get_cycle_info_from_calendar(report_date_obj)
+        except ValueError:
+            print(f"   ⚠️  Invalid REPORT_DATE format: {report_date_str}, using today's date")
+            cycle_info = get_current_cycle_info()
+    else:
+        cycle_info = get_current_cycle_info()
+    
+    # Step 3: Transform CSV
+    print("\n🔄 Transforming CSV to briefing format...")
+    briefing_df = transform_to_briefing_format(csv_path, cycle_info)
+    
+    if briefing_df is None:
+        print("\n❌ Transformation failed")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 4: Save briefing CSV
+    print("\n💾 Saving briefing CSV...")
+    output_file = save_briefing_csv(briefing_df, OUTPUT_FOLDER)
+    
+    if not output_file:
+        print("\n❌ Failed to save CSV")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 5: Create ChatGPT prompt file
+    print("\n📝 Creating ChatGPT prompt file...")
+    prompt_file = create_chatgpt_prompt_file(OUTPUT_FOLDER, output_file, briefing_df, cycle_info)
+    
+    # Step 6: Create basic instructions file
+    print("\n📝 Creating instructions file...")
+    create_instructions_file(OUTPUT_FOLDER, output_file)
+    
+    # Success summary
+    print("\n" + "=" * 60)
+    print("✅ SUCCESS - BRIEFING CSV READY FOR CHATGPT")
+    print("=" * 60)
+    print(f"\n📂 Output Location: {OUTPUT_FOLDER}")
+    print(f"📄 CSV File: {os.path.basename(output_file)}")
+    print(f"📋 ChatGPT Prompt: CHATGPT_BRIEFING_PROMPT.md")
+    print(f"📋 Instructions: BRIEFING_INSTRUCTIONS.txt")
+    print("\n🤖 Next Steps:")
+    print("   1. Upload the CSV file to ChatGPT")
+    print("   2. Open CHATGPT_BRIEFING_PROMPT.md")
+    print("   3. Copy the entire prompt and paste it into ChatGPT")
+    print("   4. ChatGPT will generate the HTML briefing")
+    print("   5. Save the HTML output and convert to PDF")
+    print("\n" + "=" * 60)
+    
+    safe_input("\nPress Enter to exit...")
+    return True
+
+if __name__ == "__main__":
+    try:
+        success = main()
+        sys.exit(0 if success else 1)
+    except KeyboardInterrupt:
+        print("\n\n❌ Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        safe_input("\nPress Enter to exit...")
+        sys.exit(1)
+
+
+
+
+
+```
+
+Files were already committed. Verifying all version updates are complete:
+
+
+```markdown
+# Version Update Summary - v1.4.0
+
+## Updated Files
+
+All version references in output files have been updated from **1.5** to **1.4.0** to match the project version. ### Scripts Updated:
+
+1. **`02_ETL_Scripts\SCRPA\scripts\generate_briefing_html.py`**
+   - Line 498: HTML output version changed from `1.5` to `1.4.0`
+   - This version appears in the HTML report header
+
+2. **`00_dev\scripts\file_operations\prepare_briefing_csv.py`**
+   - Line 501: Reporting Parameters section version changed from `1.5` to `1.4.0`
+   - Line 718: HTML template version changed from `1.5` to `1.4.0`
+   - This version appears in the ChatGPT prompt file and HTML template
+
+3. **`02_ETL_Scripts\SCRPA\scripts\prepare_briefing_csv.py`**
+   - Line 475: Reporting Parameters section version changed from `1.5` to `1.4.0`
+   - Line 686: HTML template version changed from `1.5` to `1.4.0`
+   - This version appears in the ChatGPT prompt file and HTML template
+
+### Where Version Appears:
+
+1. **HTML Report Output** (`*_rms_summary.html`)
+   - Header section: "Version: 1.4.0"
+   - Generated by `generate_briefing_html.py`
+
+2. **ChatGPT Prompt File** (`CHATGPT_BRIEFING_PROMPT.md`)
+   - Reporting Parameters section: "Version: 1.4.0"
+   - HTML template section: "Version: 1.4.0"
+   - Generated by `prepare_briefing_csv.py`
+
+### Next Steps:
+
+When you run the report generation:
+- New HTML reports will show version **1.4.0** in the header
+- New ChatGPT prompt files will show version **1.4.0** in the Reporting Parameters and HTML template
+
+---
+
+**Updated**: December 29, 2025  
+**Previous Version**: 1.5  
+**New Version**: 1.4.0
+
+```
+
+Verifying all version updates are complete:
+
+
+All version numbers have been updated. Summary:
+
+## Version update complete
+
+### Files updated (version changed from 1.5 to 1.4.0):
+
+1. **`02_ETL_Scripts\SCRPA\scripts\generate_briefing_html.py`**
+   - Line 498: HTML report header version → `1.4.0`
+
+2. **`00_dev\scripts\file_operations\prepare_briefing_csv.py`**
+   - Line 501: Reporting Parameters version → `1.4.0`
+   - Line 718: HTML template version → `1.4.0`
+
+3. **`02_ETL_Scripts\SCRPA\scripts\prepare_briefing_csv.py`**
+   - Line 475: Reporting Parameters version → `1.4.0`
+   - Line 686: HTML template version → `1.4.0`
+
+### Where version appears in output:
+
+- HTML reports (`*_rms_summary.html`): Header shows "Version: 1.4.0"
+- ChatGPT prompt file (`CHATGPT_BRIEFING_PROMPT.md`): 
+  - Reporting Parameters section: "Version: 1.4.0"
+  - HTML template section: "Version: 1.4.0"
+
+### Git commits:
+
+```
+2cc5057 - Add version update summary document
+87703c1 - Add git commit summary document
+742acde - v1.4.0: Fix Zone formatting, date filtering, and optimize Data Dictionary storage
+```
+
+All version references in the output files now show **1.4.0**, matching the project version. The next report generation will display the updated version in both HTML reports and ChatGPT prompt files. ```plaintext
+2cc5057 - Add version update summary document
+87703c1 - Add git commit summary document
+742acde - v1.4.0: Fix Zone formatting, date filtering, and optimize Data Dictionary storage
+```
+
+---
+
+**User**
+
+why did the version go from 1.5 to 1.4.0? should the new version be a greater number? ---
+
+**Cursor**
+
+Correcting the version: the output was 1.5, so the new version should be 1.5.0 (or higher). Updating to 1.5.0 to match the existing output. ```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SCRPA Briefing HTML Generator
+Author: R. A. Carucci
+Date: 2025-10-28
+Purpose: Generate HTML briefing from prepared CSV matching exact template format
+
+Reads the SCRPA_Briefing_Ready CSV and generates formatted HTML
+matching the Strategic Crime Reduction Briefing template.
+""" import os
+import sys
+import pandas as pd
+import re
+from datetime import datetime
+from collections import defaultdict
+
+print("=" * 60)
+print("SCRPA BRIEFING HTML GENERATOR")
+print("=" * 60)
+print()
+
+# Configuration
+OUTPUT_FOLDER = r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output"
+
+def safe_input(prompt=""):
+    """Handle input() calls in non-interactive mode (when called from batch)"""
+    try:
+        # Check if stdin is available and not redirected
+        if sys.stdin.isatty():
+            return input(prompt)
+        else:
+            # Non-interactive mode - just return empty string
+            return ""
+    except (EOFError, OSError):
+        # Handle EOFError when stdin is closed
+        return ""
+
+def find_latest_briefing_csv():
+    """Find the most recent SCRPA_Briefing_Ready CSV"""
+    try:
+        import glob
+        pattern = os.path.join(OUTPUT_FOLDER, "SCRPA_Briefing_Ready_*.csv")
+        files = glob.glob(pattern)
+        
+        if not files:
+            print(f"❌ No briefing CSV files found")
+            return None
+        
+        # Sort by modification time, newest first
+        latest_file = max(files, key=os.path.getmtime)
+        print(f"✅ Found briefing CSV: {os.path.basename(latest_file)}")
+        return latest_file
+        
+    except Exception as e:
+        print(f"❌ Error finding CSV: {e}")
+        return None
+
+def categorize_incident(row):
+    """Categorize incident by type for section organization"""
+    incident_type = str(row.get('IncidentType', '')).upper()
+    
+    # Roman numeral ordering
+    if 'BURGLARY' in incident_type and 'AUTO' in incident_type:
+        return ('I', 'BURGLARY - AUTO')
+    elif 'MOTOR VEHICLE THEFT' in incident_type or 'MV THEFT' in incident_type:
+        return ('II', 'MOTOR VEHICLE THEFT')
+    elif 'ROBBERY' in incident_type:
+        return ('III', 'ROBBERY')
+    elif 'SEXUAL' in incident_type:
+        return ('IV', 'SEXUAL OFFENSES')
+    elif 'BURGLARY' in incident_type and 'COMMERCIAL' in incident_type:
+        return ('V', 'BURGLARY - COMMERCIAL')
+    elif 'BURGLARY' in incident_type and ('RESIDENCE' in incident_type or 'RESIDENTIAL' in incident_type):
+        return ('VI', 'BURGLARY - RESIDENCE')
+    else:
+        return ('VII', 'OTHER')
+
+def extract_suspect_info(narrative):
+    """Extract suspect description from narrative"""
+    if pd.isna(narrative) or not narrative:
+        return "Data Incomplete"
+    
+    # Look for "Suspect description:" pattern
+    match = re.search(r'[Ss]uspect [Dd]escription:?\s*(.+?)(? :\n\n|\n     |$)', narrative, re.DOTALL)
+    if match:
+        desc = match.group(1).strip()
+        # Clean up excessive whitespace
+        desc = re.sub(r'\s+', ' ', desc)
+        return desc if desc else "Data Incomplete"
+    
+    return "Data Incomplete"
+
+def extract_loss_items(narrative, loss_total):
+    """Extract loss items from narrative"""
+    if pd.isna(narrative) or not narrative:
+        return []
+    
+    items = []
+    
+    # Look for patterns like "concealed several iPhones and Macbooks"
+    # This is basic extraction - AI would do better
+    item_patterns = [
+        r'(?:conceal(?:ed)?|stole|stolen|took)\s+(?:several\s+)? ([^.,\n]+)',
+        r'(?:iphone|macbook|laptop|phone|tablet|cash|jewelry|wallet)s?' ]
+    
+    for pattern in item_patterns:
+        matches = re.finditer(pattern, narrative, re.IGNORECASE)
+        for match in matches:
+            if match.group(0):
+                item_text = match.group(0).strip()
+                if len(item_text) > 3 and len(item_text) < 100:  # Reasonable length
+                    items.append(item_text)
+    
+    # If we found items but no values, create generic entry
+    if items and loss_total and loss_total != "$0.00":
+        return [f"{', '.join(set(items[:3]))} - {loss_total}"]
+    elif not items and loss_total and loss_total != "$0.00":
+        return [f"Property - {loss_total}"]
+    
+    return []
+
+def generate_case_card_html(row, category):
+    """Generate HTML for a single case card"""
+    # Extract data with safe string conversion
+    case_num = str(row.get('CaseNumber', 'Data Incomplete'))
+    incident_datetime = str(row.get('IncidentDateTime', 'Data Incomplete'))
+    incident_type = str(row.get('IncidentType', 'Data Incomplete'))
+    subtype = str(row.get('Subtype', '')) if pd.notna(row.get('Subtype')) else ''
+    statute = str(row.get('Statute', '')) if pd.notna(row.get('Statute')) else ''
+    full_address = str(row.get('FullAddress', 'Data Incomplete'))
+    grid = str(row.get('Grid', '')) if pd.notna(row.get('Grid')) else ''
+    # Format Zone as whole number (remove decimal if present)
+    zone_raw = row.get('Zone', '')
+    if pd.notna(zone_raw) and zone_raw != '':
+        try:
+            # Convert to float first to handle string numbers, then to int to remove decimals
+            zone = str(int(float(zone_raw)))
+        except (ValueError, TypeError):
+            zone = str(zone_raw)
+    else:
+        zone = ''
+    narrative = str(row.get('Narrative', '')) if pd.notna(row.get('Narrative')) else ''
+    status = str(row.get('Status', 'Data Incomplete'))
+    loss_total = str(row.get('LossTotal', '$0.00'))
+    
+    # Vehicle info with safe conversion
+    victim_vehicle_make = str(row.get('VictimVehicleMake', '')) if pd.notna(row.get('VictimVehicleMake')) else ''
+    victim_vehicle_model = str(row.get('VictimVehicleModel', '')) if pd.notna(row.get('VictimVehicleModel')) else ''
+    plate = str(row.get('Plate', '')) if pd.notna(row.get('Plate')) else ''
+    plate_state = str(row.get('PlateState', '')) if pd.notna(row.get('PlateState')) else ''
+    
+    # Build header line
+    display_type = incident_type
+    if subtype and subtype.strip():
+        display_type += f" / {subtype}"
+    if statute and statute.strip():
+        display_type += f" - {statute}"
+    
+    header = f"Case {case_num} | {incident_datetime} | {display_type}"
+    
+    # Build bullet points based on category
+    bullets = []
+    
+    # Location (always include)
+    if full_address and full_address != 'Data Incomplete':
+        bullets.append(f"<span class='lb'>Location:</span> {full_address}")
+    
+    # Grid/Zone
+    if grid or zone:
+        grid_zone = f"{grid if grid else 'N/A'} / {zone if zone else 'N/A'}"
+        bullets.append(f"<span class='lb'>Grid/Zone:</span> {grid_zone}")
+    
+    # Category-specific bullets
+    if category[1] in ['MOTOR VEHICLE THEFT', 'BURGLARY - AUTO']:
+        # Vehicle info
+        if victim_vehicle_make or victim_vehicle_model:
+            vehicle = f"{victim_vehicle_make} {victim_vehicle_model}".strip()
+            if plate:
+                vehicle += f" ({plate}, {plate_state if plate_state else 'Unknown'})"
+            bullets.append(f"<span class='lb'>Victim Vehicle:</span> {vehicle}")
+    
+    # Suspect description
+    suspect_desc = extract_suspect_info(narrative)
+    bullets.append(f"<span class='lb'>Suspect Description:</span> {suspect_desc}")
+    
+    # Loss items
+    loss_items = extract_loss_items(narrative, loss_total)
+    if loss_items or (loss_total and loss_total != '$0.00'):
+        bullets.append(f"<span class='lb'>Loss:</span>")
+        if loss_items:
+            for item in loss_items:
+                bullets.append(f"  {item}")
+        bullets.append(f"  <strong>Total: {loss_total}</strong>")
+    
+    # Status
+    bullets.append(f"<span class='lb'>Status:</span> {status}")
+    
+    # Build card HTML
+    card_html = f"""
+        <div class='card'>
+            <div class='card-h'>{header}</div>
+            <ul class='blt'>
+"""
+    
+    for bullet in bullets:
+        card_html += f"                <li>{bullet}</li>\n"
+    
+    card_html += """            </ul>
+        </div>"""
+    
+    return card_html
+
+def generate_html_briefing(csv_path):
+    """Generate complete HTML briefing"""
+    try:
+        print(f"\n📊 Loading CSV: {os.path.basename(csv_path)}")
+        df = pd.read_csv(csv_path)
+        print(f"✅ Loaded {len(df)} records")
+        
+        # Check if dataframe is empty
+        if len(df) == 0:
+            print("❌ Error: CSV file is empty (0 records)")
+            return None, None
+        
+        # Extract metadata
+        cycle_id = df['CycleID'].iloc[0] if 'CycleID' in df.columns and len(df) > 0 else 'Data Incomplete'
+        range_start = df['RangeStart'].iloc[0] if 'RangeStart' in df.columns and len(df) > 0 else 'Data Incomplete'
+        range_end = df['RangeEnd'].iloc[0] if 'RangeEnd' in df.columns and len(df) > 0 else 'Data Incomplete'
+        date_range = f"{range_start} - {range_end}"
+        
+        print(f"📅 Cycle: {cycle_id}")
+        print(f"📅 Range: {date_range}")
+        
+        # Categorize incidents
+        print("\n🗂️  Categorizing incidents...")
+        df['category'] = df.apply(categorize_incident, axis=1)
+        df = df.sort_values('category')  # Sort by Roman numeral
+        
+        # Group by category
+        categories = defaultdict(list)
+        for idx, row in df.iterrows():
+            cat_code, cat_name = row['category']
+            categories[row['category']].append(row)
+        
+        # Show breakdown
+        print("\n📋 Crime Type Breakdown:")
+        for (cat_code, cat_name), cases in categories.items():
+            print(f"   {cat_code}. {cat_name}: {len(cases)} cases")
+        
+        # Generate HTML
+        print("\n🌐 Generating HTML...")
+        
+        html = f"""<!doctype html>
+<html lang='en'>
+
+<head>
+    <meta charset='utf-8' />
+    <meta name='viewport' content='width=device-width,initial-scale=1' />
+    <title>Strategic Crime Reduction Briefing - Patrol Captain</title>
+    <!-- Title hint: SCRPA_Briefing_{cycle_id}.html -->
+    <style>
+        @page {{
+            size: Letter landscape;
+            margin: 0.5in;
+            @top-left {{ content: ""; }}
+            @top-center {{ content: ""; }}
+            @top-right {{ content: ""; }}
+            @bottom-left {{ content: ""; }}
+            @bottom-center {{ content: ""; }}
+            @bottom-right {{ content: ""; }}
+        }}
+        @media print {{
+            @page {{
+                margin: 0.5in;
+                size: Letter landscape;
+            }}
+            body {{
+                margin: 0;
+                padding: 0;
+            }}
+        }}
+        @font-face {{
+            font-family: 'DIN';
+            src: local('DIN');
+            font-weight: normal;
+            font-style: normal
+        }}
+
+        :root {{
+            --ink: #0d233c;
+            --text: #1f2937;
+            --muted: #6b7280;
+            --bg: #f6f8fb;
+            --card: #ffffff;
+            --rule: #d1d5db;
+            --radius: 12px;
+            --shadow: 0 2px 8px rgba(2, 6, 23, .08)
+        }}
+
+        * {{
+            box-sizing: border-box
+        }}
+
+        html,
+        body {{
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font: 13px/1.45 'DIN', Arial, Helvetica, sans-serif
+        }}
+
+        .page {{
+            max-width: 900px;
+            margin: 20px auto;
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            padding: 18px 20px
+        }}
+
+        .hdr-title {{
+            color: var(--ink);
+            font-size: 20px;
+            font-weight: 700;
+            margin: 0 0 6px 0
+        }}
+
+        .hdr-top {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 0 0 8px 0;
+            font-size: 12px;
+            color: var(--muted)
+        }}
+
+        .hdr-grid {{
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px 10px;
+            margin: 8px 0 8px
+        }}
+
+        .hdr-item .k {{
+            color: var(--muted);
+            font-size: 11px
+        }}
+
+        .hdr-item .v {{
+            color: var(--text);
+            font-weight: 600;
+            font-size: 13px
+        }}
+
+        .divider {{
+            height: 1px;
+            background: var(--rule);
+            margin: 8px 0 10px
+        }}
+
+        .section {{
+            page-break-inside: avoid;
+            margin: 10px 0
+        }}
+
+        .section-h {{
+            color: var(--ink);
+            font-weight: 800;
+            border-bottom: 1px solid var(--rule);
+            padding-bottom: 4px;
+            margin-bottom: 8px
+        }}
+
+        .cards {{
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px
+        }}
+
+        .card {{
+            border: 1px solid var(--rule);
+            border-radius: 12px;
+            background: var(--card);
+            box-shadow: var(--shadow);
+            padding: 10px 12px;
+            page-break-inside: avoid
+        }}
+
+        .card-h {{
+            font-weight: 700;
+            color: var(--ink);
+            margin-bottom: 6px;
+            font-size: 13px
+        }}
+
+        .blt {{
+            margin: 0;
+            padding-left: 18px
+        }}
+
+        .blt li {{
+            margin: 4px 0
+        }}
+
+        .lb {{
+            color: var(--muted);
+            font-weight: 600;
+            margin-right: 4px
+        }}
+
+        .summary {{
+            page-break-inside: avoid;
+            margin-top: 12px
+        }}
+
+        .summary-h {{
+            color: var(--ink);
+            font-weight: 800;
+            border-bottom: 1px solid var(--rule);
+            padding-bottom: 4px;
+            margin-bottom: 6px
+        }}
+
+        table {{
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px
+        }}
+
+        th,
+        td {{
+            border-bottom: 1px solid var(--rule);
+            padding: 6px 8px
+        }}
+
+        th {{
+            text-align: left;
+            color: var(--ink)
+        }}
+
+        td.money {{
+            text-align: right
+        }}
+
+        footer {{
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+            font-size: 11px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid var(--rule)
+        }}
+
+        @page {{
+            size: letter;
+            margin: 14mm 14mm
+        }}
+
+        @media print {{
+            .page {{
+                box-shadow: none;
+                border-radius: 0
+            }}
+        }}
+    </style>
+</head>
+
+<body>
+    <div class='page'>
+        <div class='hdr-top'>
+            <div>Run Time: {datetime.now().strftime('%Y%m%d_%H%M%S')}</div>
+            <div>Cycle: {cycle_id}</div>
+        </div>
+        <h1 class='hdr-title'>Strategic Crime Reduction Briefing - Patrol Captain</h1>
+        <div class='hdr-grid'>
+            <div class='hdr-item'>
+                <div class='k'>Date Range</div>
+                <div class='v'>{date_range}</div>
+            </div>
+            <div class='hdr-item'>
+                <div class='k'>Prepared by</div>
+                <div class='v'>P.O. R. A. Carucci</div>
+            </div>
+            <div class='hdr-item'>
+                <div class='k'>Captain</div>
+                <div class='v'>Captain Smith</div>
+            </div>
+            <div class='hdr-item'>
+                <div class='k'>Version</div>
+                <div class='v'>1.5.0</div>
+            </div>
+        </div>
+        <div class='divider'></div>
+"""
+        
+        # Add sections for each category
+        for (cat_code, cat_name), cases in sorted(categories.items()):
+            if len(cases) > 0:
+                html += f"""
+        <div class='section'>
+            <div class='section-h'>{cat_code}. {cat_name}</div>
+            <div class='cards'>
+"""
+                for case in cases:
+                    html += generate_case_card_html(case, (cat_code, cat_name))
+                
+                html += """
+            </div>
+        </div>
+"""
+        
+        # Add summary table
+        html += """
+        <div class='summary'>
+            <div class='summary-h'>Summary Table</div>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Case #</th>
+                        <th>Type</th>
+                        <th>Date/Time</th>
+                        <th>Loss Total</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+"""
+        
+        for idx, row in df.iterrows():
+            case_num = row.get('CaseNumber', 'Data Incomplete')
+            incident_type = row.get('IncidentType', 'Data Incomplete')
+            incident_datetime = row.get('IncidentDateTime', 'Data Incomplete')
+            loss_total = row.get('LossTotal', '$0.00')
+            status = row.get('Status', 'Data Incomplete')
+            
+            html += f"""
+                    <tr>
+                        <td>{case_num}</td>
+                        <td>{incident_type}</td>
+                        <td>{incident_datetime}</td>
+                        <td class='money'>{loss_total}</td>
+                        <td>{status}</td>
+                    </tr>
+"""
+        
+        # Estimate page count based on content (rough estimate: ~3-4 cases per page)
+        estimated_pages = max(1, (len(df) + 2) // 4)  # Add 2 for header/summary, divide by 4 cases per page
+        
+        html += f"""
+                </tbody>
+            </table>
+        </div>
+        <footer>
+            <div>Hackensack Police Department - Safe Streets Operations Control Center | Cycle: {cycle_id}</div>
+            <div>Page 1 of {estimated_pages}</div>
+        </footer>
+    </div>
+</body>
+
+</html>
+"""
+        
+        print("✅ HTML generation complete")
+        return html, cycle_id
+        
+    except Exception as e:
+        print(f"❌ Error generating HTML: {e}")
+        import traceback
+        traceback.print_exc()
+        return None, None
+
+def save_html(html, cycle_id, output_folder):
+    """Save HTML briefing"""
+    try:
+        os.makedirs(output_folder, exist_ok=True)
+        
+        timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        output_file = os.path.join(output_folder, f"{timestamp}_rms_summary.html")
+        
+        with open(output_file, 'w', encoding='utf-8') as f:
+            f.write(html)
+        
+        print(f"\n✅ HTML briefing saved: {os.path.basename(output_file)}")
+        print(f"📁 Location: {output_file}")
+        
+        return output_file
+        
+    except Exception as e:
+        print(f"❌ Error saving HTML: {e}")
+        return None
+
+def main():
+    """Main execution"""
+    print("🚀 Starting SCRPA Briefing HTML Generation\n")
+    
+    # Find latest briefing CSV
+    csv_path = find_latest_briefing_csv()
+    if not csv_path:
+        print("\n❌ Cannot proceed without briefing CSV file")
+        print("   Run prepare_briefing_csv.py first!") safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Generate HTML
+    print("\n🔄 Generating HTML briefing...")
+    html, cycle_id = generate_html_briefing(csv_path)
+    
+    if not html:
+        print("\n❌ HTML generation failed")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Save HTML
+    print("\n💾 Saving HTML...")
+    output_file = save_html(html, cycle_id, OUTPUT_FOLDER)
+    
+    if not output_file:
+        print("\n❌ Failed to save HTML")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Success summary
+    print("\n" + "=" * 60)
+    print("✅ SUCCESS - HTML BRIEFING GENERATED")
+    print("=" * 60)
+    print(f"\n📂 Output Location: {OUTPUT_FOLDER}")
+    print(f"📄 HTML File: {os.path.basename(output_file)}")
+    print(f"📋 Cycle: {cycle_id}")
+    print("\n💡 Note: Basic suspect/loss extraction used.") print("   For advanced extraction, use ChatGPT with START PROMPT")
+    print("\n" + "=" * 60)
+    
+    # Open the file
+    try:
+        os.startfile(output_file)
+        print("\n🌐 Opening HTML in browser...")
+    except:
+        pass
+    
+    safe_input("\nPress Enter to exit...")
+    return True
+
+if __name__ == "__main__":
+    try:
+        success = main()
+        sys.exit(0 if success else 1)
+    except KeyboardInterrupt:
+        print("\n\n❌ Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        safe_input("\nPress Enter to exit...")
+        sys.exit(1)
+
+
+
+```
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SCRPA Briefing CSV Preparation Script
+Author: R. A. Carucci
+Date: 2025-10-28
+Purpose: Transform RMS CSV export into ChatGPT-ready briefing format
+
+This script handles structural transformations and column mapping. AI (ChatGPT) will handle intelligent narrative parsing for:
+- Suspect descriptions
+- Loss items extraction
+- Methods, allegations, etc.
+"""

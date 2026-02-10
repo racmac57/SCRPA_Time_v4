@@ -1,0 +1,1 @@
+Try loading the query in Power BI Desktop again; the "Token ')' expected" error should be gone.

@@ -233,3 +233,53 @@ The logic will work perfectly with bi-weekly cycles because:
 2. Bi-weekly cycles have explicit `Report_Due_Date` values
 3. Date ranges (7-Day, 28-Day) remain unchanged
 4. Three-tier fallback ensures accuracy
+
+---
+
+## Addendum: Report_Date Fallback Bug (Fixed 2026-01-27)
+
+### Problem
+`Report_Date` used `CoalesceAny(Report Date, EntryDate, Incident_Date_Date)`. When both Report Date and EntryDate were null, we fell back to **Incident_Date**. Lagday logic used `Report_Date`, so those rows were evaluated as if reported on the **incident** date. The cycle for “report” was then the incident’s cycle, and the incident often fell inside that cycle → **IsLagDay = FALSE**, **LagDays = 0** even when the real report was later (true lag).
+
+Example: Incident 01/09/26, Report 01/16/26, but Report Date null → fallback to 01/09. Cycle for 01/09 → 01/06–01/12, start 01/06. 01/09 ≮ 01/06 → not lagday, LagDays 0. Correct behavior: cycle for 01/16 → 01/13–01/19, start 01/13; 01/09 < 01/13 → lagday, LagDays 4.
+
+### Fix
+- Added **`Report_Date_ForLagday`**: `Coalesce(Report Date, EntryDate)` only — **no** Incident_Date fallback.
+- **IsLagDay**, **LagDays**, **Backfill_7Day**, and **IsCurrent7DayCycle** now use **`Report_Date_ForLagday`** instead of `Report_Date`.
+- When both Report Date and EntryDate are null, `Report_Date_ForLagday` is null → lagday logic yields **IsLagDay = false**, **LagDays = 0** by design (we cannot assign a reporting cycle).
+
+`Report_Date` and **IncidentToReportDays** still use the original fallback for display/QA; only cycle/lagday logic uses `Report_Date_ForLagday`.
+
+---
+
+## Addendum: Lagday Table Filter (Detail / “Recently Reported”) — 2026-01-27
+
+### Rule
+
+The **lagday detail tables** (e.g. Motor Vehicle Theft “Recently Reported” table) must filter on **`Backfill_7Day = TRUE`**, not just **`IsLagDay = TRUE`**.
+
+- **`IsLagDay`**: Incident occurred **before** the cycle start (for the cycle tied to that row’s report date). Includes *all* lagday cases, regardless of when they were reported.
+- **`Backfill_7Day`**: Incident before **current** cycle start **and** report date **in** the current 7‑day cycle (e.g. 01/20–01/26 for 26C01W04). Only “reported **this** cycle” lagday cases.
+
+The lagday table is for **reporting delays in the current cycle**: incidents that **happened** before the cycle but were **reported** during it. Those are exactly `Backfill_7Day` cases.
+
+### Example: 26-005319 (Motor Vehicle Theft)
+
+- **Incident date**: 01/09/26  
+- **Report date**: 01/16/26  
+- **Current cycle** 26C01W04: 7‑day 01/20–01/26  
+
+01/16 is **before** the cycle (01/20–01/26), so the case was **not** reported during the current cycle.  
+→ **Backfill_7Day = FALSE** → **must NOT** appear in the lagday table.
+
+It is still a lagday (incident 01/09 &lt; cycle start 01/20), so **IsLagDay = TRUE**. If the visual filters only on `IsLagDay`, 26‑005319 incorrectly appears. Filtering on **`Backfill_7Day = TRUE`** fixes it.
+
+### Power BI change
+
+For each **lagday detail** visual (e.g. Motor Vehicle Theft “Recently Reported” table):
+
+1. Add a **Visual-level filter** (or **Filter on this visual**).
+2. Filter **`Backfill_7Day`** = **True** (instead of, or in addition to, `IsLagDay`).
+3. Keep **`Crime_Category`** = the relevant category (e.g. Motor Vehicle Theft) as needed.
+
+Same for any export or calculated table that feeds “LagDay_*_data” CSVs: base it on **Backfill_7Day**, not IsLagDay alone.

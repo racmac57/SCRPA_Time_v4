@@ -1,0 +1,632 @@
+Args:
+        report_date_tuple: Optional tuple (year, month, day) to filter files by date
+    """
+    csv_files = []
+    
+    # Full export CSVs (from Excel conversion)
+    pattern = os.path.join(RMS_EXPORT_DIR, "*.csv")
+    all_csv_files = glob.glob(pattern)
+    
+    # Exclude files already in archive
+    all_csv_files = [f for f in all_csv_files if "archive" not in f]
+    
+    # Filter by date if report_date_tuple is provided
+    if report_date_tuple:
+        year, month, day = report_date_tuple
+        # Create date string patterns to match (YYYY_MM_DD or YY_MM_DD)
+        date_pattern_4digit = f"{year:04d}_{month:02d}_{day:02d}"
+        date_pattern_2digit = f"{year % 100:02d}_{month:02d}_{day:02d}"
+        
+        filtered_files = []
+        for csv_file in all_csv_files:
+            filename = os.path.basename(csv_file)
+            # Check if filename contains the date pattern
+            if date_pattern_4digit in filename or date_pattern_2digit in filename:
+                filtered_files.append(csv_file)
+        
+        csv_files = filtered_files
+        if len(csv_files) == 0:
+            print(f"⚠️  No CSV files found matching date {year}-{month:02d}-{day:02d}")
+            print(f"   Found {len(all_csv_files)} total CSV file(s), but none match the report date")
+            print(f"   Note: Excel files must be converted to CSV first using convert_all_xlsx.bat")
+        else:
+            print(f"📊 Found {len(csv_files)} CSV file(s) matching report date {year}-{month:02d}-{day:02d}")
+    else:
+        # No date filter - copy all (backward compatibility)
+        csv_files = all_csv_files
+        if len(csv_files) == 0:
+            print(f"⚠️  No CSV files found in {RMS_EXPORT_DIR}")
+            print(f"   Note: Excel files must be converted to CSV first using convert_all_xlsx.bat")
+            print(f"   Excel files found: {len(glob.glob(os.path.join(RMS_EXPORT_DIR, '*.xlsx')))}")
+        else:
+            print(f"📊 Found {len(csv_files)} CSV file(s) to copy (no date filter)")
+    
+    return csv_files
+
+def collect_excel_files(report_date_tuple=None):
+    """
+    Collect Excel files from RMS export directory and archive, optionally filtered by report date. Args:
+        report_date_tuple: Optional tuple (year, month, day) to filter files by date
+    """
+    excel_files = []
+    
+    # Excel files (source files) - check main folder first
+    pattern = os.path.join(RMS_EXPORT_DIR, "*.xlsx")
+    all_excel_files = glob.glob(pattern)
+    
+    # Also check archive folder for Excel files (they may have been archived before organize step)
+    archive_dir = os.path.join(RMS_EXPORT_DIR, "archive")
+    if os.path.exists(archive_dir):
+        archive_pattern = os.path.join(archive_dir, "**", "*.xlsx")
+        archive_files = glob.glob(archive_pattern, recursive=True)
+        all_excel_files.extend(archive_files)
+    
+    # Note: We include archive files because they may have been archived before organize step
+    
+    # Filter by date if report_date_tuple is provided
+    if report_date_tuple:
+        year, month, day = report_date_tuple
+        # Create date string patterns to match (YYYY_MM_DD or YY_MM_DD)
+        # Excel files have format: YYYY_MM_DD_HH_MM_SS_SCRPA_RMS.xlsx
+        date_pattern_4digit = f"{year:04d}_{month:02d}_{day:02d}"
+        date_pattern_2digit = f"{year % 100:02d}_{month:02d}_{day:02d}"
+        
+        filtered_files = []
+        for excel_file in all_excel_files:
+            filename = os.path.basename(excel_file)
+            # Check if filename contains the date pattern
+            if date_pattern_4digit in filename or date_pattern_2digit in filename:
+                filtered_files.append(excel_file)
+        
+        excel_files = filtered_files
+        if len(excel_files) == 0:
+            print(f"⚠️  No Excel files found matching date {year}-{month:02d}-{day:02d}")
+            print(f"   Found {len(all_excel_files)} total Excel file(s), but none match the report date")
+        else:
+            print(f"📊 Found {len(excel_files)} Excel file(s) matching report date {year}-{month:02d}-{day:02d}")
+    else:
+        # No date filter - copy all (backward compatibility)
+        excel_files = all_excel_files
+        print(f"📊 Found {len(excel_files)} Excel file(s) to copy (no date filter)")
+    
+    return excel_files
+
+def collect_report_files():
+    """Collect HTML and PDF files from SCRPA_ArcPy output - only latest versions of each report type"""
+    report_files = []
+    
+    # HTML files
+    html_pattern = os.path.join(SCRPA_OUTPUT_DIR, "*.html")
+    all_html = glob.glob(html_pattern)
+    
+    # PDF files
+    pdf_pattern = os.path.join(SCRPA_OUTPUT_DIR, "*.pdf")
+    all_pdf = glob.glob(pdf_pattern)
+    
+    # Exclude files in archive
+    all_html = [f for f in all_html if "archive" not in f and "99_archive" not in f]
+    all_pdf = [f for f in all_pdf if "archive" not in f and "99_archive" not in f]
+    
+    # Group by report type pattern and keep only the latest of each type
+    html_groups = {}
+    for html_file in all_html:
+        base_name = os.path.basename(html_file)
+        
+        # Determine report type pattern
+        if "_rms_summary.html" in base_name:
+            pattern = "*_rms_summary.html"  # Tactical reports
+        elif "SCRPA_Combined_Executive_Summary_" in base_name:
+            pattern = "SCRPA_Combined_Executive_Summary_*.html"  # Strategic reports
+        else:
+            pattern = base_name  # Unknown pattern, keep as-is
+        
+        # Keep only the latest file for each pattern
+        if pattern not in html_groups or os.path.getmtime(html_file) > os.path.getmtime(html_groups[pattern]):
+            html_groups[pattern] = html_file
+    
+    pdf_groups = {}
+    for pdf_file in all_pdf:
+        base_name = os.path.basename(pdf_file)
+        
+        # Determine report type pattern
+        if "_rms_summary.pdf" in base_name:
+            pattern = "*_rms_summary.pdf"  # Tactical reports
+        elif "SCRPA_Combined_Executive_Summary_" in base_name:
+            pattern = "SCRPA_Combined_Executive_Summary_*.pdf"  # Strategic reports
+        else:
+            pattern = base_name  # Unknown pattern, keep as-is
+        
+        # Keep only the latest file for each pattern
+        if pattern not in pdf_groups or os.path.getmtime(pdf_file) > os.path.getmtime(pdf_groups[pattern]):
+            pdf_groups[pattern] = pdf_file
+    
+    # Add latest files
+    report_files.extend(html_groups.values())
+    report_files.extend(pdf_groups.values())
+    
+    print(f"📄 Found {len(report_files)} report file(s) to copy (latest versions only)")
+    return report_files
+
+def find_7day_csv(report_date_tuple=None):
+    """
+    Find the 7-day filtered CSV file, optionally filtered by report date. Args:
+        report_date_tuple: Optional tuple (year, month, day) to filter files by date
+    """
+    pattern = os.path.join(RMS_EXPORT_DIR, "*_ReportDate_Last7.csv")
+    all_files = glob.glob(pattern)
+    
+    # Exclude archive
+    files = [f for f in all_files if "archive" not in f]
+    
+    # Filter by date if provided
+    if report_date_tuple and files:
+        year, month, day = report_date_tuple
+        date_pattern_4digit = f"{year:04d}_{month:02d}_{day:02d}"
+        date_pattern_2digit = f"{year % 100:02d}_{month:02d}_{day:02d}"
+        
+        filtered_files = [f for f in files 
+                         if date_pattern_4digit in os.path.basename(f) or 
+                            date_pattern_2digit in os.path.basename(f)]
+        
+        if filtered_files:
+            files = filtered_files
+    
+    if not files:
+        return None
+    
+    # Get most recent
+    latest = max(files, key=os.path.getmtime)
+    print(f"✅ Found 7-day CSV: {os.path.basename(latest)}")
+    return latest
+
+def find_briefing_csv(report_date_tuple=None):
+    """
+    Find the briefing-ready CSV file, optionally filtered by report date. Args:
+        report_date_tuple: Optional tuple (year, month, day) to filter files by date
+    """
+    pattern = os.path.join(SCRPA_OUTPUT_DIR, "SCRPA_Briefing_Ready_*.csv")
+    all_files = glob.glob(pattern)
+    
+    # Filter by date if provided
+    if report_date_tuple and all_files:
+        year, month, day = report_date_tuple
+        date_pattern_4digit = f"{year:04d}_{month:02d}_{day:02d}"
+        date_pattern_2digit = f"{year % 100:02d}_{month:02d}_{day:02d}"
+        
+        filtered_files = [f for f in all_files 
+                         if date_pattern_4digit in os.path.basename(f) or 
+                            date_pattern_2digit in os.path.basename(f)]
+        
+        if filtered_files:
+            files = filtered_files
+        else:
+            files = all_files
+            print(f"⚠️  No briefing CSV found matching date {year}-{month:02d}-{day:02d}, using latest available")
+    else:
+        files = all_files
+    
+    if not files:
+        return None
+    
+    # Get most recent
+    latest = max(files, key=os.path.getmtime)
+    print(f"✅ Found briefing CSV: {os.path.basename(latest)}")
+    return latest
+
+def find_chatgpt_prompt(report_date_tuple=None):
+    """
+    Find the ChatGPT prompt file, checking if it matches the report date. Args:
+        report_date_tuple: Optional tuple (year, month, day) to verify file date
+    """
+    prompt_file = os.path.join(SCRPA_OUTPUT_DIR, "CHATGPT_BRIEFING_PROMPT.md")
+    
+    if os.path.exists(prompt_file):
+        # Check if the prompt file matches the report date by reading its header
+        if report_date_tuple:
+            try:
+                with open(prompt_file, 'r', encoding='utf-8') as f:
+                    first_lines = f.read(500)  # Read first 500 chars to check date
+                    year, month, day = report_date_tuple
+                    date_str_4digit = f"{year:04d}-{month:02d}-{day:02d}"
+                    date_str_2digit = f"{year % 100:02d}-{month:02d}-{day:02d}"
+                    
+                    # Check if the file contains the report date
+                    if date_str_4digit in first_lines or date_str_2digit in first_lines:
+                        print(f"✅ Found ChatGPT prompt: {os.path.basename(prompt_file)} (matches report date)")
+                    else:
+                        print(f"⚠️  Found ChatGPT prompt: {os.path.basename(prompt_file)} (may be from different date)")
+                        print(f"   Report date: {year}-{month:02d}-{day:02d}")
+                        print(f"   Prompt file may need to be regenerated for this report date")
+            except Exception as e:
+                print(f"⚠️  Could not verify prompt file date: {e}")
+        else:
+            print(f"✅ Found ChatGPT prompt: {os.path.basename(prompt_file)}")
+        return prompt_file
+    
+    return None
+
+def copy_file_safe(source, dest_dir, dest_name=None):
+    """Copy file with error handling"""
+    try:
+        if not os.path.exists(source):
+            print(f"  ⚠️  Source not found: {os.path.basename(source)}")
+            return False
+        
+        if dest_name is None:
+            dest_name = os.path.basename(source)
+        
+        dest_path = os.path.join(dest_dir, dest_name)
+        
+        # Create destination directory if needed
+        os.makedirs(dest_dir, exist_ok=True)
+        
+        # Copy file
+        shutil.copy2(source, dest_path)
+        print(f"  ✓ Copied: {dest_name}")
+        return True
+        
+    except Exception as e:
+        print(f"  ❌ Failed to copy {os.path.basename(source)}: {e}")
+        return False
+
+def create_consolidated_md(report_folder, csv_files, prompt_file):
+    """Create consolidated markdown file with CSV content and prompt"""
+    try:
+        md_path = os.path.join(report_folder, "Documentation", "SCRPA_Report_Summary.md")
+        
+        # Check what files actually exist in the report folder
+        data_folder = os.path.join(report_folder, "Data")
+        docs_folder = os.path.join(report_folder, "Documentation")
+        reports_folder = os.path.join(report_folder, "Reports")
+        
+        # Get actual CSV files from Data folder
+        actual_csv_files = []
+        if os.path.exists(data_folder):
+            actual_csv_files = [os.path.join(data_folder, f) for f in os.listdir(data_folder) 
+                              if f.lower().endswith('.csv')]
+        
+        # Get actual prompt file from Documentation folder
+        actual_prompt_file = None
+        if os.path.exists(docs_folder):
+            prompt_path = os.path.join(docs_folder, "CHATGPT_BRIEFING_PROMPT.md")
+            if os.path.exists(prompt_path):
+                actual_prompt_file = prompt_path
+        
+        # Use actual files if available, otherwise use passed parameters
+        csv_files_to_use = actual_csv_files if actual_csv_files else csv_files
+        prompt_file_to_use = actual_prompt_file if actual_prompt_file else prompt_file
+        
+        with open(md_path, 'w', encoding='utf-8') as f:
+            f.write("# SCRPA Report Summary\n\n")
+            f.write(f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("---\n\n")
+            
+            # CSV Files Section
+            f.write("## CSV Data Files\n\n")
+            if csv_files_to_use:
+                f.write("The following CSV files are included in this report:\n\n")
+                for csv_file in csv_files_to_use:
+                    f.write(f"- `{os.path.basename(csv_file)}`\n")
+                f.write("\n")
+            else:
+                f.write("**No CSV files found in this report. **\n\n")
+                f.write("This may indicate that:\n")
+                f.write("- Excel conversion step failed\n")
+                f.write("- No Excel files were available for conversion\n")
+                f.write("- Files were not successfully copied to the Data/ folder\n\n")
+            
+            # Include 7-day CSV content if available
+            last7_csv = None
+            # Check in Data folder first
+            if os.path.exists(data_folder):
+                for csv_file in actual_csv_files:
+                    if "_ReportDate_Last7" in os.path.basename(csv_file) or "_Last7" in os.path.basename(csv_file):
+                        last7_csv = csv_file
+                        break
+            
+            # If not found in Data folder, check source location
+            if not last7_csv:
+                last7_csv = find_7day_csv()
+            
+            if last7_csv and os.path.exists(last7_csv):
+                f.write("### 7-Day Filtered Data\n\n")
+                f.write(f"**File**: `{os.path.basename(last7_csv)}`\n\n")
+                f.write("**Note**: Full CSV content available in Data/ folder.\n")
+                f.write("This section includes a summary of the 7-day filtered data.\n\n")
+                
+                # Read and include CSV summary (first 10 rows)
+                try:
+                    import pandas as pd
+                    df = pd.read_csv(last7_csv)
+                    f.write(f"**Total Records**: {len(df)}\n\n")
+                    if len(df) > 0:
+                        f.write("**First 10 Records**:\n\n")
+                        f.write("```\n")
+                        f.write(df.head(10).to_string())
+                        f.write("\n```\n\n")
+                    else:
+                        f.write("*CSV file is empty (0 records)*\n\n")
+                except Exception as e:
+                    f.write(f"*Could not read CSV content: {e}*\n\n")
+            else:
+                f.write("### 7-Day Filtered Data\n\n")
+                f.write("*7-day filtered CSV file not found. *\n\n")
+            
+            f.write("---\n\n")
+            
+            # ChatGPT Prompt Section
+            if prompt_file_to_use and os.path.exists(prompt_file_to_use):
+                f.write("## ChatGPT Briefing Prompt\n\n")
+                f.write("The complete prompt used for ChatGPT briefing generation:\n\n")
+                f.write("---\n\n")
+                
+                # Read and include prompt content
+                try:
+                    with open(prompt_file_to_use, 'r', encoding='utf-8') as pf:
+                        prompt_content = pf.read()
+                        f.write(prompt_content)
+                except Exception as e:
+                    f.write(f"*Could not read prompt file: {e}*\n\n")
+            else:
+                f.write("## ChatGPT Briefing Prompt\n\n")
+                f.write("*Prompt file not found. *\n\n")
+                f.write("This may indicate that:\n")
+                f.write("- Briefing CSV preparation step failed\n")
+                f.write("- No 7-day CSV file was available for briefing preparation\n")
+                f.write("- The prompt file was not successfully copied to the Documentation/ folder\n\n")
+                f.write("**Expected location**: `Documentation/CHATGPT_BRIEFING_PROMPT.md`\n\n")
+            
+            f.write("---\n\n")
+            f.write(f"*Report summary generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n")
+        
+        print(f"✅ Created consolidated MD file: {os.path.basename(md_path)}")
+        return md_path
+        
+    except Exception as e:
+        print(f"❌ Error creating MD file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def cleanup_old_reports(reports_folder):
+    """
+    Remove old report files from the Reports folder, keeping only the latest
+    version of each report type. Report types:
+    - *_rms_summary.html/pdf (Tactical)
+    - SCRPA_Combined_Executive_Summary_*.html/pdf (Strategic)
+    
+    Args:
+        reports_folder: Path to the Reports subfolder
+        
+    Returns:
+        Tuple of (deleted_count, kept_count)
+    """
+    if not os.path.exists(reports_folder):
+        return (0, 0)
+    
+    deleted_count = 0
+    kept_files = []
+    
+    # Define report type patterns
+    report_patterns = {
+        'tactical_html': '*_rms_summary.html',
+        'tactical_pdf': '*_rms_summary.pdf',
+        'strategic_html': 'SCRPA_Combined_Executive_Summary_*.html',
+        'strategic_pdf': 'SCRPA_Combined_Executive_Summary_*.pdf',
+    }
+    
+    for report_type, pattern in report_patterns.items():
+        full_pattern = os.path.join(reports_folder, pattern)
+        matching_files = glob.glob(full_pattern)
+        
+        if not matching_files:
+            continue
+        
+        # Sort by modification time (newest first)
+        matching_files.sort(key=os.path.getmtime, reverse=True)
+        
+        # Keep the newest file
+        latest_file = matching_files[0]
+        kept_files.append(os.path.basename(latest_file))
+        
+        # Delete older files
+        for old_file in matching_files[1:]:
+            try:
+                os.remove(old_file)
+                deleted_count += 1
+                print(f"  🗑️  Deleted old: {os.path.basename(old_file)}")
+            except Exception as e:
+                print(f"  ⚠️  Could not delete {os.path.basename(old_file)}: {e}")
+    
+    if deleted_count > 0:
+        print(f"🧹 Cleaned up {deleted_count} old report file(s)")
+    
+    if kept_files:
+        print(f"📄 Keeping {len(kept_files)} latest report file(s):")
+        for f in kept_files:
+            print(f"    ✓ {f}")
+    
+    return (deleted_count, len(kept_files))
+
+def organize_files(report_folder):
+    """Main function to organize all files into report folder"""
+    print(f"\n📁 Organizing files into: {os.path.basename(report_folder)}\n")
+    
+    # Extract report date from folder name
+    folder_name = os.path.basename(report_folder)
+    report_date_tuple = extract_date_from_folder_name(folder_name)
+    
+    if report_date_tuple:
+        year, month, day = report_date_tuple
+        print(f"📅 Report date detected: {year}-{month:02d}-{day:02d} (from folder name)")
+    else:
+        print(f"⚠️  Could not extract date from folder name: {folder_name}")
+        print(f"   Will copy all available files (no date filtering)")
+    
+    # Ensure subfolders exist
+    data_folder = os.path.join(report_folder, "Data")
+    reports_folder = os.path.join(report_folder, "Reports")
+    docs_folder = os.path.join(report_folder, "Documentation")
+    
+    os.makedirs(data_folder, exist_ok=True)
+    os.makedirs(reports_folder, exist_ok=True)
+    os.makedirs(docs_folder, exist_ok=True)
+    
+    copied_count = 0
+    
+    # 1. Copy CSV files to Data folder (filtered by date if available)
+    print("📊 Copying CSV files to Data/ folder...")
+    csv_files = collect_csv_files(report_date_tuple)
+    for csv_file in csv_files:
+        if copy_file_safe(csv_file, data_folder):
+            copied_count += 1
+    
+    # 1b. Copy Excel files to Data folder (filtered by date if available)
+    print("\n📊 Copying Excel files to Data/ folder...")
+    excel_files = collect_excel_files(report_date_tuple)
+    for excel_file in excel_files:
+        if copy_file_safe(excel_file, data_folder):
+            copied_count += 1
+    
+    # 2. Process 7-day CSV: restructure into Detailed/Summary outputs
+    last7_csv = find_7day_csv(report_date_tuple)
+    if last7_csv:
+        print("\n📅 Processing 7-day filtered CSV (restructuring)...")
+        # Note: We no longer copy SCRPA_7Day_Filtered.csv - it's deprecated
+        # The Detailed CSV has all the same data plus robust columns (lagdays, cycle dates, etc.) print("   ℹ️  Note: SCRPA_7Day_Filtered.csv is deprecated and not copied.") print("      Use SCRPA_7Day_Detailed.csv instead (has all filtered incidents plus robust columns).") # Run restructure script to generate Detailed and Summary CSVs
+        restructure_script = os.path.join(os.path.dirname(__file__), "tools", "scrpa_7day_restructure.py")
+        if os.path.exists(restructure_script):
+            print("   🔄 Running 7-day restructure script...")
+            try:
+                # Run the restructure script in the data folder so outputs are created there
+                # Pass REPORT_DATE environment variable if we have report date
+                env = os.environ.copy()
+                if report_date_tuple:
+                    year, month, day = report_date_tuple
+                    # Format as MM/DD/YYYY for cycle calendar lookup
+                    env['REPORT_DATE'] = f"{month:02d}/{day:02d}/{year}"
+                
+                result = subprocess.run(
+                    [sys.executable, restructure_script],
+                    cwd=data_folder,
+                    env=env,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace"
+                )
+                
+                # Print output for debugging
+                if result.stdout:
+                    print(result.stdout)
+                
+                if result.returncode == 0:
+                    print("   ✅ Restructure completed successfully")
+                    # Copy the generated files
+                    detailed_csv = os.path.join(data_folder, "SCRPA_7Day_Detailed.csv")
+                    summary_csv = os.path.join(data_folder, "SCRPA_7Day_Summary.csv")
+                    dict_md = os.path.join(data_folder, "SCRPA_7Day_Data_Dictionary.md")
+                    readme_md = os.path.join(data_folder, "README_7day_outputs.md")
+                    
+                    if os.path.exists(detailed_csv):
+                        print(f"   ✓ Generated: SCRPA_7Day_Detailed.csv")
+                        copied_count += 1
+                    if os.path.exists(summary_csv):
+                        print(f"   ✓ Generated: SCRPA_7Day_Summary.csv")
+                        copied_count += 1
+                    # Note: Data Dictionary and README are kept in Data/ folder only
+                    # They are optional in Documentation/ since Data Dictionary is in reference location
+                    # and README is just migration notes
+                    if os.path.exists(dict_md):
+                        print(f"   ✓ Generated: SCRPA_7Day_Data_Dictionary.md (in Data/)")
+                        print(f"     Note: Reference copy is in 09_Reference/Standards/RMS/SCRPA/")
+                        print(f"     (Not copied to Documentation/ - optional reference file)")
+                    if os.path.exists(readme_md):
+                        print(f"   ✓ Generated: README_7day_outputs.md (in Data/)")
+                        print(f"     (Not copied to Documentation/ - migration notes only)")
+                else:
+                    print(f"   ⚠️  Restructure script returned error code {result.returncode}")
+                    if result.stderr:
+                        print(f"   Error output: {result.stderr[:500]}")
+            except Exception as e:
+                print(f"   ⚠️  Error running restructure script: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print(f"   ⚠️  Restructure script not found: {restructure_script}")
+    
+    # 3. Copy briefing CSV (if exists, filtered by date)
+    briefing_csv = find_briefing_csv(report_date_tuple)
+    if briefing_csv:
+        print("\n📋 Copying briefing CSV...")
+        if copy_file_safe(briefing_csv, data_folder):
+            copied_count += 1
+    else:
+        if report_date_tuple:
+            year, month, day = report_date_tuple
+            print(f"\n⚠️  No briefing CSV found for date {year}-{month:02d}-{day:02d}")
+            print(f"   Briefing CSV may need to be generated for this report date")
+    
+    # 3b. Remove old briefing CSV files that don't match the report date
+    if report_date_tuple and os.path.exists(data_folder):
+        year, month, day = report_date_tuple
+        date_pattern_4digit = f"{year:04d}_{month:02d}_{day:02d}"
+        date_pattern_2digit = f"{year % 100:02d}_{month:02d}_{day:02d}"
+        
+        old_briefing_files = []
+        for item in os.listdir(data_folder):
+            if item.startswith("SCRPA_Briefing_Ready_") and item.endswith(".csv"):
+                if date_pattern_4digit not in item and date_pattern_2digit not in item:
+                    old_briefing_files.append(item)
+        
+        if old_briefing_files:
+            print(f"\n🧹 Removing {len(old_briefing_files)} old briefing CSV file(s) that don't match report date...")
+            for old_file in old_briefing_files:
+                try:
+                    os.remove(os.path.join(data_folder, old_file))
+                    print(f"  ✓ Removed: {old_file}")
+                except Exception as e:
+                    print(f"  ⚠️  Could not remove {old_file}: {e}")
+    
+    # 4. Clean up old report files before copying new ones
+    print("\n🧹 Cleaning up old report files...")
+    cleanup_old_reports(reports_folder)
+    
+    # 5. Copy HTML and PDF files to Reports folder
+    print("\n📄 Copying HTML and PDF reports...")
+    report_files = collect_report_files()
+    for report_file in report_files:
+        if copy_file_safe(report_file, reports_folder):
+            copied_count += 1
+    
+    # 5. Copy ChatGPT prompt to Documentation folder (verify date match)
+    prompt_file = find_chatgpt_prompt(report_date_tuple)
+    if prompt_file:
+        print("\n📝 Copying ChatGPT prompt...")
+        # Check if existing prompt file in docs folder is from different date
+        existing_prompt = os.path.join(docs_folder, "CHATGPT_BRIEFING_PROMPT.md")
+        if os.path.exists(existing_prompt) and report_date_tuple:
+            try:
+                with open(existing_prompt, 'r', encoding='utf-8') as f:
+                    first_lines = f.read(500)
+                    year, month, day = report_date_tuple
+                    date_str_4digit = f"{year:04d}-{month:02d}-{day:02d}"
+                    date_str_2digit = f"{year % 100:02d}-{month:02d}-{day:02d}"
+                    
+                    # If existing prompt doesn't match report date, remove it
+                    if date_str_4digit not in first_lines and date_str_2digit not in first_lines:
+                        print(f"  🗑️  Removing old prompt file from different date...")
+                        os.remove(existing_prompt)
+            except:
+                pass  # If we can't read it, just overwrite it
+        
+        if copy_file_safe(prompt_file, docs_folder):
+            copied_count += 1
+    else:
+        if report_date_tuple:
+            year, month, day = report_date_tuple
+            print(f"\n⚠️  No ChatGPT prompt file found")
+            print(f"   Prompt file may need to be generated for report date {year}-{month:02d}-{day:02d}")
+            print(f"   Run prepare_briefing_csv.py to generate prompt file")
+    
+    # 5b.

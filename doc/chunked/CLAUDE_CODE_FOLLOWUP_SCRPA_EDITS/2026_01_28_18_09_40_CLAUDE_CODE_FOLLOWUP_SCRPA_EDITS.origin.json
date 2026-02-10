@@ -1,0 +1,36 @@
+{
+  "tags": [
+    "code",
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "cycle",
+        "time",
+        "incident",
+        "7-day",
+        "cycle_name",
+        "current"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# Claude Code Follow-Up: SCRPA Python Transform Edits\n\n**Date:** 2026-01-28  \n**Purpose:** Edits to `scripts/scrpa_transform.py` and related outputs based on user review of `m_code/preview_tables/all_crimes/2026_01_28_all_crimes.csv` and...",
+      "first_line": "# Claude Code Follow-Up: SCRPA Python Transform Edits"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-28T18:09:40.080681",
+  "department": "admin"
+}

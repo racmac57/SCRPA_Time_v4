@@ -1,0 +1,454 @@
+{
+  "source_file": "2026_01_28_claude_code_rework_scrpa.md",
+  "source_path": "C:\\_chunker\\02_data\\2026_01_28_claude_code_rework_scrpa.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\2026_01_28_claude_code_rework_scrpa\\2026_01_28_18_09_40_2026_01_28_claude_code_rework_scrpa.origin.json",
+  "created_at": "2026_01_28_18_09_40",
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "docs",
+    "excel",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "multi",
+    "department": "admin",
+    "key_terms": [
+      "scripts",
+      "csv",
+      "python",
+      "lines",
+      "scrpa",
+      "data"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "Microsoft Windows [Version 10.0.26200.7628]\n(c) Microsoft Corporation. All rights reserved.",
+    "first_line": "Microsoft Windows [Version 10.0.26200.7628]"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "ai",
+        "code",
+        "create",
+        "cycle",
+        "data",
+        "date",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "return",
+        "scripts",
+        "sql"
+      ],
+      "key_terms": [
+        "return",
+        "create",
+        "scripts",
+        "code",
+        "cycle",
+        "date"
+      ],
+      "summary": "Microsoft Windows [Version 10.0.26200.7628]\n(c) Microsoft Corporation.",
+      "char_length": 29520,
+      "byte_length": 33680
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk2",
+      "chunk_index": 2,
+      "file": "chunk_00001.txt",
+      "tags": [
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "incident",
+        "json",
+        "markdown",
+        "none",
+        "police",
+        "python",
+        "return",
+        "sql"
+      ],
+      "key_terms": [
+        "return",
+        "row",
+        "none",
+        "incident",
+        "str",
+        "get"
+      ],
+      "summary": "Returns:\n         Tuple of (TimeOfDay label, TimeOfDay_SortKey)\n     \"\"\"\n     if t is None:\n         return (\"Unknown Time\", 99)\n\n     hr = t.hour\n\n     if 4 <= hr < 8:\n         return (\"Early Morning (04:00-07:59)\", 2)\n     elif 8 <= hr...",
+      "char_length": 29687,
+      "byte_length": 30468
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk3",
+      "chunk_index": 3,
+      "file": "chunk_00002.txt",
+      "tags": [
+        "7-day",
+        "ai",
+        "code",
+        "create",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scripts",
+        "create",
+        "data",
+        "scrpa",
+        "csv",
+        "7-day"
+      ],
+      "summary": "# Summary\n     print(\"\\nPeriod breakdown:\")\n     print(enhanced_df['Period'].value_counts().to_string())\n\n     print(f\"\\nLag days: {enhanced_df['IsLagDay'].sum()} incidents\")\n     print(f\"Backfill 7-Day: {enhanced_df['Backfill_7Day'].sum...",
+      "char_length": 29794,
+      "byte_length": 35093
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk4",
+      "chunk_index": 4,
+      "file": "chunk_00003.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "code",
+        "create",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scripts",
+        "csv",
+        "data",
+        "2026",
+        "create",
+        "scrpa"
+      ],
+      "summary": "Bi-Weekly Email Dates:\n    - 26BW01: 12/30/2025 - 01/12/2026\n    - 26BW02: 01/13/2026 - 01/26/2026\n\n  Usage\n\n  # Full pipeline\n  python scripts/run_scrpa_pipeline.py rms_export.csv --report-date 01/27/2026\n\n  # Individual scripts\n  pytho...",
+      "char_length": 29941,
+      "byte_length": 35547
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk5",
+      "chunk_index": 5,
+      "file": "chunk_00004.txt",
+      "tags": [
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "scrpa",
+        "sql",
+        "status"
+      ],
+      "key_terms": [
+        "scripts",
+        "csv",
+        "python",
+        "status",
+        "scrpa",
+        "data"
+      ],
+      "summary": "//\n     // MIGRATION NOTES:\n     // - This replaces the complex 742-line All_Crimes.m\n     // - All data enrichment (cycle detection, lag days, period, crime category, etc.) is done in Python\n     // - Python script: scripts/scrpa_transf...",
+      "char_length": 29894,
+      "byte_length": 38213
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk6",
+      "chunk_index": 6,
+      "file": "chunk_00005.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scripts",
+        "csv",
+        "python",
+        "2026",
+        "scrpa",
+        "data"
+      ],
+      "summary": "Create comprehensive documentation: `claude.md`, `data_dictionary.yaml/json`, and `PROJECT_SUMMARY.yaml/json`\n\n  **Reference Files**:\n  - M Code: `m_code/All_Crimes.m` (742 lines - match this logic exactly)\n  - Preview Table: `alL_crimes...",
+      "char_length": 30001,
+      "byte_length": 34328
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk7",
+      "chunk_index": 7,
+      "file": "chunk_00006.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "lines",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "sql"
+      ],
+      "key_terms": [
+        "scripts",
+        "python",
+        "csv",
+        "lines",
+        "data",
+        "2026"
+      ],
+      "summary": "● Searched for 1 pattern, read 1 file (ctrl+o to expand)\n\n● Now I have a complete picture of the requirements.",
+      "char_length": 29847,
+      "byte_length": 34604
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk8",
+      "chunk_index": 8,
+      "file": "chunk_00007.txt",
+      "tags": [
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "lines",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scripts",
+        "python",
+        "csv",
+        "scrpa",
+        "data",
+        "lines"
+      ],
+      "summary": "Workflow Commands\n  # Full pipeline\n  python scripts/run_scrpa_pipeline.py \"path/to/rms.csv\" --report-date 01/27/2026\n\n  # Validate against reference\n  python scripts/validate_parity.py output.csv reference.csv\n\n  The Python-first SCRPA...",
+      "char_length": 29484,
+      "byte_length": 34169
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk9",
+      "chunk_index": 9,
+      "file": "chunk_00008.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "documentation",
+        "excel",
+        "json",
+        "lines",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "sql"
+      ],
+      "key_terms": [
+        "scripts",
+        "csv",
+        "python",
+        "2026",
+        "documentation",
+        "lines"
+      ],
+      "summary": "8 +\n        9 +```\n       10 +RMS Export → Python Scripts → Enriched CSVs → Power BI (simple import)\n       11 +```\n       12 +\n       13 +## Quick Start\n       14 +\n       15 +### Full Pipeline\n       16 +```powershell\n       17 +# Run...",
+      "char_length": 29684,
+      "byte_length": 34175
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk10",
+      "chunk_index": 10,
+      "file": "chunk_00009.txt",
+      "tags": [
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "lines",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scripts",
+        "python",
+        "csv",
+        "data",
+        "scrpa",
+        "lines"
+      ],
+      "summary": "● Update(scripts\\scrpa_transform.py)\n  ⎿  Added 4 lines, removed 1 line\n      29  import re\n      30\n      31  # Suppress pandas warnings for cleaner output\n      32 -warnings.filterwarnings('ignore',\n         -category=pd.errors.Setting...",
+      "char_length": 28616,
+      "byte_length": 32151
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk11",
+      "chunk_index": 11,
+      "file": "chunk_00010.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "return",
+        "scripts",
+        "sql"
+      ],
+      "key_terms": [
+        "csv",
+        "scripts",
+        "python",
+        "2026",
+        "200",
+        "return"
+      ],
+      "summary": "Here's a summary of what was created:\n\n  Implementation Summary\n\n  Scripts Created (6 files)\n  ┌───────────────────────────────────────────┬─────────────────────────────────────────────────┬────────────┐\n  │                  Script...",
+      "char_length": 30047,
+      "byte_length": 34776
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk12",
+      "chunk_index": 12,
+      "file": "chunk_00011.txt",
+      "tags": [
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "hackensack",
+        "incident",
+        "json",
+        "lines",
+        "markdown",
+        "police",
+        "python",
+        "scripts",
+        "sql",
+        "time",
+        "zone"
+      ],
+      "key_terms": [
+        "zone",
+        "lines",
+        "incident",
+        "time",
+        "hackensack",
+        "scripts"
+      ],
+      "summary": "')[0]\n      692 +            return int(zone)\n      693 +\n      694 +        # Handle float\n      695 +        if isinstance(zone, float):\n      696 +            return int(zone)\n      697 +\n      698 +        # Handle int\n      699 +...",
+      "char_length": 28843,
+      "byte_length": 31087
+    },
+    {
+      "chunk_id": "2026-01-28T18:09:40+00:00_2026_01_28_claude_code_rework_scrpa_chunk13",
+      "chunk_index": 13,
+      "file": "chunk_00012.txt",
+      "tags": [
+        "ai",
+        "carucci_r",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "hackensack",
+        "json",
+        "lines",
+        "markdown",
+        "onedrive",
+        "police",
+        "python",
+        "scrpa",
+        "sql",
+        "zone"
+      ],
+      "key_terms": [
+        "scrpa",
+        "zone",
+        "hackensack",
+        "lines",
+        "carucci_r",
+        "onedrive"
+      ],
+      "summary": "… +78 lines (ctrl+o to expand)\n\n● Bash(cd \"C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\16_Reports\\SCRPA\" && git diff --stat scripts/scrpa_transform.py  timeout: 30s\n      scripts/generate_documentation.py)\n  ⎿  (No content)\n\n● Bash(...",
+      "char_length": 28942,
+      "byte_length": 33891
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

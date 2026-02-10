@@ -1,0 +1,18 @@
+**Folder path corrected**: Changed `SCRPA` to `scrpa` (lowercase) on line 19
+2. **Syntax errors fixed**: Fixed all instances where the arrow operator `=>` was split across lines:
+   - `AsTime` function (line 43)
+   - `AsTimeQuick` function (line 63)
+   - `AsDate` functions (lines 96, 117, 140)
+
+All the helper functions now have proper syntax with the arrow operator on the same line. The query should load without syntax errors in Power BI Desktop. The fixes ensure:
+- Correct folder path: `C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa`
+- All function definitions use proper `=>` syntax
+- Code is properly formatted and readable
+
+Try loading the query again in Power BI Desktop; it should work now. ---
+
+**User**
+
+error around 221
+
+also you are adding quotes in the middle of paths which is causing errors.

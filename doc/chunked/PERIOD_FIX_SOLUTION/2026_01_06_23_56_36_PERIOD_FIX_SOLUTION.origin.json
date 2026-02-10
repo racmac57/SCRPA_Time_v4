@@ -1,0 +1,31 @@
+{
+  "tags": [
+    "docs",
+    "markdown",
+    "police"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "28-day",
+        "cycle",
+        "period",
+        "2026",
+        "should",
+        "check"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# Period Calculation Fix - Solution\n\n## Problem Identified\n\nBoth cases are showing **\"28-Day\"** instead of expected values:\n- **Case 26-001094** (01/04/2026): Shows \"28-Day\" but should be **\"7-Day\"**\n- **Case 25-113412** (12/29/2025): Sh...",
+      "first_line": "# Period Calculation Fix - Solution"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-06T23:56:36.644727",
+  "department": "admin"
+}

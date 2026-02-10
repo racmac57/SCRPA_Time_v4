@@ -1,0 +1,375 @@
+The issue was the `let...in` structure and how the boolean expression was formatted. **The problem:**
+- The `in` keyword was on the same line as the variable assignments
+- The boolean expression wasn't properly formatted with line breaks
+- Missing spaces around `<>` operators
+
+**The fix:**
+- Properly structured `let` block with `let` and `in` on separate lines
+- Each boolean condition on its own line for readability
+- Proper spacing around operators
+
+The section now matches ChatGPT's working version. The query should load without errors in Power BI Desktop. Should I review the rest of the file to ensure it matches ChatGPT's formatting style, or test this specific section first? ---
+
+**User**
+
+SHOULD THESE BE ADDED 
+JUST ADVISE DO NOT MAKE UPDATES YET
+a. Want me to also consolidate the repeated Table.SelectRows(CycleCalendar, …) into a helper like GetCycleByDate(d as date) as nullable record for readability + speed? b. Want a “safe column getter” helper (e.g., GetField(_, "Incident Time")) to eliminate most try [Col] otherwise null noise? ---
+
+**Cursor**
+
+Analyzing both options without making changes:
+
+
+## Analysis & Recommendations
+
+### Option A: `GetCycleByDate` helper function
+
+**Current usage:**
+- `Table.SelectRows(CycleCalendar, ...)` appears 4 times:
+  1. `CurrentCycleTbl` (line 194) - finds current cycle
+  2. `CycleName_Added` (line 212) - finds cycle by incident date
+  3. `IsLagDay_Added` (line 255) - finds cycle by report date
+  4. `LagDays_Added` (line 270) - finds cycle by report date (duplicate of #3)
+
+**Recommendation: YES, but with caveats**
+
+**Pros:**
+- Reduces duplication (3 similar lookups)
+- Easier maintenance (one place to change logic)
+- Clearer intent
+- Potential performance benefit if buffered/optimized
+
+**Cons:**
+- Adds a helper function
+- Slight indirection
+
+**Implementation suggestion:**
+```m
+GetCycleByDate = (d as nullable date) as nullable record =>
+    if d = null then null
+    else
+        let
+            matches = Table.SelectRows(CycleCalendar, each d >= [7_Day_Start] and d <= [7_Day_End])
+        in
+            if Table.IsEmpty(matches) then null else matches{0}
+```
+
+**Verdict:** Worth doing — moderate benefit, low risk. ---
+
+### Option B: Safe column getter helper
+
+**Current usage:**
+- `try ... otherwise null` appears ~32 times throughout the file
+
+**Recommendation: NO, not recommended**
+
+**Reasons:**
+1. Power Query M limitation: Dynamic column access is awkward. A helper like `GetField(_, "Incident Time")` would require `Record.Field(_, "Incident Time")`, which is less readable than `[Incident Time]`. 2. `try [Col] otherwise null` is idiomatic and widely understood. 3. Minimal performance gain; the try/otherwise pattern is already efficient. 4. Readability: `try [Incident Time] otherwise null` is clearer than `GetField(_, "Incident Time")`. 5. Type safety: Direct column access `[Col]` gives better IntelliSense and compile-time checks. **If you still want it:**
+```m
+GetField = (r as record, fieldName as text) as nullable any =>
+    try Record.Field(r, fieldName) otherwise null
+```
+But you'd use it like: `GetField(_, "Incident Time")` which is less clear than `try [Incident Time] otherwise null`. **Verdict:** Not recommended — adds complexity without clear benefit. ---
+
+## Final Recommendation
+
+- Implement Option A (`GetCycleByDate` helper) — moderate benefit, low risk. - Skip Option B (safe column getter) — not worth the added complexity. **Priority:** Low to medium. The query works as-is; this is a cleanup/optimization, not a fix. Should I implement Option A, or keep the current structure? ```plaintext
+GetCycleByDate = (d as nullable date) as nullable record =>
+    if d = null then null
+    else
+        let
+            matches = Table.SelectRows(CycleCalendar, each d >= [7_Day_Start] and d <= [7_Day_End])
+        in
+            if Table.IsEmpty(matches) then null else matches{0}
+```
+
+```plaintext
+GetField = (r as record, fieldName as text) as nullable any =>
+    try Record.Field(r, fieldName) otherwise null
+```
+
+---
+
+**User**
+
+Analysis & Recommendations
+
+a. Want me to make GetCycleRec faster by pre-building an index (record of date ranges), or is Table.SelectRows speed fine for your dataset size? b. Want the “safe getter” helper next (e.g., GetText(_, "FullAddress")) to remove most try … otherwise null clutter? ---
+
+**Cursor**
+
+Analyzing both optimization options:
+
+
+## Analysis & Recommendations
+
+### Option A: Pre-build index for `GetCycleRec` performance
+
+**Current situation:**
+- `CycleCalendar` is already buffered (line 192: `Table.Buffer(CycleCalendarTyped)`)
+- `Table.SelectRows(CycleCalendar, ...)` is called 3-4 times per query execution
+- Cycle calendar size: ~52 rows (one per week for a year)
+- Typical incident volume: 8-12 cases per cycle (from briefing prompts)
+
+**Performance analysis:**
+- `Table.SelectRows` on a buffered 52-row table is fast
+- Each lookup scans ~52 rows (O(n))
+- With 3-4 lookups per query, total operations: ~156-208 row checks
+- For 8-12 incidents, this is negligible
+
+**Index approach:**
+```m
+// Pre-build date range index
+CycleIndex = List.Generate(
+    () => 0,
+    each _ < Table.RowCount(CycleCalendar),
+    each _ + 1,
+    each [
+        Start = CycleCalendar{_}[7_Day_Start],
+        End = CycleCalendar{_}[7_Day_End],
+        Record = CycleCalendar{_}
+    ]
+),
+// Binary search or hash lookup
+GetCycleRec = (d as nullable date) as nullable record =>
+    // ... index lookup logic
+```
+
+**Recommendation: NO — not worth it**
+
+**Reasons:**
+1. Dataset size is small (~52 cycles, ~8-12 incidents)
+2. Already buffered — Power Query optimizes buffered tables
+3. Complexity cost outweighs benefit
+4. Index maintenance adds overhead
+5. Current performance is likely sub-millisecond
+
+**When to consider:**
+- If cycle calendar grows to 500+ rows
+- If processing 10,000+ incidents per query
+- If profiling shows this as a bottleneck
+
+**Verdict:** Skip — current approach is fine for this scale. ---
+
+### Option B: Safe getter helper for text fields
+
+**Current situation:**
+- ~19 instances of `try [Field] otherwise null` patterns
+- Mostly used for: time fields, date fields, incident types, narrative
+- Pattern is consistent and readable
+
+**Usage patterns found:**
+```m
+try [Incident Time] otherwise null          // 3 instances
+try [Incident Date] otherwise null          // 3 instances  
+try [Report Date] otherwise null            // 2 instances
+try [Incident Type_1] otherwise null        // 2 instances
+try [Narrative] otherwise null              // 1 instance
+try Text.From([Field]) otherwise null      // Multiple in Vehicle fields
+```
+
+**Helper approach:**
+```m
+GetText = (r as record, fieldName as text) as nullable text =>
+    try Record.Field(r, fieldName) otherwise null,
+    
+GetAny = (r as record, fieldName as text) as nullable any =>
+    try Record.Field(r, fieldName) otherwise null
+```
+
+**Usage would change from:**
+```m
+try [Incident Time] otherwise null
+```
+**To:**
+```m
+GetAny(_, "Incident Time")
+```
+
+**Recommendation: NO — not recommended**
+
+**Reasons:**
+1. Less readable — `try [Field] otherwise null` is clearer than `GetAny(_, "Field")`
+2. Loses IntelliSense — no autocomplete for column names
+3. Loses type safety — typos in strings aren't caught at design time
+4. Minimal benefit — only ~19 instances, pattern is already clear
+5. Power Query idiom — `try ... otherwise null` is standard
+
+**When it might help:**
+- If you had 100+ instances (you have ~19)
+- If column names were dynamic/computed (they're static)
+- If you needed complex null handling logic (you don't)
+
+**Verdict:** Skip — current pattern is better. ---
+
+## Final Recommendations
+
+**Option A (Index):** ❌ Skip — not needed for this dataset size  
+**Option B (Safe getter):** ❌ Skip — adds complexity without benefit
+
+**Rationale:**
+1. Current performance is fine — buffered table + small dataset
+2. Code is readable — `try [Field] otherwise null` is clear
+3. Premature optimization — no performance issues observed
+4. Maintenance cost — helpers add complexity without clear benefit
+
+**When to reconsider:**
+- If you see performance issues in Power BI query diagnostics
+- If dataset grows significantly (1000+ cycles, 1000+ incidents)
+- If you need complex null handling logic across many fields
+
+**Bottom line:** Keep the current approach. It's simple, readable, and performant for your use case. ```plaintext
+// Pre-build date range index
+CycleIndex = List.Generate(
+    () => 0,
+    each _ < Table.RowCount(CycleCalendar),
+    each _ + 1,
+    each [
+        Start = CycleCalendar{_}[7_Day_Start],
+        End = CycleCalendar{_}[7_Day_End],
+        Record = CycleCalendar{_}
+    ]
+),
+// Binary search or hash lookup
+GetCycleRec = (d as nullable date) as nullable record =>
+    // ... index lookup logic
+```
+
+```plaintext
+try [Incident Time] otherwise null          // 3 instances
+try [Incident Date] otherwise null          // 3 instances  
+try [Report Date] otherwise null            // 2 instances
+try [Incident Type_1] otherwise null        // 2 instances
+try [Narrative] otherwise null              // 1 instance
+try Text.From([Field]) otherwise null      // Multiple in Vehicle fields
+```
+
+```plaintext
+GetText = (r as record, fieldName as text) as nullable text =>
+    try Record.Field(r, fieldName) otherwise null,
+    
+GetAny = (r as record, fieldName as text) as nullable any =>
+    try Record.Field(r, fieldName) otherwise null
+```
+
+```plaintext
+try [Incident Time] otherwise null
+```
+
+```plaintext
+GetAny(_, "Incident Time")
+```
+
+---
+
+**User**
+
+You are a Power BI Power Query (M) expert. Fix Formula.Firewall for query 'All_Crimes' at step 'NeedFuzzyFlag'. Refactor so the combining/transformation query does NOT directly access data sources. 1) Create three staging queries:
+   - q_RMS_Source: Folder.Files -> latest XLSX -> Excel.Workbook -> first table
+   - q_CycleCalendar: File.Contents CSV -> PromoteHeaders -> types -> Table.Buffer
+   - q_CallTypeCategories: File.Contents CSV -> PromoteHeaders -> types -> Table.Buffer
+2) Update Updated_All_Crimes (or All_Crimes) to reference only these queries:
+   FirstTable = Table.Buffer(q_RMS_Source)
+   CycleCalendar = q_CycleCalendar
+   CallTypeCategories = q_CallTypeCategories
+   and remove all Folder.Files/File.Contents calls from the combining query. 3) Keep all existing columns, fuzzy matching behavior, and logic unchanged. 4) Output the full M code for the 3 staging queries + the modified main query, plus a short bullet list of what changed. You’re hitting **Formula.Firewall** because **`All_Crimes` is both (a) combining data and (b) directly reading data sources** (`Folder.Files` / `File.Contents`). Power Query’s privacy/firewall blocks that pattern. From your screenshots, you currently have:
+
+* Queries: **All_Crimes**, **Export_Formatting** (functions), **Updated_All_Crimes**
+* `Export_Formatting` is just functions (good; not the firewall culprit by itself). Also: I tried searching the uploaded `.m` files, but the file index returned **no matches** (likely expired in this session). If you want me to patch your *exact* files line-by-line, please re-upload them. Meanwhile, here’s the clean structural fix that resolves the firewall in Power BI. ---
+
+## Fix (recommended): **3 staging queries** + 1 transform query
+
+Create these **three new queries** that do *only data access*. Then your `Updated_All_Crimes` (or `All_Crimes`) becomes transform-only and references them. ### 1) `q_RMS_Source` (Folder → latest XLSX → first table)
+
+```powerquery
+let
+    FolderPath = "C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa",
+    AllFiles = Folder.Files(FolderPath),
+    XlsxFiles = Table.SelectRows(AllFiles, each Text.EndsWith([Name], ".xlsx", Comparer.OrdinalIgnoreCase)),
+    SortedFiles = Table.Sort(XlsxFiles, {{"Date modified", Order.Descending}}),
+    LatestFilePath = SortedFiles{0}[Folder Path] & SortedFiles{0}[Name],
+    Source = Excel.Workbook(File.Contents(LatestFilePath), true),
+    FirstTable = Source{0}[Data]
+in
+    FirstTable
+```
+
+### 2) `q_CycleCalendar` (CSV calendar)
+
+```powerquery
+let
+    CycleCalendarRaw = Csv.Document(
+        File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv"),
+        [Encoding = 65001, Delimiter = ",", QuoteStyle = QuoteStyle.Csv]
+    ),
+    CycleCalendarTable0 = Table.PromoteHeaders(CycleCalendarRaw, [PromoteAllScalars = true]),
+    CycleCalendarTyped = Table.TransformColumnTypes(
+        CycleCalendarTable0,
+        {{"7_Day_Start", type date}, {"7_Day_End", type date}, {"Report_Name", type text}}
+    ),
+    CycleCalendar = Table.Buffer(CycleCalendarTyped)
+in
+    CycleCalendar
+```
+
+### 3) `q_CallTypeCategories` (CSV mapping)
+
+```powerquery
+let
+    CallTypeCategoriesRaw = Csv.Document(
+        File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv"),
+        [Encoding = 65001, Delimiter = ",", QuoteStyle = QuoteStyle.Csv]
+    ),
+    CallTypeCategories0 = Table.PromoteHeaders(CallTypeCategoriesRaw, [PromoteAllScalars = true]),
+    CallTypeCategories =
+        Table.Buffer(
+            Table.TransformColumnTypes(
+                CallTypeCategories0,
+                {{"Incident", type text}, {"Incident_Norm", type text}, {"Category_Type", type text}, {"Response_Type", type text}}
+            )
+        )
+in
+    CallTypeCategories
+```
+
+✅ **Disable Load** for these 3 staging queries (recommended). ---
+
+## Modify `Updated_All_Crimes` (or `All_Crimes`) to reference staging queries
+
+At the very top of your main query, replace all `Folder.Files(...)` / `File.Contents(...)` blocks with:
+
+```powerquery
+let
+    FirstTable = Table.Buffer(q_RMS_Source),
+    CycleCalendar = q_CycleCalendar,
+    CallTypeCategories = q_CallTypeCategories,
+    Today = Date.From(DateTime.LocalNow()),
+
+    // ...rest of your transformations (BestTimeValueAdded onward) unchanged...
+in
+    #"Sorted Rows"
+```
+
+That’s the key: **the combining query no longer directly accesses any data source** → firewall goes away. If you want to keep the report model pointing at `All_Crimes`, make `All_Crimes` a thin wrapper:
+
+```powerquery
+let
+    Result = Updated_All_Crimes
+in
+    Result
+```
+
+---
+
+## If it STILL errors: set privacy consistently (or Fast Combine)
+
+If sources have different Privacy Levels, firewall can still trigger. * **Data source settings → set all three to the same privacy** (Organizational is typical), OR
+* **Options → Privacy → Ignore privacy levels (Fast Combine)**
+
+
+---
+
+**Cursor**
+
+Refactoring to fix the Formula.Firewall error by separating data access from transformations.

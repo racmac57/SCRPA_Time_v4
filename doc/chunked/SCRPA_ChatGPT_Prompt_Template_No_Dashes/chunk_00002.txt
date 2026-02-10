@@ -1,0 +1,172 @@
+Insert the date range from the Reporting Parameters in the header meta block in MM/DD/YYYY - MM/DD/YYYY format.\n\n")
+@@
+-            f.write("- **Section I (Burglary – Auto)**: If `IncidentType` = 'Burglary - Auto'\n")
++            f.write("- **Section I (Burglary - Auto)**: If `IncidentType` = 'Burglary - Auto'\n")
+@@
+-            f.write("- **Section V (Burglary – Commercial)**: If `IncidentType` contains 'Burglary' and (`Context` suggests business/commercial OR `FullAddress` contains business indicators)\n")
+-            f.write("- **Section VI (Burglary – Residence)**: If `IncidentType` contains 'Burglary' and (`Context` suggests residence/home OR `FullAddress` contains residential indicators)\n\n")
++            f.write("- **Section V (Burglary - Commercial)**: If `IncidentType` contains 'Burglary' and (`Context` suggests business/commercial OR `FullAddress` contains business indicators)\n")
++            f.write("- **Section VI (Burglary - Residence)**: If `IncidentType` contains 'Burglary' and (`Context` suggests residence/home OR `FullAddress` contains residential indicators)\n\n")
+@@
+-    <div class="meta">
+-      <div><b>Cycle:</b> {cycle_id}</div>
+-      <div><b>Range:</b> {range_start} – {range_end}</div>
++    <div class="meta">
++      <div><b>Cycle:</b> {cycle_id}</div>
++      <div><b>Range:</b> {range_start} - {range_end}</div>
+       <div><b>Version:</b> 1.5</div>
+       <div><b>Prepared by:</b> P.O. R. A. Carucci</div>
+       <div><b>Submitted to:</b> Captain Smith</div>
+       <div><b>Date Generated:</b> {generated_date_str}</div>
+     </div>
+     <div class="divider"></div>
+ 
+-    <!-- SECTIONS: I. Burglary–Auto, II. MV Theft, III. Robbery, IV. Sexual Offenses, V. Burglary–Commercial, VI. Burglary–Residence -->
++    <!-- SECTIONS: I. Burglary-Auto, II. MV Theft, III. Robbery, IV. Sexual Offenses, V. Burglary-Commercial, VI. Burglary-Residence -->
+@@
+-    <div class="section">
+-      <div class="section-title">I. Burglary – Auto</div>
++    <div class="section">
++      <div class="section-title">I. Burglary - Auto</div>
+       <div class="case-card">
+-        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} – {{Statute}}</div>
++        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} - {{Statute}}</div>
+         <ul class="bullets">
+@@
+     <div class="section">
+       <div class="section-title">II. Motor Vehicle Theft</div>
+       <div class="case-card">
+-        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | Motor Vehicle Theft – {{Statute}}</div>
++        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | Motor Vehicle Theft - {{Statute}}</div>
+         <ul class="bullets">
+@@
+     <div class="section">
+       <div class="section-title">III. Robbery</div>
+       <div class="case-card">
+-        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{Subtype}} – {{Statute}}</div>
++        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{Subtype}} - {{Statute}}</div>
+         <ul class="bullets">
+@@
+     <div class="section">
+       <div class="section-title">IV. Sexual Offenses</div>
+       <div class="case-card">
+-        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{Subtype}} – {{Statute}}</div>
++        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{Subtype}} - {{Statute}}</div>
+         <ul class="bullets">
+@@
+     <div class="section">
+-      <div class="section-title">V. Burglary – Commercial</div>
++      <div class="section-title">V. Burglary - Commercial</div>
+       <div class="case-card">
+-        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} – {{Statute}}</div>
++        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} - {{Statute}}</div>
+         <ul class="bullets">
+@@
+     <div class="section">
+-      <div class="section-title">VI. Burglary – Residence</div>
++      <div class="section-title">VI. Burglary - Residence</div>
+       <div class="case-card">
+-        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} – {{Statute}}</div>
++        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} - {{Statute}}</div>
+         <ul class="bullets">
+@@
+     <div class="footer">
+-      <div>Hackensack Police Department - Strategic Crime Analysis Unit | Cycle: {cycle_id}</div>
++      <div>HPD | SSOCC | SCRPA Report | Cycle: {cycle_id}</div>
+       <div>Generated: {generated_date_str}</div>
+     </div>
+@@
+-            f.write("* **Case header line format:** `Case {#} | {MM/DD/YY HH:mm} | {Incident Type} – {Statute}`.\n\n")
++            f.write("* **Case header line format:** `Case {#} | {MM/DD/YY HH:mm} | {Incident Type} - {Statute}`.\n\n")
+@@
+-            f.write("* **Parking Location label:** Present for MV Theft and Burglary–Auto.\n\n")
++            f.write("* **Parking Location label:** Present for MV Theft and Burglary-Auto.\n\n")
+@@
+-            f.write("* **Footer:** \"Hackensack Police Department - Strategic Crime Analysis Unit | Cycle: {Cycle}\" and Generated date.\n\n")
++            f.write("* **Footer:** \"HPD | SSOCC | SCRPA Report | Cycle: {Cycle}\" and Generated date.\n\n")
+*** End Patch
+```
+
+```python
+*** Begin Patch
+*** Update File: 05_EXPORTS/_RMS/scrpa/prepare_briefing_csv.py
+@@
+-            f.write("| 25-060392 | Burglary–Auto   | 07/18/25 20:30  | $0.00      | Active Investigation|\n")
++            f.write("| 25-060392 | Burglary - Auto | 07/18/25 20:30  | $0.00      | Active Investigation|\n")
+@@
+-            f.write("3. Insert the date range from the Reporting Parameters in the header meta block in MM/DD/YYYY – MM/DD/YYYY format.\n\n")
++            f.write("3. Insert the date range from the Reporting Parameters in the header meta block in MM/DD/YYYY - MM/DD/YYYY format.\n\n")
+@@
+-            f.write("- **Section I (Burglary – Auto)**: If `IncidentType` = 'Burglary - Auto'\n")
++            f.write("- **Section I (Burglary - Auto)**: If `IncidentType` = 'Burglary - Auto'\n")
+@@
+-            f.write("- **Section V (Burglary – Commercial)**: If `IncidentType` contains 'Burglary' and (`Context` suggests business/commercial OR `FullAddress` contains business indicators)\n")
+-            f.write("- **Section VI (Burglary – Residence)**: If `IncidentType` contains 'Burglary' and (`Context` suggests residence/home OR `FullAddress` contains residential indicators)\n\n")
++            f.write("- **Section V (Burglary - Commercial)**: If `IncidentType` contains 'Burglary' and (`Context` suggests business/commercial OR `FullAddress` contains business indicators)\n")
++            f.write("- **Section VI (Burglary - Residence)**: If `IncidentType` contains 'Burglary' and (`Context` suggests residence/home OR `FullAddress` contains residential indicators)\n\n")
+*** End Patch
+```
+
+### ✅ Updated: no em/en dashes + new footer text
+I updated the **prompt generator template** in `C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\prepare_briefing_csv.py` so it **does not emit any `–` or `—`** and so the HTML template footer is now:
+
+**`HPD | SSOCC | SCRPA Report | Cycle: {Cycle}`** (Generated date stays as-is)
+
+I also removed the em-dash usage from `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\scripts\generate_briefing_html.py` and fixed both `prepare_briefing_csv.py` + `organize_report_files.py` to not crash on Windows console encoding. ### ✅ Re-ran the .bat and re-copied into the report folder
+I reran `prepare_briefing.bat` with `REPORT_DATE=12/16/2025` and then reran `organize_report_files.py`. **Verified in** `Time_Based/2025/25C13W50_25_12_16/Documentation/CHATGPT_BRIEFING_PROMPT.md`:
+- **No em/en dashes found**
+- Footer line is **`HPD | SSOCC | SCRPA Report | Cycle: 25C13W50`**
+- Range shows **`12/09/2025 - 12/15/2025`**
+- Cycle shows **`25C13W50`**
+
+---
+
+**User**
+
+Make changes to the README, SUMMARY and changelog files to reflect recent updates. then Please stage and commit the changes locally. ---
+
+**Cursor**
+
+I’ll first confirm what’s currently tracked in git (including that deleted `prepare_briefing_csv.py`), then I’ll update `README.md`, `SUMMARY.md`, and `CHANGELOG.md` to document the new “no en/em dashes + HPD | SSOCC footer + Windows console encoding fix + REPORT_DATE cycle alignment” behavior. After that I’ll stage everything and create a local commit with a clear message. Plan: first I’ll locate where the actual Git repository lives on your machine (it’s not in `16_Reports\\SCRPA`), then I’ll update `README.md`, `SUMMARY.md`, and `CHANGELOG.md` to reflect the no-dash template + new footer + Windows console encoding fixes, and finally I’ll stage + commit those doc changes locally. Nice: the Git repo is **`C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\02_ETL_Scripts\\SCRPA`** (on `main`) and it already has two modified script files. Next I’ll find where the repo’s “README / Summary / Changelog” live (they might be under `docs/`), update them for the no-dash prompt template + new footer + Windows console encoding fix, and then commit everything together cleanly. Good news: the SCRPA repo is writable and we can add the missing docs, but my first attempt to create the files used a malformed PowerShell here-string, so it got parsed as commands. Next I’ll rewrite `README.md`, `SUMMARY.md`, and `CHANGELOG.md` using proper here-strings, then update `.gitignore`, and finally stage + commit. ### What I changed
+In the **Git repo** at `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA`:
+
+- **Added docs (since this repo didn’t have them)**:
+  - `README.md` (quick start + REPORT_DATE note + no-dash/footer note)
+  - `SUMMARY.md` (high-level workflow + recent hardening notes)
+  - `CHANGELOG.md` (new `1.3.1` entry for the no-dash/footer + UTF-8 console fixes)
+
+- **Updated `.gitignore`** to ignore local scratch artifacts:
+  - `_ul`, `tatus`, and the `2025_12_15_SCRPA_directory_tree. *` files
+
+### Staged + committed locally
+I staged the doc additions plus the related script fixes already pending in the repo (`organize_report_files.py`, `scripts/generate_briefing_html.py`) and committed them. - **Commit**: `c9d3eaa`  
+- **Message**: `docs: add README/SUMMARY/CHANGELOG; no-dash prompt footer; win console utf-8`  
+- **Status**: working tree clean
+
+---
+
+**User**
+
+I'm preparing to export this chat. Please generate a descriptive filename that summarizes the main topic or task of this conversation. Requirements:
+• 4-8 words
+• Title Case (capitalize major words)
+• Replace spaces with underscores
+• Include .md extension
+• No dates or special characters
+
+Output only the filename, nothing else. After export, I'll process it using: scripts\quick_process_chatlog.bat
+
+I'm preparing to export this chat. Please generate a descriptive filename that summarizes the main topic or task of this conversation. Requirements:
+• 4-8 words
+• Title Case (capitalize major words)
+• Replace spaces with underscores
+• Include .md extension
+• No dates or special characters
+
+Output only the filename, nothing else. After export, I'll process it using: scripts\quick_process_chatlog.bat
+
+---
+
+**Cursor**
+
+SCRPA_ChatGPT_Prompt_Template_No_Dashes.md

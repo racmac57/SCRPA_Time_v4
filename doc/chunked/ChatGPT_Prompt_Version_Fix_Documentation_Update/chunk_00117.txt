@@ -1,0 +1,626 @@
+Returns:
+        dict with cycle_id, range_start, range_end, 28_day_start, 28_day_end
+        or None if not found
+    """
+    try:
+        if not os.path.exists(CYCLE_CSV):
+            print(f"⚠️  Cycle calendar not found: {CYCLE_CSV}")
+            return None
+        
+        cycle_df = pd.read_csv(CYCLE_CSV)
+        
+        # Determine the date to use for lookup
+        is_specific_report_date = report_due_date is not None
+        if report_due_date is None:
+            lookup_date = datetime.now().date()
+            lookup_date_str = datetime.now().strftime("%m/%d/%Y")
+        else:
+            if isinstance(report_due_date, str):
+                lookup_date = pd.to_datetime(report_due_date).date()
+                lookup_date_str = report_due_date
+            else:
+                lookup_date = report_due_date.date() if hasattr(report_due_date, 'date') else report_due_date
+                lookup_date_str = lookup_date.strftime("%m/%d/%Y")
+        
+        # First try to match by Report_Due_Date (exact match) - this is the primary method
+        matching_row = cycle_df[cycle_df['Report_Due_Date'] == lookup_date_str]
+        
+        if not matching_row.empty:
+            row = matching_row.iloc[0]
+            cycle_info = {
+                'cycle_id': row['Report_Name'],
+                'range_start': row['7_Day_Start'],
+                'range_end': row['7_Day_End'],
+                '28_day_start': row['28_Day_Start'],
+                '28_day_end': row['28_Day_End']
+            }
+            print(f"✅ Cycle from Report_Due_Date: {cycle_info['cycle_id']}")
+            print(f"   7-Day Range: {cycle_info['range_start']} to {cycle_info['range_end']}")
+            print(f"   28-Day Range: {cycle_info['28_day_start']} to {cycle_info['28_day_end']}")
+            return cycle_info
+        
+        # Fallback: Only use if exact match failed AND we're NOT using a specific Report_Due_Date
+        # When we have a Report_Due_Date, we MUST match exactly - no fallback to date ranges
+        if is_specific_report_date:
+            # If we have a specific report date, exact match should always work
+            print(f"⚠️  Exact match failed for Report_Due_Date: {lookup_date_str}")
+            print("   This may indicate a date format mismatch or missing cycle in calendar")
+            print(f"   Attempted lookup: {lookup_date_str}")
+            print(f"   Available Report_Due_Dates in calendar: {cycle_df['Report_Due_Date'].head(5).tolist()}")
+        else:
+            # Only use fallback when using today's date (not a specific Report_Due_Date)
+            # Find cycle where today falls within the 7-day range
+            for _, row in cycle_df.iterrows():
+                try:
+                    # Parse dates
+                    start_date = pd.to_datetime(row['7_Day_Start']).date()
+                    end_date = pd.to_datetime(row['7_Day_End']).date()
+                    
+                    if start_date <= lookup_date <= end_date:
+                        cycle_info = {
+                            'cycle_id': row['Report_Name'],
+                            'range_start': row['7_Day_Start'],
+                            'range_end': row['7_Day_End'],
+                            '28_day_start': row['28_Day_Start'],
+                            '28_day_end': row['28_Day_End']
+                        }
+                        print(f"✅ Cycle from date range: {cycle_info['cycle_id']}")
+                        print(f"   7-Day Range: {cycle_info['range_start']} to {cycle_info['range_end']}")
+                        print(f"   28-Day Range: {cycle_info['28_day_start']} to {cycle_info['28_day_end']}")
+                        return cycle_info
+                except:
+                    continue
+        
+        print(f"⚠️  No matching cycle found for date: {lookup_date_str}")
+        return None
+        
+    except Exception as e:
+        print(f"⚠️  Error loading cycle calendar: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def get_current_cycle_info():
+    """Get current cycle information from cycle calendar (uses today's date)"""
+    return get_cycle_info_from_calendar(None)
+
+def parse_statute(incident_type):
+    """Extract statute code from incident type string"""
+    if pd.isna(incident_type) or not incident_type:
+        return ""
+    
+    # Look for pattern like "2C:18-2" or "2C:20-3"
+    import re
+    match = re.search(r'(2C:\d+-\d+[A-Za-z]? )', incident_type)
+    if match:
+        return match.group(1)
+    return ""
+
+def clean_incident_type(incident_type):
+    """Remove statute from incident type to get clean name"""
+    if pd.isna(incident_type) or not incident_type:
+        return ""
+    
+    # Remove " - 2C:XX-X" pattern
+    import re
+    cleaned = re.sub(r'\s*-\s*2C:\d+-\d+[A-Za-z]? ', '', incident_type)
+    return cleaned.strip()
+
+def format_datetime(date_val, time_val):
+    """Combine date and time into MM/DD/YY HH:mm format"""
+    try:
+        if pd.isna(date_val) or pd.isna(time_val):
+            return "Data Incomplete"
+        
+        # Parse date
+        if isinstance(date_val, str):
+            date_obj = pd.to_datetime(date_val).date()
+        else:
+            date_obj = pd.to_datetime(date_val).date()
+        
+        # Parse time
+        if isinstance(time_val, str):
+            time_obj = pd.to_datetime(time_val).time()
+        else:
+            time_obj = pd.to_datetime(time_val).time()
+        
+        # Combine
+        dt = datetime.combine(date_obj, time_obj)
+        return dt.strftime('%m/%d/%y %H:%M')
+        
+    except Exception as e:
+        return "Data Incomplete"
+
+def format_money(value):
+    """Format money value with commas and two decimals"""
+    try:
+        if pd.isna(value) or value == "" or value is None:
+            return "$0.00"
+        
+        # Convert to float
+        amount = float(str(value).replace(',', '').replace('$', ''))
+        return f"${amount:,.2f}"
+        
+    except:
+        return "$0.00"
+
+def transform_to_briefing_format(csv_path, cycle_info):
+    """Transform RMS CSV to ChatGPT briefing format"""
+    try:
+        print(f"\n📊 Loading CSV: {os.path.basename(csv_path)}")
+        df = pd.read_csv(csv_path)
+        print(f"✅ Loaded {len(df)} records")
+        
+        # Filter by Report Date to only include incidents within the cycle range
+        if cycle_info:
+            try:
+                # Parse cycle dates
+                cycle_start = pd.to_datetime(cycle_info['range_start']).date()
+                cycle_end = pd.to_datetime(cycle_info['range_end']).date()
+                
+                # Convert Report Date column to date type
+                df['Report Date'] = pd.to_datetime(df['Report Date']).dt.date
+                
+                # Filter: only include incidents where Report Date is within cycle range
+                initial_count = len(df)
+                df = df[(df['Report Date'] >= cycle_start) & (df['Report Date'] <= cycle_end)]
+                filtered_count = len(df)
+                
+                if initial_count != filtered_count:
+                    excluded = initial_count - filtered_count
+                    print(f"   ⚠️  Filtered out {excluded} incident(s) with Report Date outside cycle range")
+                    print(f"   📅 Cycle range: {cycle_start} to {cycle_end}")
+                    print(f"   ✅ {filtered_count} incident(s) remain after filtering")
+                else:
+                    print(f"   ✅ All {filtered_count} incident(s) are within cycle range")
+                    
+            except Exception as e:
+                print(f"   ⚠️  Warning: Could not filter by Report Date: {e}")
+                print(f"   📋 Proceeding with all {len(df)} records (no filtering applied)")
+        
+        # Create new dataframe with briefing columns
+        briefing_df = pd.DataFrame()
+        
+        # Direct mappings
+        briefing_df['CaseNumber'] = df['Case Number']
+        briefing_df['FullAddress'] = df['FullAddress']
+        briefing_df['Grid'] = df['Grid']
+        # Convert Zone to integer (handle decimal values like 8.0 -> 8)
+        briefing_df['Zone'] = df['Zone'].apply(
+            lambda x: int(x) if pd.notna(x) and str(x).replace('. ', '', 1).isdigit() else x
+        )
+        briefing_df['Narrative'] = df['Narrative']
+        
+        # Date/Time combination
+        briefing_df['IncidentDateTime'] = df.apply(
+            lambda row: format_datetime(row['Incident Date'], row['Incident Time']), 
+            axis=1
+        )
+        
+        # Incident type parsing
+        briefing_df['IncidentType'] = df['Incident Type_1'].apply(clean_incident_type)
+        briefing_df['Subtype'] = df['Incident Type_2'].fillna('')
+        briefing_df['Statute'] = df['Incident Type_1'].apply(parse_statute)
+        
+        # Vehicle information
+        briefing_df['VictimVehicleMake'] = df['Make1'].fillna('')
+        briefing_df['VictimVehicleModel'] = df['Model1'].fillna('')
+        briefing_df['Plate'] = df['Registration 1'].fillna('')
+        briefing_df['PlateState'] = df['Reg State 1'].fillna('')
+        
+        # Additional vehicle (if needed)
+        briefing_df['VictimVehicle2Make'] = df['Make2'].fillna('')
+        briefing_df['VictimVehicle2Model'] = df['Model2'].fillna('')
+        briefing_df['Plate2'] = df['Registration 2'].fillna('')
+        briefing_df['PlateState2'] = df['Reg State 2'].fillna('')
+        
+        # Loss information
+        briefing_df['LossTotal'] = df['Total Value Stolen'].apply(format_money)
+        briefing_df['RecoveredTotal'] = df['Total Value Recover'].apply(format_money)
+        
+        # Case information
+        briefing_df['Status'] = df['Case_Status'].fillna('Unknown')
+        briefing_df['Officer'] = df['Officer of Record'].fillna('')
+        briefing_df['Squad'] = df['Squad'].fillna('')
+        briefing_df['Detective'] = df['Det_Assigned'].fillna('')
+        
+        # Add cycle information
+        if cycle_info:
+            briefing_df['CycleID'] = cycle_info['cycle_id']
+            briefing_df['RangeStart'] = cycle_info['range_start']
+            briefing_df['RangeEnd'] = cycle_info['range_end']
+        else:
+            # Fallback to auto-detection
+            briefing_df['CycleID'] = 'Auto-Detected'
+            today = datetime.now()
+            week_ago = today - timedelta(days=7)
+            briefing_df['RangeStart'] = week_ago.strftime('%m/%d/%y')
+            briefing_df['RangeEnd'] = today.strftime('%m/%d/%y')
+        
+        # Placeholder fields for AI to extract from narrative
+        briefing_df['SuspectDesc'] = 'Extract from Narrative'
+        briefing_df['SuspectVehicle'] = 'Extract from Narrative'
+        briefing_df['Method'] = 'Extract from Narrative'
+        briefing_df['PointOfEntry'] = 'Extract from Narrative'
+        briefing_df['MeansOfEntry'] = 'Extract from Narrative'
+        briefing_df['LossItems'] = 'Extract from Narrative (semicolon separated Item:$Amount)'
+        briefing_df['VictimSex'] = ''
+        briefing_df['VictimAdultJuvenile'] = ''
+        briefing_df['Allegation'] = ''
+        briefing_df['ParkingLocation'] = ''
+        briefing_df['Context'] = ''
+        
+        print(f"✅ Transformed to briefing format: {len(briefing_df)} records")
+        return briefing_df
+        
+    except Exception as e:
+        print(f"❌ Error transforming CSV: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def save_briefing_csv(df, output_folder):
+    """Save briefing CSV with timestamp"""
+    try:
+        os.makedirs(output_folder, exist_ok=True)
+        
+        timestamp = datetime.now().strftime('%Y_%m_%d_%H_%M_%S')
+        output_file = os.path.join(output_folder, f"SCRPA_Briefing_Ready_{timestamp}.csv")
+        
+        # Save with proper quoting for narrative fields
+        df.to_csv(output_file, index=False, quoting=csv.QUOTE_ALL, encoding='utf-8')
+        
+        print(f"\n✅ Briefing CSV saved: {os.path.basename(output_file)}")
+        print(f"📁 Location: {output_file}")
+        print(f"\n📋 Records by Crime Type:")
+        
+        # Show breakdown by crime type
+        crime_counts = df['IncidentType'].value_counts()
+        for crime_type, count in crime_counts.items():
+            print(f"   • {crime_type}: {count} cases")
+        
+        return output_file
+        
+    except Exception as e:
+        print(f"❌ Error saving CSV: {e}")
+        return None
+
+def find_raw_7day_csv(rms_export_dir=None):
+    """
+    Find the raw 7-day filtered CSV file. Args:
+        rms_export_dir: Path to RMS export directory. If None, uses default. Returns:
+        Path to the most recent *_ReportDate_Last7.csv file, or None if not found.
+    """ import glob
+    if rms_export_dir is None:
+        rms_export_dir = RMS_FOLDER
+    
+    pattern = os.path.join(rms_export_dir, "*_ReportDate_Last7.csv")
+    files = glob.glob(pattern)
+    
+    if not files:
+        return None
+    
+    # Get most recent file by modification time
+    latest = max(files, key=os.path.getmtime)
+    return latest
+
+def append_raw_7day_csv_section(f, rms_export_dir=None):
+    """
+    Append the raw 7-day CSV data section to the prompt file. Args:
+        f: Open file handle to write to
+        rms_export_dir: Path to RMS export directory
+    """
+    # Find the raw 7-day CSV file
+    raw_7day_csv_path = find_raw_7day_csv(rms_export_dir)
+    
+    if not raw_7day_csv_path or not os.path.exists(raw_7day_csv_path):
+        f.write("\n---\n\n")
+        f.write("## Raw 7-Day Filtered CSV Data (Source)\n\n")
+        f.write("*Note: Raw 7-day CSV file (`*_ReportDate_Last7.csv`) not found. *\n\n")
+        return
+    
+    f.write("\n---\n\n")
+    f.write("## Raw 7-Day Filtered CSV Data (Source)\n\n")
+    f.write("**IMPORTANT**: The following is the raw 7-day filtered CSV data with original column names. ") f.write("This provides additional context and fields not present in the transformed briefing CSV.\n\n")
+    f.write(f"**File**: `{os.path.basename(raw_7day_csv_path)}`\n\n")
+    
+    # List of additional columns available
+    f.write("### Additional Columns Available\n\n")
+    f.write("This raw data includes these additional columns not in the briefing CSV:\n\n")
+    f.write("- `Incident Date_Between`, `Incident Time_Between` - Range values if applicable\n")
+    f.write("- `Report Date`, `Report Time` - When the report was filed\n")
+    f.write("- `Incident Type_1`, `Incident Type_2`, `Incident Type_3` - Multiple incident type codes\n")
+    f.write("- `Total Value Stolen`, `Total Value Recover` - Property value information\n")
+    f.write("- `Registration 1`, `Reg State 1`, `Make1`, `Model1` - First vehicle info\n")
+    f.write("- `Registration 2`, `Reg State 2`, `Make2`, `Model2` - Second vehicle info\n")
+    f.write("- `Reviewed By` - Reviewer information\n\n")
+    
+    f.write("### Raw CSV File Content\n\n")
+    f.write("```csv\n")
+    
+    try:
+        raw_df = pd.read_csv(raw_7day_csv_path, encoding='utf-8')
+        
+        # Convert to CSV string
+        csv_buffer = raw_df.to_csv(index=False, quoting=csv.QUOTE_MINIMAL)
+        f.write(csv_buffer)
+        
+    except UnicodeDecodeError:
+        # Try with different encoding
+        try:
+            raw_df = pd.read_csv(raw_7day_csv_path, encoding='latin-1')
+            csv_buffer = raw_df.to_csv(index=False, quoting=csv.QUOTE_MINIMAL)
+            f.write(csv_buffer)
+        except Exception as e:
+            f.write(f"*Could not read raw CSV: {e}*\n")
+    except Exception as e:
+        f.write(f"*Could not read raw CSV: {e}*\n")
+    
+    f.write("```\n\n")
+    
+    f.write("**Usage Note**: Use this raw data to cross-reference details like exact report times, ")
+    f.write("vehicle information, property values, and additional incident type codes that may be ")
+    f.write("relevant to the tactical briefing.\n\n")
+
+def create_chatgpt_prompt_file(output_folder, csv_filename, briefing_df, cycle_info):
+    """Create comprehensive ChatGPT prompt file with CSV data and HTML template"""
+    try:
+        prompt_file = os.path.join(output_folder, "CHATGPT_BRIEFING_PROMPT.md")
+        
+        # Get CSV summary stats
+        total_cases = len(briefing_df)
+        crime_counts = briefing_df['IncidentType'].value_counts().to_dict()
+        
+        # Get cycle info
+        cycle_id = cycle_info.get('cycle_id', 'Auto-Detected') if cycle_info else 'Auto-Detected'
+        range_start = cycle_info.get('range_start', '') if cycle_info else ''
+        range_end = cycle_info.get('range_end', '') if cycle_info else ''
+        
+        with open(prompt_file, 'w', encoding='utf-8') as f:
+            f.write("# SCRPA Strategic Crime Reduction Briefing - ChatGPT Prompt\n\n")
+            f.write(f"**Generated**: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("---\n\n")
+            
+            # CSV Data Summary
+            f.write("## CSV Data Summary\n\n")
+            f.write(f"**CSV File**: `{os.path.basename(csv_filename)}`\n\n")
+            f.write(f"**Total Cases**: {total_cases}\n\n")
+            f.write("**Cases by Type**:\n")
+            for crime_type, count in sorted(crime_counts.items(), key=lambda x: x[1], reverse=True):
+                f.write(f"- {crime_type}: {count}\n")
+            f.write("\n")
+            f.write(f"**Cycle**: {cycle_id}\n")
+            f.write(f"**Date Range**: {range_start} to {range_end}\n\n")
+            f.write("---\n\n")
+            
+            # Reporting Parameters Section (ChatGPT recommendation)
+            # Convert date format from MM/DD/YYYY to YYYY-MM-DD for Reporting Parameters
+            def convert_date_format(date_str):
+                """Convert MM/DD/YYYY to YYYY-MM-DD"""
+                try:
+                    if not date_str:
+                        return ""
+                    # Parse MM/DD/YYYY format
+                    date_obj = pd.to_datetime(date_str, format='%m/%d/%Y')
+                    return date_obj.strftime('%Y-%m-%d')
+                except:
+                    # If conversion fails, return original
+                    return date_str
+            
+            range_start_iso = convert_date_format(range_start)
+            range_end_iso = convert_date_format(range_end)
+            
+            f.write("## Reporting Parameters For This Run\n\n")
+            f.write("- Cycle ID: {}\n".format(cycle_id))
+            f.write("- Date Range Start: {}\n".format(range_start_iso))
+            f.write("- Date Range End: {}\n".format(range_end_iso))
+            f.write("- Version: 1.5.0\n")
+            f.write("- Prepared By: P.O. R. A. Carucci\n")
+            f.write("- Submitted To: Captain Smith\n\n")
+            f.write("---\n\n")
+            
+            # Include Full CSV Data
+            f.write("## Complete CSV Data\n\n")
+            f.write("**IMPORTANT**: The complete CSV data is included below. ") f.write("Use this data to extract all details from the Narrative column and other fields.\n\n")
+            f.write("### CSV File Content\n\n")
+            f.write("```csv\n")
+            # Use pandas to_csv with proper CSV formatting
+            csv_buffer = briefing_df.to_csv(index=False, quoting=csv.QUOTE_MINIMAL, escapechar='\\')
+            f.write(csv_buffer)
+            f.write("```\n\n")
+            f.write("**Note**: All column headers and data rows are included above. ") f.write("Pay special attention to the **Narrative** column which contains detailed information ")
+            f.write("about suspects, vehicles, loss items, methods of entry, and other case details.\n\n")
+            
+            # Add raw 7-day CSV section
+            append_raw_7day_csv_section(f, rms_export_dir=RMS_FOLDER)
+            
+            f.write("---\n\n")
+            
+            # Instructions
+            f.write("## Instructions for ChatGPT\n\n")
+            f.write("**Option 1 (Recommended)**: Copy this ENTIRE file and paste it into ChatGPT. The CSV data is already embedded below.\n\n")
+            f.write("**Option 2 (Alternative)**: Upload the CSV file (`{}`) separately, then copy and paste the prompt section below (starting from '## Strategic Crime Reduction Briefing Prompt').\n\n".format(os.path.basename(csv_filename)))
+            f.write("**Note**: The CSV data is included in this prompt file, so uploading separately is optional.\n\n")
+            f.write("---\n\n")
+            
+            # Main Prompt
+            f.write("## Strategic Crime Reduction Briefing Prompt\n\n")
+            f.write("I'm preparing a strategic-crime-reduction briefing for the Patrol Captain. ") f.write("You'll receive a list of RMS incident records with these key fields for each case:\n\n")
+            f.write("* Case Number\n")
+            f.write("* Incident Date & Time\n")
+            f.write("* Incident Type(s)\n")
+            f.write("* Full Address\n")
+            f.write("* Narrative\n")
+            f.write("* Vehicle Registration(s), Make(s) & Model(s) (if applicable)\n")
+            f.write("* Suspect Description(s)\n")
+            f.write("* Victim Details (gender, adult/juvenile, relationship to suspect for sexual offenses)\n")
+            f.write("* Loss Details (specific items with values AND total loss amount)\n")
+            f.write("  **IMPORTANT**: Loss Total is calculated by adding the sum of all individual loss items.\n")
+            f.write("* Scene/Entry Details (point of entry, tools used, signs of force)\n")
+            f.write("* Parking/Location Context (driveway, street, lot, garage, business, etc. )\n")
+            f.write("* Grid / Zone (if available)\n")
+            f.write("* Status (Active Investigation, Cleared/Closed)\n\n")
+            f.write("---\n\n")
+            
+            # Global Instructions
+            f.write("### Global Instructions\n\n")
+            f.write("* **Sort** every section **chronologically** (oldest → newest).\n\n")
+            f.write("* **Flag** any missing or ambiguous fields as **Data Incomplete**.\n\n")
+            f.write("* Use `##` for section headers and `-` for bullets.\n\n")
+            f.write("* **Standardize** all monetary values with commas and two decimals (e.g. `$1,024.00`).\n\n")
+            f.write("* At the end include a **Key Takeaways** block with totals and hotspots.\n\n")
+            f.write("* Also provide a **summary table** formatted as:\n\n")
+            f.write("```\n")
+            f.write("| Case #    | Type            | Date/Time       | Loss Total | Status              |\n")
+            f.write("|-----------|-----------------|-----------------|------------|---------------------|\n")
+            f.write("| 25-060392 | Burglary - Auto   | 07/18/25 20:30  | $0.00      | Active Investigation|\n")
+            f.write("```\n\n")
+            
+            # Loss And Monetary Rules (ChatGPT recommendation)
+            f.write("**Loss And Monetary Rules**\n\n")
+            f.write("1. For each case, read the loss item text and the narrative for any dollar amounts linked to stolen or missing property.\n\n")
+            f.write("2. Add together all dollar amounts for that case to produce a single loss total in dollars.\n\n")
+            f.write("3. If the CSV loss total is 0 or does not match this summed value, use the summed value as the Loss Total for that case.\n\n")
+            f.write("4. Use \"$0.00\" only when there are no dollar amounts for stolen or missing items in the data.\n\n")
+            f.write("5. Show this final loss total both in the Loss Total bullet and in the Summary table for that case.\n\n")
+            
+            # Cycle And Date Rules (ChatGPT recommendation)
+            f.write("**Cycle And Date Rules**\n\n")
+            f.write("1. Treat the Cycle ID and date range in the Reporting Parameters section as the single source of truth.\n\n")
+            f.write("2. Insert that Cycle ID in the header meta block, in the footer, and anywhere else the cycle appears in the HTML template.\n\n")
+            f.write("3. Insert the date range from the Reporting Parameters in the header meta block in MM/DD/YYYY - MM/DD/YYYY format.\n\n")
+            f.write("4. Replace any sample cycle or date values from the template with the Reporting Parameters for this run.\n\n")
+            
+            # Summary Table Rules (ChatGPT recommendation)
+            f.write("**Summary Table Rules**\n\n")
+            f.write("1. For each case listed in the Summary table, use the final Loss Total value from the Loss And Monetary Rules section.\n\n")
+            f.write("2. Ensure the Loss Total column in the Summary table matches the Loss Total bullet for that same case.\n\n")
+            f.write("3. Keep the Summary table sorted chronologically by incident date and time, oldest to newest.\n\n")
+            
+            f.write("---\n\n")
+            
+            # Category Templates with explicit mapping rules
+            f.write("### Category Templates\n\n")
+            f.write("Organize cases into these sections using these rules:\n\n")
+            f.write("**Category Mapping Rules:**\n")
+            f.write("- **Section I (Burglary - Auto)**: If `IncidentType` = 'Burglary - Auto'\n")
+            f.write("- **Section II (Motor Vehicle Theft)**: If `IncidentType` = 'Motor Vehicle Theft'\n")
+            f.write("- **Section III (Robbery)**: If `IncidentType` contains 'Robbery'\n")
+            f.write("- **Section IV (Sexual Offenses)**: If `IncidentType` contains 'Sexual' or 'Assault' with sexual context\n")
+            f.write("- **Section V (Burglary - Commercial)**: If `IncidentType` contains 'Burglary' and (`Context` suggests business/commercial OR `FullAddress` contains business indicators)\n")
+            f.write("- **Section VI (Burglary - Residence)**: If `IncidentType` contains 'Burglary' and (`Context` suggests residence/home OR `FullAddress` contains residential indicators)\n\n")
+            f.write("**Note**: Sections V and VI may not have sample data in this CSV. If no cases match these categories, omit those sections.\n\n")
+            f.write("---\n\n")
+            
+            # HTML Template - Use actual values for cycle info
+            generated_date_str = datetime.now().strftime('%Y-%m-%d')
+            f.write("### HTML Template\n\n")
+            f.write("Generate the output as HTML using this exact template structure. ") f.write("Replace all placeholders (shown as {{PLACEHOLDER}}) with actual data from the CSV:\n\n")
+            f.write("```html\n")
+            html_template = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Strategic Crime Reduction Briefing - Patrol Captain</title>
+
+<!-- Fonts: prefer DIN, fall back to system sans -->
+<style>
+  @font-face {{ font-family: "DIN"; src: local("DIN"); font-weight: normal; font-style: normal; }}
+  :root{{
+    --ink:#0d233c;           /* titles and section headers */
+    --text:#1f2937;          /* body text */
+    --muted:#6b7280;         /* subtle labels */
+    --bg:#f6f8fb;            /* page background */
+    --card:#ffffff;          /* card background */
+    --rule:#d1d5db;          /* dividers */
+    --accent:#0d233c;        /* accent same as titles */
+    --radius:12px;
+    --shadow:0 1px 2px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+    --small:12px;
+    --base:14px;             /* keep compact for 1-page */
+    --h1:22px;
+    --h2:16px;
+  }}
+  html,body{{height:100%;}}
+  body{{
+    margin:0; padding:24px;
+    background:var(--bg);
+    color:var(--text);
+    font: 400 var(--base)/1.45 "DIN","DIN Next","DINPro",Arial,Helvetica,sans-serif;
+  }}
+  .page{{
+    max-width: 820px;
+    margin:0 auto;
+    background:#fff;
+    padding:24px 28px;
+    box-shadow:var(--shadow);
+  }}
+  h1{{
+    margin:0 0 4px 0;
+    color:var(--ink);
+    font-size:var(--h1);
+    letter-spacing:.2px;
+  }}
+  .meta{{
+    display:grid; grid-template-columns: repeat(3, minmax(0,1fr));
+    gap:8px 16px; margin-bottom:16px; font-size: var(--small);
+  }}
+  .meta b{{color:var(--ink)}}
+  .divider{{
+    border-top:2px solid var(--rule);
+    margin:6px 0 14px 0;
+  }}
+  .section-title{{
+    color:var(--ink); font-weight:700; font-size:var(--h2);
+    margin:10px 0 8px 0;
+  }}
+  .case-card{{
+    background:var(--card); border:1px solid var(--rule);
+    border-radius:var(--radius); padding:12px 14px; margin-bottom:10px;
+    box-shadow:0 1px 1px rgba(0,0,0,.02);
+    page-break-inside: avoid;
+  }}
+  .case-head{{
+    font-weight:700; color:var(--text); margin-bottom:6px;
+  }}
+  .bullets{{margin:0; padding-left:18px;}}
+  .bullets li{{margin:2px 0;}}
+  .muted{{color:var(--muted);}}
+  table{{
+    width:100%; border-collapse:collapse; margin-top:8px; font-size: var(--base);
+    page-break-inside: avoid;
+  }}
+  th,td{{border:1px solid var(--rule); padding:6px 8px; text-align:left;}}
+  th{{background:#f3f4f6; color:var(--ink); font-weight:700;}}
+  tfoot td{{font-weight:700;}}
+  .footer{{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:12px; font-size:var(--small); color:var(--muted);
+  }}
+  /* Print: force single page if content fits; avoid orphans/widows */
+  @media print{{
+    @page {{ size: A4; margin: 10mm; }}
+    body{{ background:#fff; }}
+    .page{{ box-shadow:none; padding:0; }}
+    .case-card, .section {{ page-break-inside: avoid; }}
+    a[href]:after{{ content:""; }} /* remove URL prints */
+  }}
+</style>
+</head>
+<body>
+  <div class="page">
+    <h1>Strategic Crime Reduction Briefing - Patrol Captain</h1>
+    <div class="meta">
+      <div><b>Cycle:</b> {cycle_id}</div>
+      <div><b>Range:</b> {range_start} - {range_end}</div>
+      <div><b>Version:</b> 1.5</div>
+      <div><b>Prepared by:</b> P.O. R. A. Carucci</div>
+      <div><b>Submitted to:</b> Captain Smith</div>
+      <div><b>Date Generated:</b> {generated_date_str}</div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- SECTIONS: I. Burglary - Auto, II. MV Theft, III. Robbery, IV. Sexual Offenses, V. Burglary - Commercial, VI. Burglary - Residence -->
+    
+    <!-- Each section follows this pattern.

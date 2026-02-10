@@ -1,0 +1,214 @@
+{
+  "source_file": "SCRPA_Docs_Update_Version_Sync_And_Release_Workflow.md",
+  "source_path": "C:\\_chunker\\02_data\\SCRPA_Docs_Update_Version_Sync_And_Release_Workflow.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\SCRPA_Docs_Update_Version_Sync_And_Release_Workflow\\2026_01_27_18_23_37_SCRPA_Docs_Update_Version_Sync_And_Release_Workflow.origin.json",
+  "created_at": "2026_01_27_18_23_37",
+  "tags": [
+    "ai",
+    "conversation",
+    "data",
+    "docs",
+    "excel",
+    "it-ops",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "2026",
+      "report",
+      "scrpa",
+      "users",
+      "carucci_r",
+      "onedrive"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "# First report under new schedule\n_Exported on 1/27/2026 at 18:23:01 EST from Cursor (2.4.21)_\n\n---\n\n**User**\n\nread the README, SUMMARY AND CHANGELOG. This will be the first report I submitt after the reporting window has been changed to...",
+    "first_line": "# First report under new schedule"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-27T18:23:37+00:00_SCRPA_Docs_Update_Version_Sync_And_Release_Workflow_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "archive",
+        "conversation",
+        "csvs",
+        "data",
+        "docs",
+        "excel",
+        "it-ops",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "report",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "2026",
+        "archive",
+        "csv",
+        "scrpa",
+        "csvs",
+        "report"
+      ],
+      "summary": "# First report under new schedule\n_Exported on 1/27/2026 at 18:23:01 EST from Cursor (2.4.21)_\n\n---\n\n**User**\n\nread the README, SUMMARY AND CHANGELOG.",
+      "char_length": 19422,
+      "byte_length": 19964
+    },
+    {
+      "chunk_id": "2026-01-27T18:23:37+00:00_SCRPA_Docs_Update_Version_Sync_And_Release_Workflow_chunk2",
+      "chunk_index": 2,
+      "file": "chunk_00001.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "carucci_r",
+        "city",
+        "conversation",
+        "data",
+        "docs",
+        "excel",
+        "it-ops",
+        "json",
+        "markdown",
+        "onedrive",
+        "police",
+        "python",
+        "scrpa",
+        "sql",
+        "users"
+      ],
+      "key_terms": [
+        "2026",
+        "scrpa",
+        "users",
+        "carucci_r",
+        "onedrive",
+        "city"
+      ],
+      "summary": "- The report folder `26C01W04_26_01_27` should now contain files in `Data/`, `Reports/`, and `Documentation/`.",
+      "char_length": 25685,
+      "byte_length": 26254
+    },
+    {
+      "chunk_id": "2026-01-27T18:23:37+00:00_SCRPA_Docs_Update_Version_Sync_And_Release_Workflow_chunk3",
+      "chunk_index": 3,
+      "file": "chunk_00002.txt",
+      "tags": [
+        "ai",
+        "all_crimes",
+        "conversation",
+        "cycle",
+        "data",
+        "date",
+        "docs",
+        "excel",
+        "it-ops",
+        "json",
+        "lagday",
+        "m_code",
+        "markdown",
+        "police",
+        "python",
+        "report",
+        "sql"
+      ],
+      "key_terms": [
+        "report",
+        "all_crimes",
+        "cycle",
+        "lagday",
+        "m_code",
+        "date"
+      ],
+      "summary": "If you want the **full bi-weekly** range (1/13–1/26) in the prompt, the data source and prompt would need to include both weeks.",
+      "char_length": 17161,
+      "byte_length": 17608
+    },
+    {
+      "chunk_id": "2026-01-27T18:23:37+00:00_SCRPA_Docs_Update_Version_Sync_And_Release_Workflow_chunk4",
+      "chunk_index": 4,
+      "file": "chunk_00003.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "ai-chat",
+        "bi-weekly",
+        "conversation",
+        "cycle",
+        "data",
+        "docs",
+        "excel",
+        "it-ops",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "report",
+        "sql",
+        "version"
+      ],
+      "key_terms": [
+        "2026",
+        "report",
+        "bi-weekly",
+        "cycle",
+        "version",
+        "csv"
+      ],
+      "summary": "- `biweekly_name` comes from `BiWeekly_Report_Name` when present (e.g.",
+      "char_length": 17907,
+      "byte_length": 18573
+    },
+    {
+      "chunk_id": "2026-01-27T18:23:37+00:00_SCRPA_Docs_Update_Version_Sync_And_Release_Workflow_chunk5",
+      "chunk_index": 5,
+      "file": "chunk_00004.txt",
+      "tags": [
+        "ai",
+        "branch",
+        "changelog",
+        "conversation",
+        "data",
+        "docs",
+        "excel",
+        "it-ops",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "readme",
+        "sql",
+        "summary",
+        "version"
+      ],
+      "key_terms": [
+        "version",
+        "docs",
+        "changelog",
+        "summary",
+        "branch",
+        "readme"
+      ],
+      "summary": "If dry_run, print planned steps and wait for approval.",
+      "char_length": 6008,
+      "byte_length": 6120
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

@@ -1,0 +1,285 @@
+If you want the **full bi-weekly** range (1/13–1/26) in the prompt, the data source and prompt would need to include both weeks. ### Step 4 (email template) error
+
+- **All_Crime preview CSV not found** is expected until you **export the All_Crime preview from Power BI** into this report folder. - Then run `scripts\export_enriched_data_and_email.py` (or the full batch) to generate the email template. ### Doc update
+
+- **`VERIFICATION_01_27_2026_REPORT.md`** now has a **“Post-run verification (01/27/2026)”** section that records these checks, fixes, and the 7-day vs bi-weekly note. ---
+
+**Bottom line:** Data and Documentation look correct; the prompt has the right cycle and 7-day range (01/20–01/26). The `.pbix` is in place, wrong-cycle reports are removed, and the email step will work once you export the All_Crime preview from Power BI. ---
+
+**User**
+
+the laGDAY IS NOT CORREECT@alL_crimes_preview_table_26_01_27.csv M CODE FOR ALL_CRIMES  IS BELOW AND THE PREVIEW TABLE IS ATTACHED THE DATA EXORT IS IN C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_27\Data i DO NOT KNOW WHY THERE ARE SO MANY COPIES OF THE EXPORT
+
+---
+
+**Cursor**
+
+
+Investigating the Lag Days calculation in the All_Crimes M code and the multiple export copies in the Data folder. Checking the cycle calendar and preview rows where LagDays = 0 but IncidentToReportDays > 0:
+
+
+
+Identifying the cause: Report_Date fallback and checking the Data folder for duplicate exports. Implementing the fix: adding `Report_Date_ForLagday` (Report Date or EntryDate only) and using it for IsLagDay and LagDays. Updating Backfill_7Day to use `Report_Date_ForLagday` so it uses the actual report date. Adding a "Duplicate exports in Data" note to the verification doc. Summary of changes:
+
+---
+
+## 1. **LagDays fix (root cause)**
+
+**What was wrong**  
+`Report_Date` used `Coalesce(Report Date, EntryDate, Incident_Date)`. When Report Date (and EntryDate) were null, it fell back to **Incident_Date**. IsLagDay/LagDays use the **report** date to choose the cycle. For those rows, the “report” date was actually the incident date, so the cycle was the incident’s cycle. The incident often lies inside that cycle → **IsLagDay = false**, **LagDays = 0** even when the real report was later. **Example (like your case)**  
+- Incident **01/09/26**, Report **01/16/26**, but Report Date null in source. - Fallback → “report” = 01/09. Cycle for 01/09 → 01/06–01/12, start 01/06. - 01/09 is not &lt; 01/06 → not lagday → **LagDays 0**. - **Correct**: cycle for 01/16 → 01/13–01/19, start 01/13. 01/09 &lt; 01/13 → lagday → **LagDays 4**. **What was changed**  
+- **`Report_Date_ForLagday`** added: uses only **Report Date** or **EntryDate** (no Incident_Date fallback). - **IsLagDay**, **LagDays**, **Backfill_7Day**, and **IsCurrent7DayCycle** now use **`Report_Date_ForLagday`** instead of `Report_Date`. - When both Report Date and EntryDate are null, `Report_Date_ForLagday` is null → we can’t assign a report cycle → **IsLagDay = false**, **LagDays = 0** by design. **Files updated**  
+- `m_code/all_crimes.m`: new column + switch to it in the four logic steps above. - `LAGDAY_LOGIC_VERIFICATION.md`: addendum describing the bug and fix. - `VERIFICATION_01_27_2026_REPORT.md`: short “LagDays fix” and “Duplicate exports” notes. ---
+
+## 2. **Duplicate exports in Data**
+
+**Why you see multiple copies**  
+- Each run produces **new timestamped** files (e.g. `SCRPA_Briefing_Ready_2026_01_27_13_34_07` and `_14_06_36` from two runs). - **Organize** copies all matching CSVs into `Data/` and does not remove older ones. - So you get multiple Briefing_Ready, 7-day, etc., from different runs. **What to do**  
+- Use the **latest** of each type (most recent timestamp). - You can delete older timestamped duplicates if you want a single set; the workflow does not auto-delete them. ---
+
+## 3. **What you should do next**
+
+1. **Update Power BI**  
+   - Use the updated `all_crimes.m` in your report ( overwrite or paste from `m_code/all_crimes.m`). - Refresh the model. 2. **Re-export All_Crime**  
+   - Export the All_Crime preview again to the report folder (overwriting the old one if you want to avoid another “copy”). 3. **Re-run the email script**  
+   - Run `scripts\export_enriched_data_and_email.py` (or the full batch) so the email template uses the new All_Crime export. 4. **Check LagDays**  
+   - In the preview/dashboard, spot-check cases like **26-005319** (Incident 01/09, Report 01/16). You should now see **LagDays = 4** (or the correct value) instead of 0, as long as Report Date is present in the source. ---
+
+**Preview table**  
+The **`alL_crimes_preview_table_26_01_27.csv`** you have was created **before** this fix. After you refresh Power BI with the updated M code and re-export the All_Crime preview, the new CSV will reflect the corrected LagDays. ---
+
+**User**
+
+@m_code/all_crimes.m @m_code/Export_Formatting.m @m_code/q_CallTypeCategories.m @m_code/q_CycleCalendar.m @m_code/q_RMS_Source.m please verify that the other m codes for the Power BI project does not need updating. ---
+
+**Cursor**
+
+
+Searching the m_code folder for references to Report_Date, LagDay, cycle, and related symbols:
+
+
+
+Checking `ALL_QUERY_M_CODE.m` — it contains All_Crimes-style logic and still uses `[Report_Date]` for lagday. Applying the Report_Date_ForLagday fix to `ALL_QUERY_M_CODE.m` so it matches `all_crimes.m`. Summary of the verification:
+
+---
+
+## M code verification summary
+
+### No updates needed
+
+| File | Purpose | Why no change |
+|------|---------|----------------|
+| **`q_RMS_Source.m`** | Load latest RMS Excel, light transforms | Supplies raw columns (Report Date, EntryDate, etc.). No cycle or lagday logic. |
+| **`q_CycleCalendar.m`** | Load cycle calendar CSV | Only provides calendar. `all_crimes` uses it; we only changed which date we use for lookups, not the calendar. |
+| **`q_CallTypeCategories.m`** | Load call-type → category mapping | Lookup only. No dates, cycles, or lagdays. |
+| **`Export_Formatting.m`** | Cycle-based filenames, column order, export paths | Uses `cycle_name` from the **input table** (e.g. All_Crimes output). No `Report_Date` / `Report_Date_ForLagday` / lagday logic. |
+
+---
+
+### Update applied: `ALL_QUERY_M_CODE.m`
+
+`ALL_QUERY_M_CODE.m` bundles All_Crimes (plus the staging queries and Export_Formatting). Its All_Crimes section still used `[Report_Date]` for lagday logic and did not have `Report_Date_ForLagday`. The same **Report_Date_ForLagday** changes as in `all_crimes.m` are now applied:
+
+1. **`Report_Date_ForLagday_Added`** – new column (Report Date or EntryDate only, no Incident_Date fallback). 2. **`Report_Date_Text_Added`** – now built from `Report_Date_ForLagday_Added`. 3. **`Backfill_7Day`**, **`IsCurrent7DayCycle`**, **`IsLagDay`**, **`LagDays`** – now use **`[Report_Date_ForLagday]`** instead of `[Report_Date]`. `Report_Date` and **IncidentToReportDays** are unchanged (still use the original fallback for display/QA). ---
+
+### Summary
+
+- **`q_RMS_Source`**, **`q_CycleCalendar`**, **`q_CallTypeCategories`**, **`Export_Formatting`**: no updates required. - **`all_crimes.m`**: already fixed (previous session). - **`ALL_QUERY_M_CODE.m`**: updated to match `all_crimes.m` so the bundled All_Crimes logic uses `Report_Date_ForLagday` for lagday-related columns. If Power BI uses `ALL_QUERY_M_CODE.m` (or you copy from it), it will now use the corrected lagday logic. ---
+
+**User**
+
+does@m_code/ALL_QUERY_M_CODE.m  replace @m_code/all_crimes.m ? if so archive the m code not being used and update the header to match the headers of all_crimes please update the date and time stamp to match EST
+
+---
+
+**Cursor**
+
+
+Checking archive naming and fetching current EST time:
+
+
+
+Confirming: the bundle `ALL_QUERY_M_CODE.m` contains the full All_Crimes logic plus staging queries and Export_Formatting. Using it makes the standalone `all_crimes.m` redundant. Archiving `all_crimes.m`, updating `ALL_QUERY_M_CODE.m`'s header to match `all_crimes` (with EST timestamp), and updating archive notes. Adding an explicit `// Timestamp: EST` line to the `ALL_QUERY_M_CODE.m` header. Summary of changes:
+
+---
+
+## 1. **`ALL_QUERY_M_CODE.m` replaces `all_crimes.m`**
+
+The bundle contains the full All_Crimes logic plus staging queries and Export_Formatting. When you use the bundle, the standalone `all_crimes.m` is no longer used. ---
+
+## 2. **Archived `all_crimes.m`**
+
+- **Copied to:** `m_code/archive/2026_01_27_all_crimes.m`
+- **Removed:** `m_code/all_crimes.m`
+
+---
+
+## 3. **`ALL_QUERY_M_CODE.m` header updated**
+
+Header now follows the `all_crimes` style, with EST timestamp:
+
+```
+// 🕒 2026_01_27_17_02_40  (EST)
+// Project: m_code/ALL_QUERY_M_CODE.m
+// Author: R. A. Carucci
+// Purpose: Bundled Power Query: All_Crimes (RMS processing, Period, LagDays, TimeOfDay, Crime_Category), staging (q_RMS_Source, q_CycleCalendar, q_CallTypeCategories), and Export_Formatting. Single-file deployment for SCRPA Power BI model. ```
+
+Timestamp `2026_01_27_17_02_40` is from Eastern Standard Time. ---
+
+## 4. **Docs updated**
+
+- **`m_code/archive/ARCHIVE_NOTES.md`**  
+  - New entry for `2026_01_27_all_crimes.m` (archived 2026-01-27; use `ALL_QUERY_M_CODE.m`). - `2026_01_06_All_Crimes.m` note updated to point to the new archive. - **`m_code/README.md`**  
+  - Main query section now describes `ALL_QUERY_M_CODE.m` as the bundled deployment and states that `all_crimes.m` has been archived. ---
+
+Use **`m_code/ALL_QUERY_M_CODE.m`** as the single-file Power BI deployment. The archived `all_crimes` version remains in `m_code/archive/` for reference. ---
+
+**User**
+
+I noticed that @m_code/ALL_QUERY_M_CODE.m  is a file with all the m code combined. I made a new @m_code/All_Crimes.m that has only the updated m code for the All_Crimes query. If no other updates were made to ALL_QUERY_M_CODE then lets delete the file to reduce confussion
+
+---
+
+**Cursor**
+
+
+Deleting `ALL_QUERY_M_CODE.m` and updating `README` and `ARCHIVE_NOTES` to reference `All_Crimes.m`. The bundle only contained the same All_Crimes updates (Report_Date_ForLagday, etc. ); staging and Export_Formatting were unchanged copies. Summary of changes:
+
+---
+
+**Removed**
+- **`m_code/ALL_QUERY_M_CODE.m`** — Deleted. The only changes there were the same All_Crimes updates (Report_Date_ForLagday, LagDays, etc.) now in your `All_Crimes.m`. The rest was unchanged staging and Export_Formatting. **Docs updated**
+- **`m_code/README.md`** — Main query is **`All_Crimes.m`** again; ALL_QUERY_M_CODE reference removed. - **`m_code/archive/ARCHIVE_NOTES.md`** — `2026_01_27_all_crimes` now says the current version is **`m_code/All_Crimes.m`** (no mention of the bundle). ---
+
+Use **`m_code/All_Crimes.m`** plus the staging queries (`q_RMS_Source`, `q_CycleCalendar`, `q_CallTypeCategories`) for Power BI. `CHANGELOG` and `LagDays_Calculation_Fix_...` still mention the bundle where relevant for past work; no edits made there. ---
+
+**User**
+
+@LagDay_Motor_Vehicle_Theft_data.csv the filter for the lagday table for motor vehicle seems off I think. Now that I am looking at it the oca 26-005319 has an incident date of 01/09/26 @Time_Based/2026/26C01W04_26_01_27/Data/2026_01_27_13_29_35_SCRPA_RMS.csv should not be in the lagday table as it happened 
+
+---
+
+**Cursor**
+
+
+Checking the LagDay Motor Vehicle Theft data, the source RMS CSV, and how the lagday filter is defined:
+
+
+
+Checking how the lagday logic and "recently reported" / report-date filters interact:
+
+
+
+Checking the cycle calendar for 26C01W04 and the "recently reported" / backfill intent:
+
+
+
+Confirming: the lagday table must show only backfill cases — incident before cycle start and reported during the current 7-day cycle (01/20–01/26). That's Backfill_7Day = TRUE. Adding a "Lagday table filter" note and updating the verification doc. Summary of what’s going on and what to change:
+
+---
+
+## Why 26-005319 shouldn’t be in the lagday table
+
+- **Incident date:** 01/09/26  
+- **Report date:** 01/16/26  
+- **Current cycle 26C01W04:** 7‑day window **01/20–01/26**
+
+The incident is before the cycle, but the **report** (01/16) is **before** the cycle too. So it was **not** “recently reported” **this** cycle. The lagday table is meant for incidents that happened before the cycle but were **reported during** the cycle (01/20–01/26). By that rule, 26-005319 should **not** appear. ---
+
+## What’s wrong with the filter
+
+The lagday table is almost certainly filtered only on **`IsLagDay = TRUE`**. - **`IsLagDay`** = incident before cycle start (using the cycle for that report date). Includes **all** lagday cases, no matter when they were reported. - **`Backfill_7Day`** = incident before **current** cycle start **and** report date **in** the current 7‑day window (01/20–01/26). Only “reported **this** cycle” lagday cases. So the table is currently showing every lagday case, including ones reported **before** the cycle (like 26-005319). It should only show **backfill** cases: reported **this** cycle. ---
+
+## What to do in Power BI
+
+For each **lagday detail** visual (e.g. Motor Vehicle Theft “Recently Reported” table):
+
+1. Open **Visual-level filters** (or “Filter on this visual”). 2. Add or change the filter so it uses **`Backfill_7Day` = True** (instead of, or in addition to, `IsLagDay`). 3. Keep **`Crime_Category`** = Motor Vehicle Theft (or the right category) as needed. Do the same for any other lagday tables (Burglary, Robbery, etc.) so they all use **`Backfill_7Day`**. ---
+
+## Docs updated
+
+- **`LAGDAY_LOGIC_VERIFICATION.md`**  
+  New addendum: **“Lagday table filter (detail / Recently Reported)”** — rule, 26-005319 example, and Power BI steps. - **`VERIFICATION_01_27_2026_REPORT.md`**  
+  New **“Lagday table filter (Motor Vehicle Theft / Recently Reported)”** subsection: issue, fix, and action. After you switch the lagday visuals to **`Backfill_7Day = TRUE`**, 26-005319 will no longer appear, and the table will only show incidents reported during the current 7‑day cycle. ---
+
+**User**
+
+look at the docs and provide a body of an email for submitting the report to Captain Smith
+
+Subject: SCRPA Weekly Report - Cycle 26C01W02 | 01/06/2026 - 01/12/2026
+
+should be like the below version
+Sir,
+
+Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for Cycle 26C01W02. Report Period: 01/06/2026 - 01/12/2026
+Date Generated: 01/13/2026
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. ---
+
+**Cursor**
+
+
+Checking the docs for report structure and any email/submission wording:
+
+
+
+Use this email body for submitting the report to Captain Smith with your subject line:
+
+---
+
+**Body:**
+
+Sir,
+
+Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for Cycle 26C01W02. **Report Period:** 01/06/2026 – 01/12/2026  
+**Date Generated:** 01/13/2026
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries  
+• ArcGIS Map visuals showing incidents occurring in the last 7 days  
+• Statistical charts and visualizations by crime type  
+• 28-Day Executive Summary (operational planning)  
+• YTD Executive Summary (strategic analysis)  
+
+Please let me know if you have any questions or require additional information. ---
+
+**Subject:** SCRPA Weekly Report - Cycle 26C01W02 | 01/06/2026 - 01/12/2026  
+
+---
+
+This matches the structure in the docs (VERIFICATION, email template). Cycle 26C01W02 and report period 01/06–01/12 align with report due 01/13/2026. If you prefer “Captain Smith,” instead of “Sir,” or want a different sign‑off, say how you’d like it changed. ---
+
+**User**
+
+you need to update the body of the email from this @Time_Based/2026/26C01W02_26_01_13/Documentation/EMAIL_TEMPLATE.txt to the reporting bi-weekly cycles and add the new bi-weekly report name
+
+---
+
+**Cursor**
+
+
+Updating the EMAIL_TEMPLATE for folder `26C01W02_26_01_13` (26BW01, 7-day 01/06–01/12, generated 01/13) to bi-weekly wording and adding the bi-weekly report name. Updating the email template generator so future runs produce bi-weekly subject/body and include the bi-weekly report name:
+
+
+
+Adding bi-weekly lookup to the script and updating the email template builder. Summary of changes:
+
+---
+
+## 1. **`26C01W02_26_01_13/Documentation/EMAIL_TEMPLATE.txt`** (static update)
+
+- **Subject:** `SCRPA Bi-Weekly Report - Cycle 26BW01 | 01/06/2026 - 01/12/2026`  
+  (was "Weekly" and "26C01W02"; now bi-weekly and **26BW01**.) - **Body:**  
+  - "…Combined Executive Summary for **Bi-Weekly Cycle 26BW01 (26C01W02)**." - Report Period and Date Generated unchanged. - Bullet list unchanged. ---
+
+## 2. **`scripts/export_enriched_data_and_email.py`** (template generator)
+
+- **Calendar lookup:**  
+  - Replaced `get_date_range_from_cycle_calendar` with `get_date_range_and_biweekly_from_calendar`. - Now returns `(start_date, end_date, biweekly_name)`.

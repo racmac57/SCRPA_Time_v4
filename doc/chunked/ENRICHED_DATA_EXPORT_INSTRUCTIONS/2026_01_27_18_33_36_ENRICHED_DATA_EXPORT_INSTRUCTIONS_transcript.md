@@ -1,0 +1,205 @@
+# Enriched Data Export Instructions
+
+**Processing Date:** 2026-01-27 18:33:36
+**Source File:** ENRICHED_DATA_EXPORT_INSTRUCTIONS.md
+**Total Chunks:** 1
+
+---
+
+# Enriched Data Export and Email Template - Implementation Guide
+
+## Overview
+
+This script automates the following tasks after Power BI refresh:
+1. ✅ Exports ALL enriched incidents to CSV (like preview table)
+2. ✅ Creates filtered CSV for 7-Day + LagDay incidents
+3. ✅ Removes rms_summary.html files (you prefer ChatGPT version)
+4. ✅ Creates email template as .txt file
+
+---
+
+## Files Created
+
+### 1. Enriched Data CSVs
+
+**Location**: `Data/` folder in report directory
+
+**Files**:
+- `SCRPA_All_Incidents_Enriched_YYYYMMDD_HHMMSS.csv`
+  - All incidents with enriched columns (Period, LagDays, Category_Type, etc.) - Same as Power BI preview table
+  
+- `SCRPA_7Day_LagDay_Enriched_YYYYMMDD_HHMMSS.csv`
+  - Filtered to incidents where:
+    - `Period = "7-Day"` OR
+    - `IsLagDay = TRUE` OR
+    - `LagDays > 0`
+  - Includes all enriched columns
+
+### 2. Email Template
+
+**Location**: `Documentation/EMAIL_TEMPLATE.txt`
+
+**Content**: Pre-filled email template with:
+- Subject line with cycle and date range
+- Body text with all report components listed
+- Ready to copy/paste into Outlook
+
+### 3. Removed Files
+
+- `*_rms_summary.html` (removed from Reports folder)
+- `*_rms_summary.pdf` (removed from Reports folder)
+
+---
+
+## Usage
+
+### Option 1: Run After Power BI Refresh (Manual)
+
+1. **Refresh Power BI** and export preview table:
+   - Open `.pbix` file
+   - Go to `All_Crimes` query
+   - Right-click → **Export Data** → **CSV**
+   - Save as `All_Crime_YYYYMMDD.csv` in report folder
+
+2. **Run the script**:
+   ```powershell
+   cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA"
+   python export_enriched_data_and_email.py
+   ```
+
+3. **Script will**:
+   - Find latest report folder
+   - Find the preview CSV
+   - Export enriched data
+   - Remove rms_summary files
+   - Create email template
+
+### Option 2: Integrate into Workflow (Automated)
+
+Add to `organize_report_files.py` or create a new step in `Run_SCRPA_Report_Folder.bat`:
+
+```batch
+REM After organize_report_files.py
+python "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\export_enriched_data_and_email.py"
+```
+
+**Note**: For automated use, you'll need to export the preview table from Power BI programmatically, or modify the script to read directly from Power BI. ---
+
+## Power BI Preview Table Export
+
+### Manual Export (Current Method)
+
+1. Open Power BI Desktop
+2. Go to **Transform Data** (Power Query Editor)
+3. Select `All_Crimes` query
+4. Right-click → **Export Data** → **CSV**
+5. Save to report folder as `All_Crime_YYYYMMDD.csv`
+
+### Automated Export (Future Enhancement)
+
+Could be automated using:
+- Power BI REST API
+- Power BI CLI tools
+- PowerShell scripts with Power BI cmdlets
+
+---
+
+## Script Configuration
+
+### Environment Variables
+
+Set `REPORT_DATE` environment variable for date range lookup:
+```powershell
+$env:REPORT_DATE = "01/06/2026"
+```
+
+### Paths
+
+Script uses these paths (update if needed):
+- **Base Directory**: `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA`
+- **Cycle Calendar**: `C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv`
+
+---
+
+## Output Files Summary
+
+```
+Report Folder/
+├── Data/
+│   ├── SCRPA_All_Incidents_Enriched_YYYYMMDD_HHMMSS.csv  ← All enriched data
+│   └── SCRPA_7Day_LagDay_Enriched_YYYYMMDD_HHMMSS.csv    ← Filtered 7-Day + LagDay
+├── Reports/
+│   ├── SCRPA_Combined_Executive_Summary_*.html            ← Kept
+│   ├── SCRPA_Combined_Executive_Summary_*.pdf             ← Kept
+│   └── *_rms_summary. *                                    ← REMOVED
+└── Documentation/
+    └── EMAIL_TEMPLATE.txt                                 ← Email template
+```
+
+---
+
+## Email Template Content
+
+The generated `EMAIL_TEMPLATE.txt` contains:
+
+```
+Subject: SCRPA Weekly Report - Cycle [CYCLE] | [DATE_RANGE]
+
+Sir,
+
+Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. ```
+
+**Usage**: Copy the entire content, paste into Outlook, add your signature, attach PDF, and send. ---
+
+## Troubleshooting
+
+### "All_Crime preview CSV not found"
+- **Solution**: Export preview table from Power BI first
+- **Location**: Should be in report folder root or `Data/` subfolder
+
+### "Could not get date range from cycle calendar"
+- **Solution**: Script will use defaults, but check cycle calendar CSV path
+- **Fix**: Update `cycle_calendar_path` in script if needed
+
+### "No report folders found"
+- **Solution**: Check that `Time_Based/` directory exists and has year folders
+- **Fix**: Run `generate_weekly_report.py` first
+
+---
+
+## Integration with Existing Workflow
+
+### Current Workflow
+```
+Run_SCRPA_Report_Folder.bat
+  → generate_weekly_report.py
+  → generate_all_reports.bat
+  → organize_report_files.py
+```
+
+### Enhanced Workflow
+```
+Run_SCRPA_Report_Folder.bat
+  → generate_weekly_report.py
+  → generate_all_reports.bat
+  → organize_report_files.py
+  → [MANUAL: Export Power BI preview table]
+  → export_enriched_data_and_email.py  ← NEW STEP
+```
+
+---
+
+**Date**: 2026-01-06  
+**Status**: ✅ Ready for Use  
+**Script**: `export_enriched_data_and_email.py`
+

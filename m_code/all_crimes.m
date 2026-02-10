@@ -1,7 +1,7 @@
-// 🕒 2026_01_13_11_11_31
-// Project: m_code/all_crimes.m
+// 🕒 2026_01_27_17_02_40  (EST)
+// Project: m_code/ALL_QUERY_M_CODE.m
 // Author: R. A. Carucci
-// Purpose: Main Power Query that processes RMS source data, calculates derived columns (Period, LagDays, TimeOfDay, Crime_Category), and enriches incident data with cycle calendar and call type mappings
+// Purpose: Bundled Power Query: All_Crimes (RMS processing, Period, LagDays, TimeOfDay, Crime_Category), staging (q_RMS_Source, q_CycleCalendar, q_CallTypeCategories), and Export_Formatting. Single-file deployment for SCRPA Power BI model.
 
 let
     // -----------------------------
@@ -153,8 +153,22 @@ let
         type nullable date
     ),
 
-    Report_Date_Text_Added = Table.AddColumn(
+    // Report_Date_ForLagday: only Report Date or EntryDate (no Incident_Date fallback).
+    // Used for IsLagDay/LagDays. When both are null, lagday logic correctly yields false/0.
+    Report_Date_ForLagday_Added = Table.AddColumn(
         Report_Date_Added,
+        "Report_Date_ForLagday",
+        each
+            let
+                dRD = AsDate(try [Report Date] otherwise null),
+                dED = AsDate(try [EntryDate] otherwise null)
+            in
+                CoalesceAny(dRD, dED),
+        type nullable date
+    ),
+
+    Report_Date_Text_Added = Table.AddColumn(
+        Report_Date_ForLagday_Added,
         "Report_Date_Text",
         each if [Report_Date] <> null then Date.ToText([Report_Date], "MM/dd/yy") else null,
         type nullable text
@@ -315,7 +329,7 @@ let
         CycleName_Added,
         "Backfill_7Day",
         each
-            let dI = [Incident_Date_Date], dR = [Report_Date]
+            let dI = [Incident_Date_Date], dR = [Report_Date_ForLagday]
             in
                 HasCurrentCycle and dI <> null and dR <> null and dI < CurrentCycleStart and dR >= CurrentCycleStart and dR <= CurrentCycleEnd,
         type logical
@@ -335,7 +349,7 @@ let
         Cycle_Name_Adjusted,
         "IsCurrent7DayCycle",
         each
-            let dR = [Report_Date]
+            let dR = [Report_Date_ForLagday]
             in
                 if HasCurrentCycle and dR <> null then
                     dR >= CurrentCycleStart and dR <= CurrentCycleEnd
@@ -347,7 +361,7 @@ let
         IsCurrent7DayCycle_Added,
         "IsLagDay",
         each
-            let dI = [Incident_Date_Date], dR = [Report_Date]
+            let dI = [Incident_Date_Date], dR = [Report_Date_ForLagday]
             in
                 if dI = null or dR = null then false
                 else
@@ -387,7 +401,7 @@ let
         IsLagDay_Added,
         "LagDays",
         each
-            let dI = [Incident_Date_Date], dR = [Report_Date]
+            let dI = [Incident_Date_Date], dR = [Report_Date_ForLagday]
             in
                 if dI = null or dR = null then null
                 else if not [IsLagDay] then 0

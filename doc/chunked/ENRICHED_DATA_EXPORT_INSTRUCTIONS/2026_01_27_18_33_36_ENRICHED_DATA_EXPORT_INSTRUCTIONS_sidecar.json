@@ -1,0 +1,66 @@
+{
+  "source_file": "ENRICHED_DATA_EXPORT_INSTRUCTIONS.md",
+  "source_path": "C:\\_chunker\\02_data\\ENRICHED_DATA_EXPORT_INSTRUCTIONS.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\ENRICHED_DATA_EXPORT_INSTRUCTIONS\\2026_01_27_18_33_36_ENRICHED_DATA_EXPORT_INSTRUCTIONS.origin.json",
+  "created_at": "2026_01_27_18_33_36",
+  "tags": [
+    "ai",
+    "data",
+    "docs",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "power",
+      "csv",
+      "export",
+      "report",
+      "data",
+      "script"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "# Enriched Data Export and Email Template - Implementation Guide\n\n## Overview\n\nThis script automates the following tasks after Power BI refresh:\n1. ✅ Exports ALL enriched incidents to CSV (like preview table)\n2.",
+    "first_line": "# Enriched Data Export and Email Template - Implementation Guide"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-27T18:33:36+00:00_ENRICHED_DATA_EXPORT_INSTRUCTIONS_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "ai",
+        "data",
+        "docs",
+        "export",
+        "markdown",
+        "police",
+        "power",
+        "python",
+        "report",
+        "script",
+        "sql"
+      ],
+      "key_terms": [
+        "power",
+        "csv",
+        "export",
+        "report",
+        "data",
+        "script"
+      ],
+      "summary": "# Enriched Data Export and Email Template - Implementation Guide\n\n## Overview\n\nThis script automates the following tasks after Power BI refresh:\n1.",
+      "char_length": 5558,
+      "byte_length": 5875
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

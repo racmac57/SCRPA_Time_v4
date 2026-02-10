@@ -49,11 +49,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Ensures HTML is freshly generated before copying
 
 ### Fixed
+- **LagDays vs IncidentToReportDays Confusion (Critical Fix - 2026-02-10)**
+  - Fixed `prepare_7day_outputs.py` using wrong field for reporting delay statistics
+  - **Root Cause**: System has two "lag" concepts that were confused:
+    - `LagDays` = CycleStart - Incident_Date (backfill metric, ≤0 for 7-Day incidents)
+    - `IncidentToReportDays` = Report_Date - Incident_Date (reporting delay metric)
+  - Crime category breakdown now uses `IncidentToReportDays` (was using `LagDays`)
+  - Lag statistics now use `IncidentToReportDays` (was using `LagDays`)
+  - **Impact**: Previously, lag counts were always 0 for 7-Day incidents; now correctly shows reporting delays
+  - See `doc/raw/LAGDAYS_REPORTING_DELAY_FIX_2026_02_10.md` for detailed analysis
+
 - **7-Day Counting Bug (Critical Fix)**
   - Fixed `prepare_7day_outputs.py` incorrectly counting backfill incidents in 7-Day totals
   - Crime category breakdown now filters to `Period='7-Day'` only (excludes backfill)
   - Lag statistics now calculated from actual 7-Day period incidents (not backfill)
-  - Changed from `IsLagDay` flag (broken) to `LagDays > 0` check (correct)
+  - Changed from `IsLagDay` flag (broken) to `IncidentToReportDays > 0` check (correct)
   - Fixed lag statistics calculation to exclude backfill incidents
 
 - **HTML Report Data Mismatch**
@@ -72,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reduced YAML Dependency**: `pyyaml` now only required for canonical documentation generation (`generate_documentation.py`), not for cycle-specific outputs
 
 ### Documentation
+- Created `LAGDAYS_REPORTING_DELAY_FIX_2026_02_10.md` - Complete analysis of LagDays vs IncidentToReportDays confusion
 - Created `HTML_INTEGRATION_IMPLEMENTATION.md` - Complete documentation of HTML generation integration
 - Created `PIPELINE_BUG_FIX_2026_02_10.md` - Details of 7-day counting bug fix
 - Created `YAML_TO_JSON_MIGRATION.md` - Migration documentation and benefits
