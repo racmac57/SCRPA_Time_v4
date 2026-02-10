@@ -155,7 +155,7 @@ def _generate_html_report_via_arcpy(
     Call SCRPA_ArcPy to generate fresh HTML report from RMS export.
     
     This ensures the HTML report in 06_Output is current before copying.
-    SCRPA_ArcPy reads from 05_EXPORTS\_RMS\scrpa\ and generates HTML with
+    SCRPA_ArcPy reads from 05_EXPORTS\\_RMS\\scrpa\\ and generates HTML with
     the actual incident data.
     
     Args:
@@ -188,6 +188,8 @@ def _generate_html_report_via_arcpy(
             env=env,
             capture_output=True,
             text=True,
+            encoding='utf-8',  # Explicitly use UTF-8 instead of cp1252
+            errors='replace',  # Replace invalid characters instead of crashing
             timeout=300  # 5 minute timeout
         )
         
