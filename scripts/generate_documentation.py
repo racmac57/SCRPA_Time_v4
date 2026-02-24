@@ -18,7 +18,7 @@ All outputs are placed in the Documentation folder of the report cycle directory
 import yaml
 import json
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Dict, Any, Optional, List
 import argparse
 
@@ -376,34 +376,45 @@ def get_project_summary(cycle_info: Optional[Dict] = None) -> Dict[str, Any]:
         'architecture': {
             'overview': 'Python-first processing where all data transformations occur in Python scripts. Power BI consumes pre-processed CSV files with minimal M code (simple imports only).',
             'data_flow': [
-                '1. RMS Export (Excel/CSV) -> Raw crime incident data',
-                '2. scrpa_transform.py -> Enriched All_Crimes data (cycle, lag days, period, etc.)',
-                '3. prepare_7day_outputs.py -> Filtered 7-day data + lag day metadata',
-                '4. generate_documentation.py -> Documentation files',
-                '5. Power BI (All_Crimes_Simple.m) -> Simple CSV import, no transformations',
-                '6. export_enriched_data_and_email.py -> Email template + organized outputs'
+                '1. RMS Export (.xlsx) -> Raw crime incident data',
+                '2. scrpa_transform.py -> SCRPA_All_Crimes_Enhanced.csv (cycle, lag days, period, etc.)',
+                '3. prepare_7day_outputs.py -> SCRPA_7Day_With_LagFlags.csv + SCRPA_7Day_Summary.json',
+                '4. generate_documentation.py -> SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt',
+                '5. SCRPA_ArcPy HTML generator -> SCRPA_Combined_Executive_Summary.html',
+                '6. Power BI (All_Crimes_Simple.m) -> Simple CSV import, no transformations',
+                '7. [Manual] ChatGPT: paste CHATGPT_SESSION_PROMPT.md, attach 2 .md files -> 7Day tactical briefing HTML',
+                '8. [Optional] clean_chatgpt_html.py -> strip ChatGPT code-fence artifacts from HTML output'
             ],
             'diagram': '''
-RMS Export
+RMS Export (.xlsx)
     |
     v
 [scrpa_transform.py] -----> SCRPA_All_Crimes_Enhanced.csv
     |
     v
 [prepare_7day_outputs.py] --> SCRPA_7Day_With_LagFlags.csv
-    |                         SCRPA_7Day_Lag_Only.csv
-    |                         SCRPA_7Day_Summary.yaml/json
+    |                         SCRPA_7Day_Summary.json
     v
-[generate_documentation.py] -> data_dictionary.yaml/json
+[generate_documentation.py] -> SCRPA_Report_Summary.md
+    |                          CHATGPT_BRIEFING_PROMPT.md
+    |                          CHATGPT_SESSION_PROMPT.md  <- paste into ChatGPT
+    |                          EMAIL_TEMPLATE.txt
     |                          PROJECT_SUMMARY.yaml/json
-    |                          claude.md
-    |                          SCRPA_Report_Summary.md
     v
-[Power BI - All_Crimes_Simple.m] --> Import CSVs (no transforms)
+[SCRPA_ArcPy HTML generator] -> SCRPA_Combined_Executive_Summary.html
     |
     v
-[export_enriched_data_and_email.py] -> EMAIL_TEMPLATE.txt
-                                       Organized folder structure
+[Power BI - All_Crimes_Simple.m] --> Import CSVs (no transforms)
+
+ChatGPT 7-Day Briefing workflow (manual, each cycle):
+  1. Paste CHATGPT_SESSION_PROMPT.md into ChatGPT project chat
+  2. Attach CHATGPT_BRIEFING_PROMPT.md + SCRPA_Report_Summary.md
+  3. Save HTML output to Reports/
+  4. Run Clean_ChatGPT_HTML.bat to strip any code-fence artifacts
+
+Canonical docs (Documentation/ folder):
+  data_dictionary.yaml/json, PROJECT_SUMMARY.yaml/json, claude.md
+  -> Regenerate with: python scripts/generate_documentation.py -o Documentation/
 '''
         },
         'data_sources': {
@@ -440,55 +451,58 @@ RMS Export
                 'inputs': ['SCRPA_All_Crimes_Enhanced.csv'],
                 'outputs': [
                     'SCRPA_7Day_With_LagFlags.csv',
-                    'SCRPA_7Day_Lag_Only.csv',
-                    'SCRPA_7Day_Summary.yaml',
                     'SCRPA_7Day_Summary.json'
+                ],
+                'notes': [
+                    'SCRPA_7Day_Lag_Only.csv no longer generated (backfill rows in With_LagFlags)',
+                    'SCRPA_7Day_Summary.yaml no longer generated (JSON only)'
                 ],
                 'key_functions': [
                     'filter_7day_by_report_date() - IsCurrent7DayCycle filter',
-                    'extract_backfill_lag() - Backfill_7Day filter',
+                    'extract_backfill_lag() - Backfill_7Day filter (internal, not saved separately)',
                     'generate_lagday_summary() - Metadata generation'
                 ],
-                'dependencies': ['pandas', 'pyyaml']
+                'dependencies': ['pandas']
             },
             'generate_documentation.py': {
-                'purpose': 'Generate structured documentation',
+                'purpose': 'Generate structured documentation (canonical and per-cycle)',
                 'inputs': ['Cycle info', 'System constants'],
                 'outputs': [
-                    'data_dictionary.yaml',
-                    'data_dictionary.json',
-                    'PROJECT_SUMMARY.yaml',
-                    'PROJECT_SUMMARY.json',
-                    'claude.md',
-                    'SCRPA_Report_Summary.md'
+                    'data_dictionary.yaml/json (canonical only)',
+                    'PROJECT_SUMMARY.yaml/json (canonical only)',
+                    'claude.md (canonical only)',
+                    'SCRPA_Report_Summary.md (per-cycle, populated with real counts)',
+                    'CHATGPT_BRIEFING_PROMPT.md (per-cycle, with 7-day narratives)',
+                    'CHATGPT_SESSION_PROMPT.md (per-cycle, paste-and-go ChatGPT prompt)',
+                    'EMAIL_TEMPLATE.txt (per-cycle, ready-to-send email)'
                 ],
                 'dependencies': ['pyyaml']
             },
-            'export_enriched_data_and_email.py': {
-                'purpose': 'Export data and generate email template',
-                'inputs': ['Power BI preview CSV', 'Cycle Calendar'],
-                'outputs': [
-                    'SCRPA_All_Incidents_Enriched_*.csv',
-                    'SCRPA_7Day_LagDay_Enriched_*.csv',
-                    'EMAIL_TEMPLATE.txt'
-                ],
-                'key_functions': [
-                    'get_date_range_and_biweekly_from_calendar() - Bi-weekly date calculation',
-                    'create_email_template() - Email generation with bi-weekly support'
-                ]
-            },
             'run_scrpa_pipeline.py': {
                 'purpose': 'Main orchestration script',
-                'inputs': ['RMS Export path', 'Report due date', 'Output directory'],
+                'inputs': ['RMS Export path (.xlsx)', 'Report due date (MM/DD/YYYY)'],
                 'outputs': ['All generated files in structured folders'],
                 'workflow': [
-                    '1. Load RMS export and cycle calendar',
-                    '2. Run scrpa_transform.py',
-                    '3. Run prepare_7day_outputs.py',
-                    '4. Run generate_documentation.py',
-                    '5. Validate outputs',
-                    '6. Generate summary report'
-                ]
+                    '1. Load RMS export + cycle calendar; resolve cycle',
+                    '2. Create output directory; copy Power BI template',
+                    '3. Run scrpa_transform -> SCRPA_All_Crimes_Enhanced.csv',
+                    '4. Run prepare_7day_outputs -> SCRPA_7Day_With_LagFlags.csv + SCRPA_7Day_Summary.json',
+                    '5. Write cycle docs (SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt)',
+                    '6. Generate HTML report via SCRPA_ArcPy; copy to Reports/'
+                ],
+                'entry_point': 'Run_SCRPA_Pipeline.bat (auto-selects latest RMS .xlsx)'
+            },
+            'clean_chatgpt_html.py': {
+                'purpose': 'Remove ChatGPT formatting artifacts from HTML output files',
+                'inputs': ['HTML file or folder path'],
+                'outputs': ['Cleaned HTML file(s) in place'],
+                'artifacts_removed': [
+                    'Leading ```html or ``` code fences',
+                    'Trailing ``` code fences (wherever they appear in the body)',
+                    'Inline ``` occurrences inside HTML',
+                    'ChatGPT citation comments (<!-- :contentReference[...] -->)'
+                ],
+                'entry_point': 'Clean_ChatGPT_HTML.bat (drag-and-drop or double-click)'
             },
             'validate_parity.py': {
                 'purpose': 'Validate Python outputs against M code reference',
@@ -507,22 +521,26 @@ RMS Export
             'description': 'Folder structure for each reporting cycle',
             'template': '''
 Time_Based/YYYY/{CYCLE_NAME}_{YY_MM_DD}/
+├── {CYCLE_NAME}_{YY_MM_DD}.pbix           # Power BI template (copied)
 ├── Data/
 │   ├── SCRPA_All_Crimes_Enhanced.csv      # Full enriched dataset
-│   ├── SCRPA_7Day_With_LagFlags.csv       # Filtered: IsCurrent7DayCycle=TRUE
-│   ├── SCRPA_7Day_Lag_Only.csv            # Filtered: Backfill_7Day=TRUE
-│   ├── SCRPA_7Day_Summary.yaml            # Lag day metadata
-│   └── SCRPA_7Day_Summary.json
+│   ├── SCRPA_7Day_With_LagFlags.csv       # IsCurrent7DayCycle=TRUE (includes backfill)
+│   └── SCRPA_7Day_Summary.json            # Lag day statistics + period counts
 ├── Documentation/
-│   ├── data_dictionary.yaml               # Field definitions
-│   ├── data_dictionary.json
-│   ├── PROJECT_SUMMARY.yaml               # This file
-│   ├── PROJECT_SUMMARY.json
-│   ├── claude.md                          # System specification
-│   ├── SCRPA_Report_Summary.md            # Report summary template
-│   └── EMAIL_TEMPLATE.txt                 # Email for report distribution
+│   ├── SCRPA_Report_Summary.md            # Cycle summary with real counts
+│   ├── CHATGPT_BRIEFING_PROMPT.md         # Attach to ChatGPT (narratives + params)
+│   ├── CHATGPT_SESSION_PROMPT.md          # Paste into ChatGPT chat (the prompt)
+│   ├── EMAIL_TEMPLATE.txt                 # Ready-to-send email
+│   ├── PROJECT_SUMMARY.json               # Project overview (canonical copy)
+│   └── PROJECT_SUMMARY.yaml
 └── Reports/
-    └── (Power BI exports, PDFs, etc.)
+    ├── SCRPA_Combined_Executive_Summary.html  # Auto-generated by ArcPy
+    ├── SCRPA_Combined_Executive_Summary.html.bak
+    └── [CYCLE]_scrpa_tac.html             # ChatGPT 7-day tactical briefing
+
+Canonical docs (16_Reports/SCRPA/Documentation/):
+    data_dictionary.yaml/json, PROJECT_SUMMARY.yaml/json, claude.md
+    -> These are NOT copied per-cycle; regenerate with generate_documentation.py
 '''
         },
         'critical_logic': {
@@ -530,34 +548,34 @@ Time_Based/YYYY/{CYCLE_NAME}_{YY_MM_DD}/
                 'description': '3-tier lookup to find the current reporting cycle',
                 'tiers': [
                     'Tier 1: Exact Report_Due_Date match (for report day)',
-                    'Tier 2: Date within 7-Day window (for mid-cycle)',
+                    'Tier 2: Date falls within a 7-Day window',
                     'Tier 3: Most recent cycle where 7_Day_End <= date'
                 ],
-                'm_code_lines': '191-224'
+                'python_function': 'scrpa_transform.resolve_cycle()'
             },
             'lagdays_calculation': {
                 'description': 'Days between incident and cycle start',
                 'formula': 'LagDays = CycleStart_7Day - Incident_Date',
                 'critical_note': 'Uses CycleStart from Report_Date_ForLagday resolution, NOT Report_Date - Incident_Date',
-                'm_code_lines': '400-439'
+                'python_function': 'scrpa_transform.calculate_lag_days()'
             },
             'report_date_for_lagday': {
                 'description': 'Date used for lag day cycle resolution',
                 'formula': 'Coalesce(Report Date, EntryDate)',
                 'critical_note': 'NO Incident_Date fallback - ensures correct lag day detection',
-                'm_code_lines': '156-168'
+                'python_function': 'scrpa_transform.build_all_crimes_enhanced()'
             },
             'period_classification': {
                 'description': 'Classify incident into reporting period',
                 'based_on': 'Incident_Date (NOT Report_Date)',
                 'priority': '7-Day > Prior Year > 28-Day > YTD > Historical',
-                'critical_note': 'Prior Year checked before 28-Day to prevent misclassification',
-                'm_code_lines': '242-273'
+                'critical_note': 'Prior Year checked before 28-Day to prevent 2025 incidents appearing in 28-Day',
+                'python_function': 'scrpa_transform.classify_period()'
             },
             'backfill_7day': {
-                'description': 'Flag for late-reported incidents',
+                'description': 'Flag for late-reported incidents (incident before cycle, report during cycle)',
                 'condition': 'Incident_Date < CycleStart AND Report_Date_ForLagday IN [CycleStart, CycleEnd]',
-                'm_code_lines': '328-336'
+                'python_function': 'scrpa_transform.build_all_crimes_enhanced()'
             }
         },
         'bi_weekly_reporting': {
@@ -572,6 +590,16 @@ Time_Based/YYYY/{CYCLE_NAME}_{YY_MM_DD}/
                     'report_due': '01/27/2026',
                     '7_day_window': '01/20/2026 - 01/26/2026',
                     'bi_weekly_period': '01/13/2026 - 01/26/2026'
+                },
+                '26BW03': {
+                    'report_due': '02/10/2026',
+                    '7_day_window': '02/03/2026 - 02/09/2026',
+                    'bi_weekly_period': '01/27/2026 - 02/09/2026'
+                },
+                '26BW04': {
+                    'report_due': '02/24/2026',
+                    '7_day_window': '02/17/2026 - 02/23/2026',
+                    'bi_weekly_period': '02/10/2026 - 02/23/2026'
                 }
             },
             'formula': 'Bi-weekly period = (7_Day_Start - 7 days) to 7_Day_End'
@@ -671,10 +699,44 @@ Backfill_7Day = (
 | File | Purpose |
 |------|---------|
 | `SCRPA_All_Crimes_Enhanced.csv` | Full enriched dataset |
-| `SCRPA_7Day_With_LagFlags.csv` | IsCurrent7DayCycle=TRUE filter |
-| `SCRPA_7Day_Lag_Only.csv` | Backfill_7Day=TRUE only |
-| `SCRPA_7Day_Summary.yaml/json` | Lag day statistics |
-| `EMAIL_TEMPLATE.txt` | Bi-weekly report email |
+| `SCRPA_7Day_With_LagFlags.csv` | IsCurrent7DayCycle=TRUE filter (includes backfill rows) |
+| `SCRPA_7Day_Summary.json` | Lag day statistics and period counts |
+| `EMAIL_TEMPLATE.txt` | Bi-weekly report email (ready to send) |
+| `CHATGPT_BRIEFING_PROMPT.md` | **Attach** to ChatGPT — cycle params + 7-day narratives |
+| `CHATGPT_SESSION_PROMPT.md` | **Paste** into ChatGPT chat — the per-cycle prompt |
+| `SCRPA_Report_Summary.md` | **Attach** to ChatGPT — authoritative counts + category table |
+
+> Note: `SCRPA_7Day_Lag_Only.csv` and `SCRPA_7Day_Summary.yaml` are no longer generated.
+> Backfill rows are included in `SCRPA_7Day_With_LagFlags.csv` (Backfill_7Day=TRUE).
+
+## ChatGPT 7-Day Tactical Briefing Workflow
+
+Each cycle, after the pipeline runs:
+1. Open a new chat in the SCRPA ChatGPT project
+2. Copy all text from `CHATGPT_SESSION_PROMPT.md` → paste into the chat
+3. Attach `CHATGPT_BRIEFING_PROMPT.md` and `SCRPA_Report_Summary.md`
+4. Send — ChatGPT generates the HTML tactical briefing
+5. Save output as `[CYCLE]_scrpa_tac.html` in `Reports/`
+6. Run `Clean_ChatGPT_HTML.bat` on the file to remove any ``` artifacts
+
+## clean_chatgpt_html.py / Clean_ChatGPT_HTML.bat
+
+Removes ChatGPT formatting artifacts from saved HTML files:
+- Leading/trailing ` ``` ` or ` ```html ` code fences
+- Inline ` ``` ` occurrences inside the HTML body
+- ChatGPT citation comments (`<!-- :contentReference[...] -->`)
+
+Usage: drag any `.html` file onto `Clean_ChatGPT_HTML.bat`, or double-click
+to scan all HTML files in the `Time_Based/` folder.
+
+## Lag Incident Counts — Two Scopes
+
+The pipeline reports lag counts in two scopes; both are correct:
+
+| Scope | Location | Meaning |
+|-------|----------|---------|
+| Pipeline console "Lag incidents: N" | Run summary | All IsLagDay=TRUE rows across the full dataset |
+| SCRPA_Report_Summary.md "Lag Incidents: N" | Cycle docs | Lag rows within the 7-day window only |
 
 ## Bi-Weekly Reporting
 
@@ -684,36 +746,39 @@ For bi-weekly cycles, the reporting period spans two 7-day windows:
 |-------|------------|--------------|------------------|
 | 26BW01 | 01/13/2026 | 01/06 - 01/12 | 12/30/2025 - 01/12/2026 |
 | 26BW02 | 01/27/2026 | 01/20 - 01/26 | 01/13/2026 - 01/26/2026 |
+| 26BW03 | 02/10/2026 | 02/03 - 02/09 | 01/27/2026 - 02/09/2026 |
+| 26BW04 | 02/24/2026 | 02/17 - 02/23 | 02/10/2026 - 02/23/2026 |
 
 Formula: `Bi-Weekly Period = (7_Day_Start - 7 days) to 7_Day_End`
 
 ## Script Execution Order
 
 ```bash
+# Run entire pipeline (recommended):
+python scripts/run_scrpa_pipeline.py input.xlsx --report-date 02/24/2026
+
+# Or run steps individually:
 # 1. Transform raw data
-python scripts/scrpa_transform.py input.csv -o Data/SCRPA_All_Crimes_Enhanced.csv
+python scripts/scrpa_transform.py input.xlsx -o Data/SCRPA_All_Crimes_Enhanced.csv
 
 # 2. Generate 7-day outputs
 python scripts/prepare_7day_outputs.py Data/SCRPA_All_Crimes_Enhanced.csv -o Data/
 
-# 3. Generate documentation
+# 3. Generate cycle documentation (per-cycle, called by pipeline)
 python scripts/generate_documentation.py -o Documentation/
 
-# 4. Validate against reference
-python scripts/validate_parity.py Data/SCRPA_All_Crimes_Enhanced.csv reference.csv
-
-# Or run entire pipeline:
-python scripts/run_scrpa_pipeline.py input.csv --report-date 01/27/2026
+# 4. Regenerate canonical docs (run from SCRPA root when docs change)
+python scripts/generate_documentation.py -o Documentation/
 ```
 
 ## Validation Checks
 
-When validating Python output against M code reference:
-1. Row count must match
-2. All columns must be present
+When validating Python output:
+1. Row count must match expected (check SCRPA_Report_Summary.md Data Summary)
+2. Period sum (7-Day + 28-Day + YTD + Prior Year) must equal Total Incidents
 3. LagDays: Verify `(CycleStart_7Day - Incident_Date).days == LagDays`
-4. Period: Compare values row-by-row
-5. Backfill_7Day: All TRUE values must have IsLagDay=TRUE
+4. Backfill_7Day=TRUE rows must also have IsLagDay=TRUE
+5. All IsCurrent7DayCycle=TRUE rows appear in SCRPA_7Day_With_LagFlags.csv
 '''
 
 
@@ -947,17 +1012,21 @@ def get_report_summary_with_data(
     lag_median = summary_data.get('lag_median', '-') if summary_data else '-'
     lag_max = summary_data.get('lag_max', '-') if summary_data else '-'
 
-    rows_7day = []
-    if summary_data and summary_data.get('7day_by_crime_category'):
-        for row in summary_data['7day_by_crime_category']:
-            cat = row.get('Crime_Category', '')
-            lag = row.get('LagDayCount', 0)
-            tot = row.get('TotalCount', 0)
-            rows_7day.append(f"| {cat} | {lag} | {tot} |")
-    if not rows_7day:
-        rows_7day = ["| (no 7-day breakdown) | - | - |"]
-
-    table_7day = "\n".join(rows_7day)
+    # Crime Category Breakdown table (7-Day | 28-Day | YTD) - matches 26C01W04 style
+    category_rows = []
+    if summary_data and summary_data.get('category_breakdown'):
+        for row in summary_data['category_breakdown']:
+            cat = row.get('Category', row.get('Crime_Category', ''))
+            p7 = row.get('7-Day', row.get('period_7', '-'))
+            p28 = row.get('28-Day', row.get('period_28', '-'))
+            y = row.get('YTD', row.get('ytd', '-'))
+            category_rows.append(f"| {cat} | {p7} | {p28} | {y} |")
+    if not category_rows:
+        # Fallback: use 7day_by_crime_category for 7-Day column only
+        default_cats = ['Motor Vehicle Theft', 'Burglary Auto', 'Burglary - Comm & Res', 'Robbery', 'Sexual Offenses', 'Other']
+        for cat in default_cats:
+            category_rows.append(f"| {cat} | - | - | - |")
+    table_category = "\n".join(category_rows)
 
     return f'''# SCRPA Report Summary - {cycle_name}
 
@@ -983,11 +1052,11 @@ def get_report_summary_with_data(
 | Lag Incidents | {lag_count} |
 | Backfill 7-Day | {backfill_count} |
 
-## 7-Day by Crime Category
+## Crime Category Breakdown
 
-| Category | LagDayCount | TotalCount |
-|----------|-------------|------------|
-{table_7day}
+| Category | 7-Day | 28-Day | YTD |
+|----------|-------|--------|-----|
+{table_category}
 
 ## Lag Day Analysis
 
@@ -997,7 +1066,7 @@ def get_report_summary_with_data(
 
 ## Notes
 
-- Generated by: `scripts/run_scrpa_pipeline.py` (cycle documentation)
+- Generated by: `scripts/generate_documentation.py`
 - Data Source: SCRPA_All_Crimes_Enhanced.csv
 - Report Period: Bi-weekly ({start_bw} - {end_bw})
 '''
@@ -1056,13 +1125,19 @@ Generated by SCRPA pipeline for cycle {cycle_id}. Report due: {report_due}.
 """
 
 
-def write_chatgpt_briefing_prompt(output_dir: Path, cycle_info: Optional[Dict]) -> Path:
+def write_chatgpt_briefing_prompt(
+    output_dir: Path,
+    cycle_info: Optional[Dict],
+    seven_day_incidents: Optional[list] = None
+) -> Path:
     """
     Write CHATGPT_BRIEFING_PROMPT.md with cycle placeholders filled.
+    Optionally include 7-day incident narratives when seven_day_incidents is provided.
 
     Args:
         output_dir: Documentation folder path
         cycle_info: Cycle information dict (name, biweekly, start_7, end_7, start_bw, end_bw, report_due)
+        seven_day_incidents: Optional list of dicts with Crime_Category, Incident_Date, Narrative
 
     Returns:
         Path to created file
@@ -1092,7 +1167,149 @@ def write_chatgpt_briefing_prompt(output_dir: Path, cycle_info: Optional[Dict]) 
         date_range_7=date_range_7,
         date_range_bw=date_range_bw
     )
+    # Insert 7-day incident narratives section if provided
+    if seven_day_incidents:
+        narrative_section = "\n## 7-Day Incidents (this cycle)\n\nIncidents occurring in the 7-Day window with narrative for briefing use.\n\n"
+        for i, inc in enumerate(seven_day_incidents, 1):
+            cat = inc.get('Crime_Category', '')
+            inc_date = inc.get('Incident_Date', '')
+            narr = (inc.get('Narrative') or '').strip()[:2500]
+            narrative_section += f"### {i}. {cat} | Incident Date: {inc_date}\n\n{narr}\n\n"
+        # Insert after Reporting Parameters table, before Instructions
+        content = content.replace(
+            "## Instructions\n",
+            narrative_section + "## Instructions\n"
+        )
     md_path = output_dir / 'CHATGPT_BRIEFING_PROMPT.md'
+    with open(md_path, 'w', encoding='utf-8') as f:
+        f.write(content)
+    print(f"  Created: {md_path.name}")
+    return md_path
+
+
+CHATGPT_SESSION_PROMPT_TEMPLATE = """\
+SCRPA TACTICAL BRIEFING — CYCLE {cycle_id}
+
+ATTACHED FILES (2)
+  1. CHATGPT_BRIEFING_PROMPT.md
+  2. SCRPA_Report_Summary.md
+
+TASK
+Generate a standalone HTML tactical briefing for the 7-day window defined in
+CHATGPT_BRIEFING_PROMPT.md. This report is submitted to a police captain —
+keep it concise, professional, and operationally focused.
+
+BEFORE WRITING, EXTRACT:
+  From CHATGPT_BRIEFING_PROMPT.md:
+    → Cycle ({cycle_id}), Bi-Weekly ({biweekly}), Report Due ({report_due})
+    → 7-Day Window ({date_range_7})
+    → Bi-Weekly Period ({date_range_bw})
+    → All "7-Day Incidents" narratives (use these verbatim, redacted, for Section 6)
+
+  From SCRPA_Report_Summary.md:
+    → All Data Summary counts
+    → Category Breakdown table (7-Day | 28-Day | YTD)
+    → Lag Day Analysis (mean / median / max)
+
+CRIME CATEGORIES (only these five — never include "Other")
+  Motor Vehicle Theft | Burglary Auto | Burglary - Comm & Res | Robbery | Sexual Offenses
+
+HTML SECTIONS (generate in this exact order — no additional sections):
+
+1. HEADER
+   Title: "SCRPA Tactical Briefing"
+   Cycle: {cycle_id} | Bi-Weekly: {biweekly}
+   7-Day Window: {date_range_7} | Report Due: {report_due}
+
+2. EXECUTIVE SUMMARY
+   2-4 bullets describing only what DID occur in the 7-day window.
+   Do NOT list categories with zero 7-day incidents.
+   Note backfill activity only if Backfill 7-Day count is greater than zero.
+
+3. KEY METRICS TABLE (source: SCRPA_Report_Summary.md Data Summary)
+   Rows: Total Incidents | 7-Day | 28-Day | YTD | Prior Year |
+         Lag Incidents | Backfill 7-Day
+
+4. CATEGORY BREAKDOWN TABLE (source: SCRPA_Report_Summary.md)
+   Columns: Category | 7-Day | 28-Day | YTD
+   Include only the five official categories listed above.
+
+5. LAG DAY SUMMARY (source: SCRPA_Report_Summary.md Lag Day Analysis)
+   Mean / Median / Max lag days + one plain-language sentence explaining
+   what a lag incident means operationally.
+
+6. 7-DAY INCIDENT HIGHLIGHTS
+   Use only the narratives from the "7-Day Incidents" section of
+   CHATGPT_BRIEFING_PROMPT.md. Do not invent or add incidents.
+   For each: Category | Incident Date | Redacted synopsis | Tactical note
+   (1 sentence: what to monitor or follow up on).
+   If no narratives are listed, write: "No 7-day incident narratives available."
+
+7. FOOTER
+   Use this exact text:
+   Hackensack Police Department - Safe Streets Operations Control Center | Cycle: {biweekly} | Range: {date_range_bw} | Version: 1.0
+
+OUTPUT RULES (CRITICAL — follow exactly)
+  • Your entire response MUST be raw HTML only.
+  • Start your response with the characters: <!DOCTYPE html>
+  • End your response with the characters: </html>
+  • Do NOT wrap output in code fences (no ``` or ```html before or after).
+  • Do NOT add any commentary, explanation, or text outside the HTML tags.
+  • Use a <style> block with inline CSS: navy/white color scheme, clean tables,
+    readable typography, print-friendly layout (max-width 960px).
+  • Never display "Other" as a crime category.
+  • Never invent data — if a value is absent, show "—".
+
+Now generate the HTML tactical briefing.
+"""
+
+
+def write_chatgpt_session_prompt(
+    output_dir: Path,
+    cycle_info: Optional[Dict]
+) -> Path:
+    """
+    Write CHATGPT_SESSION_PROMPT.md — the per-cycle paste-and-go prompt for
+    ChatGPT. Paste this text into the ChatGPT chat each session (do not attach
+    it; attach the two data files listed inside it instead).
+
+    Args:
+        output_dir: Documentation folder path
+        cycle_info: Cycle information dict (name, biweekly, start_7, end_7,
+                    start_bw, end_bw, report_due)
+
+    Returns:
+        Path to created file
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    if not cycle_info:
+        cycle_id = "[CYCLE_ID]"
+        biweekly = "[BIWEEKLY]"
+        report_due = "[REPORT_DUE]"
+        date_range_7 = "[START] - [END]"
+        date_range_bw = "[START] - [END]"
+    else:
+        cycle_id = cycle_info.get('name', '[CYCLE_ID]')
+        biweekly = cycle_info.get('biweekly', 'N/A')
+        report_due = cycle_info.get('report_due', '[REPORT_DUE]')
+        start_7 = cycle_info.get('start_7', '[START]')
+        end_7 = cycle_info.get('end_7', '[END]')
+        date_range_7 = f"{start_7} - {end_7}"
+        start_bw = cycle_info.get('start_bw', start_7)
+        end_bw = cycle_info.get('end_bw', end_7)
+        date_range_bw = f"{start_bw} - {end_bw}"
+
+    content = CHATGPT_SESSION_PROMPT_TEMPLATE.format(
+        cycle_id=cycle_id,
+        biweekly=biweekly,
+        report_due=report_due,
+        date_range_7=date_range_7,
+        date_range_bw=date_range_bw,
+    )
+
+    md_path = output_dir / 'CHATGPT_SESSION_PROMPT.md'
     with open(md_path, 'w', encoding='utf-8') as f:
         f.write(content)
     print(f"  Created: {md_path.name}")

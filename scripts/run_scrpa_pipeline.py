@@ -26,6 +26,7 @@ Output Structure:
     ├── Documentation/   (cycle-specific only)
     │   ├── SCRPA_Report_Summary.md   (populated from pipeline data)
     │   ├── CHATGPT_BRIEFING_PROMPT.md
+    │   ├── CHATGPT_SESSION_PROMPT.md  (paste into ChatGPT; attach the 2 .md files)
     │   └── EMAIL_TEMPLATE.txt
     └── Reports/
         └── (HTML/PDF from SCRPA_ArcPy)
@@ -65,6 +66,7 @@ from prepare_7day_outputs import save_7day_outputs
 from generate_documentation import (
     write_report_summary_with_data,
     write_chatgpt_briefing_prompt,
+    write_chatgpt_session_prompt,
 )
 
 
@@ -569,23 +571,20 @@ def create_email_template(
     cycle_name = cycle_info['name']
     biweekly = cycle_info.get('biweekly')
 
-    # Determine date range for email
-    if biweekly and cycle_info.get('start_bw') and cycle_info.get('end_bw'):
-        date_range = f"{cycle_info['start_bw']} - {cycle_info['end_bw']}"
-        cycle_display = biweekly
-        body_cycle = f"Bi-Weekly Cycle {biweekly} ({cycle_name})"
-    else:
-        date_range = f"{cycle_info['start_7']} - {cycle_info['end_7']}"
-        cycle_display = cycle_name
-        body_cycle = f"Cycle {cycle_name}"
+    # Primary report period: 7-Day window (attached summary is 7-Day focused)
+    date_range_7 = f"{cycle_info['start_7']} - {cycle_info['end_7']}"
+    cycle_display = biweekly or cycle_name
+    body_cycle = f"Bi-Weekly Cycle {biweekly} ({cycle_name})" if biweekly else f"Cycle {cycle_name}"
+    date_range_bw = f"{cycle_info.get('start_bw', cycle_info['start_7'])} - {cycle_info.get('end_bw', cycle_info['end_7'])}" if cycle_info.get('start_bw') else date_range_7
 
-    email_template = f"""Subject: SCRPA Bi-Weekly Report - Cycle {cycle_display} | {date_range}
+    email_template = f"""Subject: SCRPA Bi-Weekly Report - Cycle {cycle_display} | 7-Day: {date_range_7}
 
 Sir,
 
-Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for {body_cycle}.
+Please find attached the SCRPA Combined Executive Summary for {body_cycle}.
 
-Report Period: {date_range}
+7-Day Report Period: {date_range_7}
+Bi-Weekly Period: {date_range_bw}
 Date Generated: {generation_date}
 
 The report includes:
@@ -811,29 +810,80 @@ def run_pipeline(
         period_counts = df_enhanced['Period'].value_counts() if 'Period' in df_enhanced.columns else {}
         lag_analysis = json_data.get('lag_analysis') or {}
         lag_dist = lag_analysis.get('lagdays_distribution') or {}
+        # Use 7-Day reporting lag count from JSON (not full-dataset IsLagDay) for report summary
+        counts = json_data.get('counts') or {}
+        lag_incidents_7day = int(counts.get('lag_incidents', 0)) if counts else 0
+        # Crime category breakdown by period (7-Day | 28-Day | YTD) for report summary (26C01W04 style)
+        category_breakdown = []
+        if 'Crime_Category' in df_enhanced.columns and 'Period' in df_enhanced.columns:
+            cross = df_enhanced.groupby(['Crime_Category', 'Period']).size().unstack(fill_value=0)
+            for p in ['7-Day', '28-Day', 'YTD']:
+                if p not in cross.columns:
+                    cross[p] = 0
+            cross = cross.reindex(columns=['7-Day', '28-Day', 'YTD'], fill_value=0)
+            order = ['Motor Vehicle Theft', 'Burglary Auto', 'Burglary - Comm & Res', 'Robbery', 'Sexual Offenses', 'Other']
+            for cat in order:
+                if cat in cross.index:
+                    category_breakdown.append({
+                        'Category': cat,
+                        '7-Day': int(cross.loc[cat, '7-Day']),
+                        '28-Day': int(cross.loc[cat, '28-Day']),
+                        'YTD': int(cross.loc[cat, 'YTD']),
+                    })
+            for cat in cross.index.difference(order):
+                if cat and str(cat).strip():
+                    category_breakdown.append({
+                        'Category': str(cat),
+                        '7-Day': int(cross.loc[cat, '7-Day']),
+                        '28-Day': int(cross.loc[cat, '28-Day']),
+                        'YTD': int(cross.loc[cat, 'YTD']),
+                    })
         summary_data = {
             'total': len(df_enhanced),
             'period_7': int(period_counts.get('7-Day', 0)),
             'period_28': int(period_counts.get('28-Day', 0)),
             'ytd': int(period_counts.get('YTD', 0)),
             'prior_year': int(period_counts.get('Prior Year', 0)),
-            'lag_count': int(df_enhanced['IsLagDay'].sum()) if 'IsLagDay' in df_enhanced.columns else 0,
+            'lag_count': lag_incidents_7day,
             'backfill_count': int(df_enhanced['Backfill_7Day'].sum()) if 'Backfill_7Day' in df_enhanced.columns else 0,
             'lag_mean': lag_dist.get('mean', '-'),
             'lag_median': lag_dist.get('median', '-'),
             'lag_max': lag_dist.get('max', '-'),
             '7day_by_crime_category': json_data.get('7day_by_crime_category') or [],
+            'category_breakdown': category_breakdown,
         }
         report_summary_path = write_report_summary_with_data(
             paths['documentation'], cycle_info, summary_data
         )
         results['files_created'].append(str(report_summary_path))
-        briefing_path = write_chatgpt_briefing_prompt(paths['documentation'], cycle_info)
+        # Build 7-day incident list with narrative for briefing prompt
+        df_7day = df_enhanced[df_enhanced['Period'] == '7-Day'] if 'Period' in df_enhanced.columns else pd.DataFrame()
+        seven_day_incidents = []
+        if not df_7day.empty and 'Narrative' in df_7day.columns:
+            for _, row in df_7day.iterrows():
+                seven_day_incidents.append({
+                    'Crime_Category': row.get('Crime_Category', ''),
+                    'Incident_Date': row.get('Incident_Date', ''),
+                    'Report_Date': str(row.get('Report_Date', '')),
+                    'Narrative': (row.get('Narrative') or '')[:2500],
+                })
+        briefing_path = write_chatgpt_briefing_prompt(paths['documentation'], cycle_info, seven_day_incidents=seven_day_incidents)
         results['files_created'].append(str(briefing_path))
+        session_prompt_path = write_chatgpt_session_prompt(paths['documentation'], cycle_info)
+        results['files_created'].append(str(session_prompt_path))
         generation_date = datetime.now().strftime('%m/%d/%Y')
         email_path = create_email_template(paths['documentation'], cycle_info, generation_date)
         results['files_created'].append(str(email_path))
         print(f"  Created: {email_path.name}")
+        # Copy PROJECT_SUMMARY.json and PROJECT_SUMMARY.yaml from canonical Documentation (26C01W04 style)
+        canonical_doc = BASE_DIR / 'Documentation'
+        for name in ('PROJECT_SUMMARY.json', 'PROJECT_SUMMARY.yaml'):
+            src = canonical_doc / name
+            if src.exists():
+                dest = paths['documentation'] / name
+                shutil.copy2(src, dest)
+                results['files_created'].append(str(dest))
+                print(f"  Copied: {name}")
 
         # =================================================================
         # STEP 6: Generate and copy HTML reports
