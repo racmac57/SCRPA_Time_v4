@@ -32,6 +32,8 @@ The SCRPA Reporting System automates the generation of bi-weekly crime analysis 
 2. Run `Run_SCRPA_Pipeline.bat` (in this repo) or `python scripts/run_scrpa_pipeline.py` with the CSV and report date.
 3. Outputs go to `Time_Based/YYYY/<cycle>_<date>/` with Data/, Documentation/ (cycle-only: `SCRPA_Report_Summary.md`, `CHATGPT_BRIEFING_PROMPT.md`, `CHATGPT_SESSION_PROMPT.md`, `HPD_REPORT_STYLE_BLOCK.md`, `EMAIL_TEMPLATE.txt`, plus copied `PROJECT_SUMMARY.*`), and Reports/ (HTML from SCRPA_ArcPy, patched as configured). Power BI template is copied from `08_Templates\Base_Report.pbix`.
 
+**ChatGPT tactical HTML → PDF:** Follow `CHATGPT_SESSION_PROMPT.md`: close **`.content`** after Lag Day, wrap **7-Day Incident Highlights** + **`.footer`** in **`.report-tail`**, use **`table.incident-highlights`**, and keep the footer inside any landscape wrapper (see `HPD_Report_Style_Prompt.md` / per-cycle style block).
+
 Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports/SCRPA/Documentation`; they are not written into each cycle folder.
 
 ## Quick Start (legacy 02_ETL_Scripts)

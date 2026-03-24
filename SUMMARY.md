@@ -78,7 +78,7 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
        ├─> scrpa_transform.py     → SCRPA_All_Crimes_Enhanced.csv
        ├─> prepare_7day_outputs   → SCRPA_7Day_With_LagFlags.csv, SCRPA_7Day_Summary.json
        ├─> Generate HTML          → Calls SCRPA_ArcPy to generate fresh HTML
-       ├─> Cycle Documentation    → SCRPA_Report_Summary.md (populated), HPD_REPORT_STYLE_BLOCK.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt; copies PROJECT_SUMMARY from canonical Documentation
+       ├─> Cycle Documentation    → SCRPA_Report_Summary.md (populated), HPD_REPORT_STYLE_BLOCK.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt; copies PROJECT_SUMMARY from canonical Documentation (session prompt encodes PDF-safe HTML: .report-tail, table.incident-highlights, footer inside same wrapper as highlights)
        └─> Copy Reports           → SCRPA_Combined_Executive_Summary.html (from SCRPA_ArcPy/06_Output, patched)
 
 3. Report Folder (cycle docs; canonical claude.md/data_dictionary stay in repo `Documentation/` only)

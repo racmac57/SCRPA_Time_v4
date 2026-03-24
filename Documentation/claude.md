@@ -9,7 +9,9 @@ The Strategic Crime Reduction Plan Analysis (SCRPA) system processes crime incid
 - Power BI imports pre-processed CSV files (no complex M code)
 - Bi-weekly reporting cycles with 7-day and 28-day analysis windows
 
-**HTML templates:** ArcPy combined HTML uses `08_Templates\Themes\HTML\scrpa_html.md`. ChatGPT tactical briefings use the per-cycle `HPD_REPORT_STYLE_BLOCK.md` (START–END excerpt) or the full `08_Templates\Report_Styles\html\HPD_Report_Style_Prompt.md`.
+**HTML:** ArcPy combined reports use `08_Templates/Themes/HTML/scrpa_html.md`. ChatGPT tactical briefings use per-cycle **`HPD_REPORT_STYLE_BLOCK.md`** (START–END excerpt) or the full **`08_Templates/Report_Styles/html/HPD_Report_Style_Prompt.md`** as attachment **#4**.
+
+**PDF / print (tactical HTML):** After Lag Day, **close** `<div class="content">`. Wrap **7-Day Incident Highlights** (`h2` + **`table.incident-highlights`**) and the **`.footer`** in `<div class="report-tail">` (optional **`report-tail-landscape`** for landscape). The **`.footer` must stay inside** that same `div` so browser PDF does not place the footer alone on the next portrait page. Full CSS (`@page`, `.report-tail`, `table.incident-highlights`) comes from the style file above.
 
 ## Critical Logic Rules
 
@@ -104,7 +106,7 @@ Backfill_7Day = (
 Each cycle, after the pipeline runs:
 1. Open a new chat in the SCRPA ChatGPT project
 2. Copy all text from `CHATGPT_SESSION_PROMPT.md` → paste into the chat (or attach it)
-3. Attach `CHATGPT_BRIEFING_PROMPT.md`, `SCRPA_Report_Summary.md`, and `HPD_REPORT_STYLE_BLOCK.md`
+3. Attach `CHATGPT_BRIEFING_PROMPT.md`, `SCRPA_Report_Summary.md`, and **one** style file: `HPD_REPORT_STYLE_BLOCK.md` (recommended) **or** full `HPD_Report_Style_Prompt.md` — whichever is attachment **#4**, per `CHATGPT_SESSION_PROMPT.md`
 4. Send — ChatGPT generates the HTML tactical briefing
 5. Save output as `[CYCLE]_scrpa_tac.html` in `Reports/`
 6. Run `Clean_ChatGPT_HTML.bat` on the file to remove any ``` artifacts

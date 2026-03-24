@@ -16,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.2] - 2026-03-24
+
+### Changed
+- **ChatGPT tactical HTML (PDF)** — Documentation describes **`.report-tail`** (optional **`.report-tail-landscape`**), **`table.incident-highlights`**, and keeping the **`.footer`** inside the same wrapper as incident highlights so print-to-PDF does not orphan the footer on a portrait page.
+- **Style attachment** — Session/workflow docs note attachment **#4** may be **`HPD_REPORT_STYLE_BLOCK.md`** *or* the full **`HPD_Report_Style_Prompt.md`** (same CSS source of truth).
+- **Canonical `Documentation/`** — Regenerated `PROJECT_SUMMARY`, `data_dictionary`, `claude.md`, and template `SCRPA_Report_Summary.md` to refresh timestamps and align narrative with `generate_documentation.py` outputs.
+- **`claude.md` (root + `Documentation/`)** — Combined ArcPy HTML theme path with ChatGPT tactical / PDF guidance.
+
+### Notes
+- Live template CSS and SCRPA closing-structure prose live under `08_Templates/Report_Styles/html/HPD_Report_Style_Prompt.md` (outside this repo if not linked); pipeline **`HPD_REPORT_STYLE_BLOCK.md`** copies the START–END excerpt on each run.
+
+---
+
 ## [2.0.1] - 2026-03-24
 
 ### Changed
