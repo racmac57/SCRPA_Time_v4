@@ -1,0 +1,249 @@
+SCRPA_7Day_With_LagFlags.csv
+   → Contains: All incidents where IsCurrent7DayCycle = TRUE. This includes:
+     a) Incidents with Period = "7-Day" (occurred in the 7-day window)
+     b) Incidents with Backfill_7Day = TRUE (occurred earlier but reported during
+        this window — these are NOT in the 7-Day Incident narratives above)
+   → Use only these columns for the appendix table; skip all others:
+     Case_Number, Incident_Date, Incident_Time, Crime_Category, ALL_INCIDENTS,
+     Clean_Address, Period, Backfill_7Day, IsLagDay, LagDays, Case_Status
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 1 — READ AND EXTRACT (before writing anything)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+From CHATGPT_BRIEFING_PROMPT.md:
+  • Cycle name, Bi-Weekly cycle, Report Due Date, 7-Day Window, Bi-Weekly Period
+  • All "7-Day Incidents" narratives (these are the incidents to feature)
+  • The footer text (exact string for Section 7)
+
+From SCRPA_Report_Summary.md:
+  • All values in the Data Summary table
+  • The full Category Breakdown table (7-Day | 28-Day | YTD)
+  • Lag Day Analysis values (mean, median, max)
+
+From the CSV:
+  • Count rows where Period = "7-Day" → should match "7-Day Period" in the summary
+  • Identify any rows where Backfill_7Day = TRUE → note these separately in Section 6
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 2 — RULES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CONFLICT RULE
+  If CSV counts differ from SCRPA_Report_Summary.md, treat the summary as
+  authoritative. Note any discrepancy in Section 7 (Data Notes). REDACTION RULE (applies to ALL input sources, including the attached files)
+  Remove from output: license plate numbers, VINs, insurance policy numbers,
+  NIC/NCIC identifiers, names of victims or officers, phone numbers. Keep: street name and block-level location (e.g., "Prospect Avenue, northbound
+  between Central and Beech"). BACKFILL RULE
+  Backfill incidents (Backfill_7Day = TRUE) were not captured in the 7-Day
+  Incident narratives. Include them in the Section 6 appendix table with a
+  "Backfill" label in the Period column. Do not invent a narrative for them. ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+STEP 3 — GENERATE HTML (sections in this order)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. HEADER BLOCK
+   • Title: "SCRPA Tactical Briefing"
+   • Cycle | Bi-Weekly Cycle | 7-Day Window | Report Due Date
+
+2. EXECUTIVE SUMMARY
+   • 2–4 bullet points: what happened in the 7-day window
+   • If any category had zero 7-day incidents, note that explicitly
+
+3. KEY METRICS TABLE (from SCRPA_Report_Summary.md)
+   • Rows: Total Incidents | 7-Day | 28-Day | YTD | Prior Year |
+     Lag Incidents | Backfill 7-Day
+
+4. CATEGORY BREAKDOWN TABLE (from SCRPA_Report_Summary.md)
+   • Columns: Category | 7-Day | 28-Day | YTD
+
+5. LAG DAY SUMMARY
+   • Mean / Median / Max lag days (from SCRPA_Report_Summary.md)
+   • One sentence explaining what lag means in plain language
+
+6. 7-DAY INCIDENT HIGHLIGHTS
+   • Use only narratives from CHATGPT_BRIEFING_PROMPT.md "7-Day Incidents" section
+   • For each incident: Category, Date, cleaned/redacted synopsis, tactical note
+     (1 sentence: what to monitor going forward)
+   • If there are no narratives, write: "No 7-day incident narratives available." 7. INCIDENT APPENDIX (from CSV, filtered as described in STEP 1)
+   • Sort by Incident_Date descending
+   • Label Backfill rows clearly in the Period column
+   • If a column has no data for a row, show "—"
+
+8. DATA NOTES (small footer text)
+   • Any count discrepancies between CSV and summary
+   • Any columns omitted due to missing data
+   • Redactions applied
+
+9. REPORT FOOTER
+   • Use the exact footer string from CHATGPT_BRIEFING_PROMPT.md Instructions
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+OUTPUT REQUIREMENTS (STRICT)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Output ONLY raw HTML. Do not wrap it in a code block, backticks, or any
+  Markdown. Your entire response should start with <!DOCTYPE html> and end
+  with </html>. • Include a <style> block with inline CSS: clean typography, readable tables,
+  subtle color accents (no dark backgrounds), print-friendly layout. • Do not invent data. If a value is absent from the inputs, show "—". • Do not include this instruction text in the output. Now generate the HTML tactical briefing. ```
+
+---
+
+**Key changes from your version:**
+- Role established first, no opening conversational line
+- Explicit CSV column list (prevents junk columns in the table)
+- Backfill Rule added (handles the 2nd row in the CSV that has no narrative)
+- Redaction Rule explicitly applies to the attached files, not just external data
+- Added Lag Day Summary as its own section (the data is in the summary file but your prompt didn't include it)
+- "No code block" requirement made explicit (`start with <!DOCTYPE html>`)
+- Numbered steps mirror how ChatGPT processes instructions sequentially
+
+You should also attach `SCRPA_7Day_With_LagFlags.csv` from the Data folder alongside the two Documentation files. ---
+
+**User**
+
+provide an updated version of the prompt and also provide 
+Instructions that I can add to the ChatGPT project so the AI knows what I want as an output
+(Set context and customize how ChatGPT responds in this project.) ---
+
+**Cursor**
+
+Here are both pieces, designed to work together — the Project Instructions set the standing context once, and the per-cycle prompt is shorter because it can reference the rules already established. ---
+
+## 1. ChatGPT Project Instructions
+
+Paste this into the project's **"Set context and customize how ChatGPT responds"** field:
+
+---
+
+```
+ROLE
+You are a crime analyst assistant for the Strategic Crime Reduction Plan Analysis
+(SCRPA) unit of the Hackensack Police Department (HPD), Office of the Special
+Services and Operational Command Center (SSOCC). You help generate official
+tactical briefing reports from bi-weekly crime data exports. SYSTEM OVERVIEW
+SCRPA uses a Python pipeline to process RMS (Records Management System) exports
+into structured data and documentation files. Each bi-weekly reporting cycle
+produces these files (which I will attach each session):
+
+  • CHATGPT_BRIEFING_PROMPT.md — Reporting Parameters (cycle name, dates, 7-day
+    window, bi-weekly period), incident narratives for the 7-day window, and the
+    required footer text. • SCRPA_Report_Summary.md — Authoritative count data: total incidents, period
+    breakdown (7-Day / 28-Day / YTD / Prior Year), crime category breakdown table,
+    and lag day analysis. • SCRPA_7Day_With_LagFlags.csv — All incidents where IsCurrent7DayCycle = TRUE. This includes: (a) incidents with Period = "7-Day" (occurred in the window),
+    and (b) incidents with Backfill_7Day = TRUE (occurred earlier, reported during
+    this window). These backfill incidents are NOT in the CHATGPT_BRIEFING_PROMPT
+    narratives. TERMINOLOGY
+  7-Day Period   — Incidents where the incident date falls within this cycle's
+                   7-day window (02/17 – 02/23 for the current cycle example). 28-Day Period  — Incidents in the current year within the last 28-day window. YTD            — Current-year incidents outside the 7-day and 28-day windows. Prior Year     — Incidents from the previous calendar year in the dataset. Lag Incident   — An incident where the report date is later than the incident
+                   date by more than expected (IsLagDay = TRUE in CSV). Backfill 7-Day — A lag incident reported during this 7-day window but with an
+                   incident date before the window started (Backfill_7Day = TRUE). LagDays        — Days between incident date and the cycle's 7-day start date
+                   (NOT the difference between report date and incident date). LAG COUNT SCOPE — IMPORTANT
+The pipeline reports lag counts in two different scopes, both correct:
+  • The pipeline run console shows "Lag incidents: N" = all IsLagDay=TRUE rows
+    across the entire dataset. • SCRPA_Report_Summary.md "Lag Incidents: N" = only lag rows within the
+    7-day window (IsCurrent7DayCycle = TRUE). Use the summary file value. STANDING AUTHORITY RULE
+If CSV-derived counts differ from SCRPA_Report_Summary.md, treat the summary
+file as authoritative. Note any discrepancy in the Data Notes section of output. STANDING REDACTION RULES (apply to all inputs, including attached files)
+Remove from all output:
+  • License plate numbers and VINs
+  • Insurance policy numbers and NIC/NCIC identifiers
+  • Victim names, witness names, reporting officer names
+  • Phone numbers, email addresses, account numbers
+Keep in output:
+  • Street name and block-level location (e.g., "Prospect Avenue, northbound
+    between Central and Beech")
+  • Crime category, offense type, incident date and time
+  • Dollar values of stolen/recovered property
+  • Case status and disposition
+
+STANDING OUTPUT FORMAT RULES
+  • Output ONLY raw HTML. Never wrap it in markdown code blocks, backticks,
+    or any commentary. Your response must start with <!DOCTYPE html> and end
+    with </html>. • Include a <style> block with inline CSS: clean sans-serif typography,
+    readable tables with alternating row shading, subtle HPD-appropriate color
+    accents (navy / light blue / white — no dark backgrounds), print-friendly
+    layout (max-width 960px, margins suitable for printing). • Never invent data. If a value is absent from the inputs, display "—". • Do not include these instructions or the session prompt in the HTML output. • The report footer must use the exact footer string from
+    CHATGPT_BRIEFING_PROMPT.md (format: "HPD | SSOCC | SCRPA Report | Cycle: XX"). PREFERRED CSV COLUMNS FOR APPENDIX TABLES
+When building incident tables from the CSV, use only these columns (skip all
+others — especially internal pipeline fields like _Period_Debug, Period_SortKey,
+Time_Validation, CompleteCalc, etc. ):
+  Case Number, Incident_Date, Incident_Time, Crime_Category, ALL_INCIDENTS,
+  Clean_Address, Period, Backfill_7Day, IsLagDay, LagDays, Case_Status
+```
+
+---
+
+## 2. Per-Cycle Prompt
+
+This is what you paste each session. Because the project instructions handle all the standing rules, this is concise:
+
+---
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+SCRPA TACTICAL BRIEFING — CYCLE 26C02W08
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+ATTACHED FILES (3)
+  1. CHATGPT_BRIEFING_PROMPT.md
+  2. SCRPA_Report_Summary.md
+  3. SCRPA_7Day_With_LagFlags.csv
+
+TASK
+Generate a standalone HTML tactical briefing for the 7-day window defined in
+CHATGPT_BRIEFING_PROMPT.md. Apply all standing rules from the project
+instructions (redaction, authority hierarchy, output format). BEFORE WRITING, EXTRACT:
+  From CHATGPT_BRIEFING_PROMPT.md:
+    → Cycle, Bi-Weekly cycle, Report Due Date, 7-Day Window, Bi-Weekly Period
+    → All "7-Day Incidents" narratives
+    → Footer text
+
+  From SCRPA_Report_Summary.md:
+    → All Data Summary counts
+    → Full Category Breakdown table (7-Day | 28-Day | YTD)
+    → Lag Day Analysis (mean / median / max)
+
+  From the CSV:
+    → Rows where Period = "7-Day" (verify count matches summary)
+    → Rows where Backfill_7Day = TRUE (include in appendix, labeled "Backfill")
+
+HTML SECTIONS (generate in this order):
+
+1. HEADER
+   Title: "SCRPA Tactical Briefing" | Cycle | Bi-Weekly | 7-Day Window | Due Date
+
+2. EXECUTIVE SUMMARY
+   2–4 bullets: what happened this 7-day window. If a category had zero incidents,
+   state that. Note any backfill activity. 3. KEY METRICS TABLE
+   Rows: Total Incidents | 7-Day | 28-Day | YTD | Prior Year |
+         Lag Incidents | Backfill 7-Day
+   Source: SCRPA_Report_Summary.md Data Summary
+
+4. CATEGORY BREAKDOWN TABLE
+   Columns: Category | 7-Day | 28-Day | YTD
+   Source: SCRPA_Report_Summary.md Category Breakdown
+
+5. LAG DAY SUMMARY
+   Mean / Median / Max lag days + one plain-language sentence explaining what
+   a lag incident means operationally. 6. 7-DAY INCIDENT HIGHLIGHTS
+   Use only narratives from CHATGPT_BRIEFING_PROMPT.md "7-Day Incidents". For each: Category | Date | Cleaned/redacted synopsis | Tactical note
+   (1 sentence: what to monitor going forward). If no narratives are present, write: "No 7-day incident narratives available." 7. INCIDENT APPENDIX (from CSV)
+   Preferred columns only (per project instructions). Sort by Incident_Date descending. Label Backfill_7Day = TRUE rows with "Backfill" in the Period column. 8. DATA NOTES
+   Any count discrepancies between CSV and summary file. Any redactions applied. Any omitted columns. 9. FOOTER
+   Exact footer string from CHATGPT_BRIEFING_PROMPT.md. Now generate the HTML tactical briefing. ```
+
+---
+
+**How to use them together:**
+
+| What | Where | When |
+|---|---|---|
+| Project Instructions | ChatGPT → Project → "Set context..." | Set once, never changes |
+| Per-Cycle Prompt | Paste at the start of each new chat in the project | Each bi-weekly cycle |
+| Attachments | Upload alongside the prompt | Each cycle (3 files from `Documentation/` + `Data/`) |
+
+The per-cycle prompt can also be saved as a file in `Documentation/` alongside `CHATGPT_BRIEFING_PROMPT.md` so the pipeline generates it automatically each cycle. Would you like me to add that to the pipeline? ---
+
+**User**
+
+is there a way to save the Per-Cycle Prompt as a text expander snippet where the cycle will be updated automatically? Or should the per-cycle prompt be added as part of CHATGPT_BRIEFING_PROMPT.md or as an additional file generated inside Documentation folder each time the .bat is run? ---
+
+**Cursor**
+
+The cleanest solution is **Option 3 — generate it as a separate file from the pipeline**.

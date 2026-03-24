@@ -140,7 +140,7 @@ Based on your images, you're adding visuals for:
 ### Save Template:
 1. Open Power BI Desktop
 2. File → Save As
-3. Location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+3. Location: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
 4. Overwrite existing file (or create backup first)
 
 ---

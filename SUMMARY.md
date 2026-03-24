@@ -77,14 +77,14 @@ The SCRPA Reporting System automates the bi-weekly generation of crime analysis 
        │
        ├─> scrpa_transform.py     → SCRPA_All_Crimes_Enhanced.csv
        ├─> prepare_7day_outputs   → SCRPA_7Day_With_LagFlags.csv, SCRPA_7Day_Summary.json
-       ├─> Generate HTML (NEW)    → Calls SCRPA_ArcPy to generate fresh HTML
-       ├─> Cycle Documentation    → SCRPA_Report_Summary.md (populated), CHATGPT_BRIEFING_PROMPT.md, EMAIL_TEMPLATE.txt
+       ├─> Generate HTML          → Calls SCRPA_ArcPy to generate fresh HTML
+       ├─> Cycle Documentation    → SCRPA_Report_Summary.md (populated), HPD_REPORT_STYLE_BLOCK.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt; copies PROJECT_SUMMARY from canonical Documentation
        └─> Copy Reports           → SCRPA_Combined_Executive_Summary.html (from SCRPA_ArcPy/06_Output, patched)
 
-3. Report Folder (cycle-only docs; no data_dictionary/PROJECT_SUMMARY/claude.md per cycle)
+3. Report Folder (cycle docs; canonical claude.md/data_dictionary stay in repo `Documentation/` only)
    └─> 16_Reports\SCRPA\Time_Based\YYYY\<cycle>_<date>\
        ├─> Data/          (Enhanced CSV, 7-day CSV, JSON summary)
-       ├─> Documentation/ (SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, EMAIL_TEMPLATE.txt)
+       ├─> Documentation/ (report summary, ChatGPT prompts, HPD style block, email template, PROJECT_SUMMARY copy)
        └─> Reports/       (HTML/PDF from ArcPy)
 ```
 
@@ -118,7 +118,7 @@ Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports
 
 ### Input Files
 - **Excel Exports**: `05_EXPORTS\_RMS\scrpa\*.xlsx`
-- **Templates**: `15_Templates\Base_Report.pbix`
+- **Templates**: `08_Templates\Base_Report.pbix`
 
 ### Processing Locations
 - **ETL Scripts**: `02_ETL_Scripts\SCRPA\`
@@ -227,7 +227,7 @@ Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports
 ### Updates
 - **Python pipeline**: `16_Reports\SCRPA\scripts\run_scrpa_pipeline.py` (primary); batch: `Run_SCRPA_Pipeline.bat`
 - **Legacy scripts**: `02_ETL_Scripts\SCRPA\`
-- **Templates**: Located in `15_Templates\`
+- **Templates**: Located in `08_Templates\`
 - **Canonical documentation**: `16_Reports\SCRPA\Documentation\` (data_dictionary, PROJECT_SUMMARY, claude.md)
 - **Project docs**: `16_Reports\SCRPA\doc\`
 

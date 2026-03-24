@@ -9,6 +9,8 @@ The Strategic Crime Reduction Plan Analysis (SCRPA) system processes crime incid
 - Power BI imports pre-processed CSV files (no complex M code)
 - Bi-weekly reporting cycles with 7-day and 28-day analysis windows
 
+**HTML templates:** ArcPy combined HTML uses `08_Templates\Themes\HTML\scrpa_html.md`. ChatGPT tactical briefings use the per-cycle `HPD_REPORT_STYLE_BLOCK.md` (START–END excerpt) or the full `08_Templates\Report_Styles\html\HPD_Report_Style_Prompt.md`.
+
 ## Critical Logic Rules
 
 ### 1. Cycle Resolution (3-Tier Lookup)
@@ -92,6 +94,7 @@ Backfill_7Day = (
 | `CHATGPT_BRIEFING_PROMPT.md` | **Attach** to ChatGPT — cycle params + 7-day narratives |
 | `CHATGPT_SESSION_PROMPT.md` | **Paste** into ChatGPT chat — the per-cycle prompt |
 | `SCRPA_Report_Summary.md` | **Attach** to ChatGPT — authoritative counts + category table |
+| `HPD_REPORT_STYLE_BLOCK.md` | **Attach** — START–END excerpt from `HPD_Report_Style_Prompt.md` |
 
 > Note: `SCRPA_7Day_Lag_Only.csv` and `SCRPA_7Day_Summary.yaml` are no longer generated.
 > Backfill rows are included in `SCRPA_7Day_With_LagFlags.csv` (Backfill_7Day=TRUE).
@@ -100,8 +103,8 @@ Backfill_7Day = (
 
 Each cycle, after the pipeline runs:
 1. Open a new chat in the SCRPA ChatGPT project
-2. Copy all text from `CHATGPT_SESSION_PROMPT.md` → paste into the chat
-3. Attach `CHATGPT_BRIEFING_PROMPT.md` and `SCRPA_Report_Summary.md`
+2. Copy all text from `CHATGPT_SESSION_PROMPT.md` → paste into the chat (or attach it)
+3. Attach `CHATGPT_BRIEFING_PROMPT.md`, `SCRPA_Report_Summary.md`, and `HPD_REPORT_STYLE_BLOCK.md`
 4. Send — ChatGPT generates the HTML tactical briefing
 5. Save output as `[CYCLE]_scrpa_tac.html` in `Reports/`
 6. Run `Clean_ChatGPT_HTML.bat` on the file to remove any ``` artifacts

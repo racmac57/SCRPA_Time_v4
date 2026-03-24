@@ -1,0 +1,36 @@
+**Complete Context** - All file paths, system architecture, and recent fixes documented
+3. **Specific Investigation Tasks** - 3 phases with actionable steps
+4. **Test Data Reference** - Expected results and the two test cases that expose the bug
+5. **Two Fix Approaches** - 
+   - **Approach A (Recommended):** Make SCRPA_ArcPy read from Python CSV (single source of truth)
+   - **Approach B:** Sync the logic between both systems
+6. **Validation Requirements** - Script to ensure future consistency
+7. **Success Criteria** - Clear checklist of what "fixed" looks like
+8. **Knowledge Transfer** - Explains the correct Python pipeline logic that SCRPA_ArcPy should match
+9. **Troubleshooting Hints** - Common issues to check if stuck
+
+## Next Steps:
+
+You can now:
+1. Copy this file's contents and paste into Claude Code
+2. Claude Code will investigate why case 26-012829 is missing from the HTML
+3. It will implement the fix (likely making SCRPA_ArcPy read from your CSV)
+4. It will add validation to prevent future mismatches
+5. It will update all documentation
+
+The prompt is self-contained with all paths, evidence, and context Claude Code needs to work independently. ---
+
+**User**
+
+I'm preparing to export this chat. Please generate a descriptive filename that summarizes the main topic or task of this conversation. Requirements:
+• 4-8 words
+• Title Case (capitalize major words)
+• Replace spaces with underscores
+• Include .md extension
+• No dates or special characters
+
+Output only the filename, with the suffix .md and nothing else. ---
+
+**Cursor**
+
+SCRPA_Pipeline_Debugging_HTML_Data_Mismatch.md

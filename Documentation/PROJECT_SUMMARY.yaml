@@ -1,7 +1,7 @@
 metadata:
   title: SCRPA Crime Reporting System - Project Summary
   version: 2.0.0 (Python-First)
-  last_updated: '2026-02-24T17:03:27.471911'
+  last_updated: '2026-03-24T11:44:13.787141'
   description: Python-first crime data transformation system for bi-weekly SCRPA reporting
 architecture:
   overview: Python-first processing where all data transformations occur in Python
@@ -13,11 +13,11 @@ architecture:
     etc.)
   - 3. prepare_7day_outputs.py -> SCRPA_7Day_With_LagFlags.csv + SCRPA_7Day_Summary.json
   - 4. generate_documentation.py -> SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md,
-    CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt
+    CHATGPT_SESSION_PROMPT.md, HPD_REPORT_STYLE_BLOCK.md, EMAIL_TEMPLATE.txt
   - 5. SCRPA_ArcPy HTML generator -> SCRPA_Combined_Executive_Summary.html
   - 6. Power BI (All_Crimes_Simple.m) -> Simple CSV import, no transformations
-  - '7. [Manual] ChatGPT: paste CHATGPT_SESSION_PROMPT.md, attach 2 .md files -> 7Day
-    tactical briefing HTML'
+  - '7. [Manual] ChatGPT: paste CHATGPT_SESSION_PROMPT.md, attach briefing + summary
+    + HPD_REPORT_STYLE_BLOCK.md -> 7Day tactical briefing HTML'
   - 8. [Optional] clean_chatgpt_html.py -> strip ChatGPT code-fence artifacts from
     HTML output
   diagram: "\nRMS Export (.xlsx)\n    |\n    v\n[scrpa_transform.py] -----> SCRPA_All_Crimes_Enhanced.csv\n\
@@ -25,15 +25,17 @@ architecture:
     \  |                         SCRPA_7Day_Summary.json\n    v\n[generate_documentation.py]\
     \ -> SCRPA_Report_Summary.md\n    |                          CHATGPT_BRIEFING_PROMPT.md\n\
     \    |                          CHATGPT_SESSION_PROMPT.md  <- paste into ChatGPT\n\
-    \    |                          EMAIL_TEMPLATE.txt\n    |                    \
-    \      PROJECT_SUMMARY.yaml/json\n    v\n[SCRPA_ArcPy HTML generator] -> SCRPA_Combined_Executive_Summary.html\n\
-    \    |\n    v\n[Power BI - All_Crimes_Simple.m] --> Import CSVs (no transforms)\n\
-    \nChatGPT 7-Day Briefing workflow (manual, each cycle):\n  1. Paste CHATGPT_SESSION_PROMPT.md\
-    \ into ChatGPT project chat\n  2. Attach CHATGPT_BRIEFING_PROMPT.md + SCRPA_Report_Summary.md\n\
-    \  3. Save HTML output to Reports/\n  4. Run Clean_ChatGPT_HTML.bat to strip any\
-    \ code-fence artifacts\n\nCanonical docs (Documentation/ folder):\n  data_dictionary.yaml/json,\
-    \ PROJECT_SUMMARY.yaml/json, claude.md\n  -> Regenerate with: python scripts/generate_documentation.py\
-    \ -o Documentation/\n"
+    \    |                          HPD_REPORT_STYLE_BLOCK.md  <- attach (START–END\
+    \ CSS)\n    |                          EMAIL_TEMPLATE.txt\n    |             \
+    \             PROJECT_SUMMARY.yaml/json\n    v\n[SCRPA_ArcPy HTML generator] ->\
+    \ SCRPA_Combined_Executive_Summary.html\n    |\n    v\n[Power BI - All_Crimes_Simple.m]\
+    \ --> Import CSVs (no transforms)\n\nChatGPT 7-Day Briefing workflow (manual,\
+    \ each cycle):\n  1. Paste CHATGPT_SESSION_PROMPT.md into ChatGPT project chat\
+    \ (or attach it)\n  2. Attach CHATGPT_BRIEFING_PROMPT.md + SCRPA_Report_Summary.md\
+    \ + HPD_REPORT_STYLE_BLOCK.md\n  3. Save HTML output to Reports/\n  4. Run Clean_ChatGPT_HTML.bat\
+    \ to strip any code-fence artifacts\n\nCanonical docs (Documentation/ folder):\n\
+    \  data_dictionary.yaml/json, PROJECT_SUMMARY.yaml/json, claude.md\n  -> Regenerate\
+    \ with: python scripts/generate_documentation.py -o Documentation/\n"
 data_sources:
   rms_export:
     description: Raw crime incident export from Records Management System
@@ -98,6 +100,7 @@ scripts:
     - SCRPA_Report_Summary.md (per-cycle, populated with real counts)
     - CHATGPT_BRIEFING_PROMPT.md (per-cycle, with 7-day narratives)
     - CHATGPT_SESSION_PROMPT.md (per-cycle, paste-and-go ChatGPT prompt)
+    - HPD_REPORT_STYLE_BLOCK.md (per-cycle, START–END excerpt for ChatGPT)
     - EMAIL_TEMPLATE.txt (per-cycle, ready-to-send email)
     dependencies:
     - pyyaml
@@ -113,8 +116,8 @@ scripts:
     - 2. Create output directory; copy Power BI template
     - 3. Run scrpa_transform -> SCRPA_All_Crimes_Enhanced.csv
     - 4. Run prepare_7day_outputs -> SCRPA_7Day_With_LagFlags.csv + SCRPA_7Day_Summary.json
-    - 5. Write cycle docs (SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md,
-      EMAIL_TEMPLATE.txt)
+    - 5. Write cycle docs (SCRPA_Report_Summary.md, HPD_REPORT_STYLE_BLOCK.md, CHATGPT_BRIEFING_PROMPT.md,
+      CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt)
     - 6. Generate HTML report via SCRPA_ArcPy; copy to Reports/
     entry_point: Run_SCRPA_Pipeline.bat (auto-selects latest RMS .xlsx)
   clean_chatgpt_html.py:
@@ -151,9 +154,10 @@ output_structure:
     \ + period counts\n├── Documentation/\n│   ├── SCRPA_Report_Summary.md       \
     \     # Cycle summary with real counts\n│   ├── CHATGPT_BRIEFING_PROMPT.md   \
     \      # Attach to ChatGPT (narratives + params)\n│   ├── CHATGPT_SESSION_PROMPT.md\
-    \          # Paste into ChatGPT chat (the prompt)\n│   ├── EMAIL_TEMPLATE.txt\
-    \                 # Ready-to-send email\n│   ├── PROJECT_SUMMARY.json        \
-    \       # Project overview (canonical copy)\n│   └── PROJECT_SUMMARY.yaml\n└──\
+    \          # Paste into ChatGPT chat (the prompt)\n│   ├── HPD_REPORT_STYLE_BLOCK.md\
+    \          # Attach — START–END HPD CSS/skeleton\n│   ├── EMAIL_TEMPLATE.txt \
+    \                # Ready-to-send email\n│   ├── PROJECT_SUMMARY.json         \
+    \      # Project overview (canonical copy)\n│   └── PROJECT_SUMMARY.yaml\n└──\
     \ Reports/\n    ├── SCRPA_Combined_Executive_Summary.html  # Auto-generated by\
     \ ArcPy\n    ├── SCRPA_Combined_Executive_Summary.html.bak\n    └── [CYCLE]_scrpa_tac.html\
     \             # ChatGPT 7-day tactical briefing\n\nCanonical docs (16_Reports/SCRPA/Documentation/):\n\

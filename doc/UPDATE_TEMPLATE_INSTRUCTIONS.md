@@ -17,7 +17,7 @@
 
 ### Step 1: Open the Template
 
-1. Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\`
+1. Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\`
 2. Open: `Base_Report.pbix`
 
 ---
@@ -177,7 +177,7 @@ in
 
 4. **Save the template:**
    - Go to **File** > **Save As**
-   - Save back to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+   - Save back to: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
    - ⚠️ **Important:** Overwrite the existing template
 
 ---
@@ -195,7 +195,7 @@ in
 
 4. Copy the updated template:
    ```
-   From: 15_Templates\Base_Report.pbix
+   From: 08_Templates\Base_Report.pbix
    To: Time_Based\2026\26C02W06_26_02_10\26C02W06_26_02_10.pbix
    ```
 

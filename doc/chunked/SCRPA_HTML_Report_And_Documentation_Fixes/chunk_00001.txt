@@ -1,0 +1,247 @@
+---
+
+A short note explaining this is in **`doc/WHY_HTML_EXECUTIVE_SUMMARY_IS_WRONG.md`**. If you want, next step can be: locate the 7-Day logic in SCRPA_ArcPy and outline exact code changes so the HTML is generated correctly. ---
+
+**User**
+
+what is the final fix for issue, no need to document please fix  when complte update doc
+
+---
+
+**Cursor**
+
+
+Implementing the fix: locating SCRPA_ArcPy and switching it to use the pipeline CSV for the 7-Day section. Inspecting data loading and where the 7-Day filter is applied:
+
+
+
+Searching for where results['7-Day'] is built and which dataframe is used:
+
+
+
+Checking the cycle calendar format and REPORT_DATE matching:
+
+
+
+Using the correct cycle calendar in ArcPy: it currently falls back to the 20250414 calendar. Updating ArcPy to use the 20260106 calendar and robust date matching. Fixing the exact-match logic: the CSV uses "02/10/2026" format. Making the 7-Day filter inclusive of the end date (use end-of-day):
+
+
+
+Removing the redundant inner import of `timedelta`. Summary of what was fixed:
+
+---
+
+## Fix applied
+
+### 1. **SCRPA_ArcPy** (`02_ETL_Scripts/SCRPA_ArcPy/05_orchestrator/RMS_Statistical_Export_FINAL_COMPLETE.py`)
+
+- **Cycle calendar**  
+  ArcPy now uses the same calendar as the pipeline: **`7Day_28Day_Cycle_20260106.csv`** (with 2026 data). The old fallback was `7Day_28Day_Cycle_20250414.csv`, so for report date 02/10/2026 the cycle wasn’t found and 7-Day fell back to “rolling 7 days” (02/04–02/10), which dropped the 02/03 incident. - **Cycle lookup**  
+  `get_cycle_info()` now:
+  - Tries exact match on `Report_Due_Date` (MM/DD/YYYY). - Then normalizes dates and compares. - Then treats report date as “7_Day_End” or “7_Day_End + 1”. - Then checks if report date is inside the 7-day range. - **7-Day and 28-Day date range**  
+  The end of the 7-Day (and 28-Day) window is now **end of day** (23:59:59.999) so incidents on the last day (e.g. 02/09) are included. ### 2. **Doc** (`doc/WHY_HTML_EXECUTIVE_SUMMARY_IS_WRONG.md`)
+
+- Added a **“Fix applied (2026-02-10)”** section describing the calendar, lookup, and inclusive end date changes. ---
+
+## What you should do
+
+1. **Regenerate the HTML**  
+   Either:
+   - Run the full pipeline again, or  
+   - Run ArcPy with `REPORT_DATE=02/10/2026` and copy the new `SCRPA_Combined_Executive_Summary_*.html` from `06_Output` into  
+     `Time_Based/2026/26C02W06_26_02_10/Reports/SCRPA_Combined_Executive_Summary.html`. 2. **Check**  
+   The 7-Day section should show **2 incidents** (Burglary Auto and Burglary - Comm & Res). ---
+
+**User**
+
+@Time_Based/2026/26C02W06_26_02_10/Reports/SCRPA_Combined_Executive_Summary.html this is from after the update
+
+---
+
+**Cursor**
+
+
+Checking the post-update HTML to verify the 7-Day section shows 2 incidents. The post-update HTML matches the intended 7-Day numbers and content. ---
+
+## Verification: 7-Day section is correct
+
+| Check | Before fix | After update |
+|--------|------------|--------------|
+| **7-Day incident count** | 1 | **2** ✓ |
+| **Summary text** | "1 incidents across 1 zones" | **"2 incidents across 2 zones"** ✓ |
+| **Incident types** | Burglary - Commercial only | **Burglary - Commercial (1) + Burglary - Auto (1)** ✓ |
+| **Zones** | Zone 7 only | **Zones 6 and 7** ✓ |
+| **Key insights** | "1 incidents recorded" | **"2 incidents recorded"** ✓ |
+
+Generated timestamp in the file: **2026-02-10 14:01:42**, so this is from a run after the SCRPA_ArcPy changes. The 7-Day section now aligns with the pipeline CSV (2 incidents: Burglary Auto and Burglary - Comm & Res). The fix is working as intended. ---
+
+**User**
+
+@Time_Based/2026/26C02W06_26_02_10/Documentation/EMAIL_TEMPLATE.txt these outputs have not been fix. The email template has the incorrect date fram and I am not sure on the report name
+@Time_Based/2026/26C02W06_26_02_10/Documentation/SCRPA_Report_Summary.md is showing the wrong incident count
+@Time_Based/2026/26C02W06_26_02_10/Documentation/CHATGPT_BRIEFING_PROMPT.md is missing the data for the incidents that happened during the 7-day cycle namly the narrative 
+
+---
+
+**Cursor**
+
+
+Fixing the three documentation outputs. Reading the files and locating the correct source data. Checking how these docs are generated and fetching correct counts and 7-day incident details from the data. Checking where the email template and report summary get their data and fetching 7-day narratives from the CSV:
+
+
+
+Implementing fixes: updating the pipeline and doc generators, then fixing the three cycle documentation files. Implementing code and doc fixes. ---
+
+**User**
+
+make outputs like from the report 010/28/26C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\EMAIL_TEMPLATE.txt
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\SCRPA_Report_Summary.md
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation\PROJECT_SUMMARY.json
+
+---
+
+**Cursor**
+
+
+Reading the 26C01W04 reference files to match their format. Checking how the pipeline generates documentation and whether it creates PROJECT_SUMMARY:
+
+
+
+Updating the report summary to the 26C01W04 structure (Crime Category Breakdown: 7-Day | 28-Day | YTD), adding PROJECT_SUMMARY to the cycle docs, and creating the three outputs for 26C02W06. Writing the three cycle files for 26C02W06 to match the reference. Summary of what was done so the 26C02W06 outputs match the 01/28 (26C01W04) style:
+
+---
+
+## 1. **EMAIL_TEMPLATE.txt** (26C02W06)
+
+- **Subject:** `SCRPA Bi-Weekly Report - Cycle 26BW03 | 01/27/2026 - 02/09/2026`  
+  (same pattern as 26C01W04: cycle + bi-weekly range)
+- **Report Period:** `01/27/2026 - 02/09/2026` (bi-weekly period)
+- **Date Generated:** `02/10/2026`
+- Body wording matches the 26C01W04 template. ---
+
+## 2. **SCRPA_Report_Summary.md** (26C02W06)
+
+- **Cycle Information** – same table as 26C01W04. - **Data Summary** – real counts: Total 252, 7-Day 2, 28-Day 11, YTD 7, Prior Year 232, **Lag Incidents 2**, Backfill 1. - **Crime Category Breakdown** – table by category with **7-Day | 28-Day | YTD** (replacing the old LagDayCount/TotalCount table):
+
+  | Category              | 7-Day | 28-Day | YTD |
+  |-----------------------|-------|--------|-----|
+  | Motor Vehicle Theft   | 0     | 3      | 1   |
+  | Burglary Auto         | 1     | 2      | 2   |
+  | Burglary - Comm & Res | 1     | 2      | 3   |
+  | Robbery               | 0     | 1      | 0   |
+  | Sexual Offenses       | 0     | 3      | 1   |
+  | Other                 | 0     | 0      | 0   |
+
+- **Lag Day Analysis** – Mean 3, Median 3, Max 5. - **Notes** – `Generated by: scripts/generate_documentation.py` and bi-weekly report period, as in 26C01W04. ---
+
+## 3. **PROJECT_SUMMARY.json** (and .yaml) in 26C02W06
+
+- **PROJECT_SUMMARY.json** and **PROJECT_SUMMARY.yaml** were copied from the canonical `16_Reports/SCRPA/Documentation/` into  
+  `Time_Based/2026/26C02W06_26_02_10/Documentation/`, so the cycle folder matches 26C01W04. ---
+
+## 4. **Pipeline / generator changes** (for future runs)
+
+- **`generate_documentation.py`**  
+  - Report summary now uses a **Crime Category Breakdown** table (Category | 7-Day | 28-Day | YTD) when `summary_data['category_breakdown']` is provided. - Notes line set to: `Generated by: scripts/generate_documentation.py`. - **`run_scrpa_pipeline.py`**  
+  - Builds **`category_breakdown`** from the enhanced CSV (counts by `Crime_Category` and Period) and passes it into the report summary. - After writing the email template, **copies** `PROJECT_SUMMARY.json` and `PROJECT_SUMMARY.yaml` from `BASE_DIR / 'Documentation'` into the cycle’s `Documentation` folder. Future pipeline runs will produce EMAIL_TEMPLATE, SCRPA_Report_Summary, and PROJECT_SUMMARY in the same format as the 01/28 report. ---
+
+**User**
+
+the new out put does not have the email template or the ChatGPT prompt
+
+---
+
+**Cursor**
+
+
+Checking the cycle Documentation folder and adding the missing EMAIL_TEMPLATE and CHATGPT_BRIEFING_PROMPT. Creating the missing EMAIL_TEMPLATE.txt and CHATGPT_BRIEFING_PROMPT.md (including 7-day incident narratives). Creating EMAIL_TEMPLATE.txt and CHATGPT_BRIEFING_PROMPT.md (including 7-day narratives) in the cycle Documentation folder. Creating CHATGPT_BRIEFING_PROMPT.md with 7-day incident narratives. Checking whether the pipeline passes `seven_day_incidents` into the briefing prompt writer and whether the writer uses it:
+
+
+
+Adding support for `seven_day_incidents` in the briefing prompt writer so future pipeline runs include the narrative section. Summary of what’s in place:
+
+---
+
+## 1. **Files created for 26C02W06**
+
+Both files were written under:
+
+`Time_Based/2026/26C02W06_26_02_10/Documentation/`
+
+- **EMAIL_TEMPLATE.txt**  
+  Same format as 26C01W04: subject “Cycle 26BW03 | 01/27/2026 - 02/09/2026”, report period 01/27–02/09, date generated 02/10/2026. - **CHATGPT_BRIEFING_PROMPT.md**  
+  Includes:
+  - Reporting parameters (cycle, bi-weekly, report due, 7-day and bi-weekly ranges)
+  - **“7-Day Incidents (this cycle)”** with full narrative for:
+    1. Burglary Auto (02/03/2026) – PSE&G van burglary
+    2. Burglary - Comm & Res (02/05/2026) – 25 Prospect burglary
+  - Instructions and footer
+
+If that folder path doesn’t exist on your machine (e.g. different drive or OneDrive path), create `Documentation` under your cycle folder and I can give you the exact text to paste into new `EMAIL_TEMPLATE.txt` and `CHATGPT_BRIEFING_PROMPT.md` files. ---
+
+## 2. **Pipeline change for future runs**
+
+In **`scripts/generate_documentation.py`**, `write_chatgpt_briefing_prompt` now:
+
+- Accepts an optional **`seven_day_incidents`** argument (list of dicts with `Crime_Category`, `Incident_Date`, `Narrative`). - When it’s provided, inserts a **“7-Day Incidents (this cycle)”** section (with narratives) before the Instructions section. The pipeline was already passing `seven_day_incidents`; the writer now uses it, so future runs will produce the ChatGPT prompt with 7-day narratives and will continue to create the email template in step 5. ---
+
+## 3. **If your cycle folder is different**
+
+If your “new output” lives in a different folder (e.g. another cycle name or path):
+
+1. Run the full pipeline for that cycle so it runs step 5 and creates `EMAIL_TEMPLATE.txt` and `CHATGPT_BRIEFING_PROMPT.md`, or  
+2. Tell me the exact path to your cycle’s `Documentation` folder and I’ll target that path for the same two files (and, if you want, a one-line check you can run to confirm they’re there). ---
+
+**User**
+
+i ran the .bat and C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C02W06_26_02_10 is the updated outout
+
+---
+
+**Cursor**
+
+
+Checking the cycle output folder after your .bat run:
+
+
+
+Confirming the pipeline run produced the full set. Verifying the key docs:
+
+
+
+The run from the .bat did update that folder. Here’s what’s in **26C02W06_26_02_10**:
+
+---
+
+## Cycle output: `26C02W06_26_02_10`
+
+**Data/**  
+- SCRPA_All_Crimes_Enhanced.csv  
+- SCRPA_7Day_With_LagFlags.csv  
+- SCRPA_7Day_Summary.json  
+
+**Documentation/**  
+- **EMAIL_TEMPLATE.txt** – Subject: Cycle 26BW03 \| 7-Day: 02/03/2026 - 02/09/2026; body has 7-Day report period, bi-weekly period, and date generated 02/10/2026. - **CHATGPT_BRIEFING_PROMPT.md** – Reporting parameters plus **7-Day Incidents (this cycle)** with full narratives for both incidents (Burglary Auto 02/03, Burglary - Comm & Res 02/05). - SCRPA_Report_Summary.md  
+- PROJECT_SUMMARY.json  
+- PROJECT_SUMMARY.yaml  
+
+**Reports/**  
+- SCRPA_Combined_Executive_Summary.html  
+
+So the batch run is producing the email template and the ChatGPT prompt (with 7-day narratives) in that updated output folder. ---
+
+**User**
+
+I'm preparing to export this chat. Please generate a descriptive filename that summarizes the main topic or task of this conversation. Requirements:
+• 4-8 words
+• Title Case (capitalize major words)
+• Replace spaces with underscores
+• Include .md extension
+• No dates or special characters
+
+Output only the filename, with the suffix .md and nothing else. ---
+
+**Cursor**
+
+
+SCRPA_HTML_Report_And_Documentation_Fixes.md

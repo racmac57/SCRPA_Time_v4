@@ -35,7 +35,7 @@ Since your current report `.pbix` file already contains all the updated M code f
 
 ### 4. Save As New Template
 - **File** → **Save As**
-- Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\`
+- Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\`
 - **File name**: `Base_Report.pbix`
 - Click **Save**
 - **Confirm overwrite** if prompted (backup old template first if needed)
@@ -97,7 +97,7 @@ When you run `Run_SCRPA_Report_Folder.bat`:
 - [ ] Period values are calculating correctly
 - [ ] Visuals display correctly
 - [ ] Old template backed up (if desired)
-- [ ] Save As to `15_Templates\Base_Report.pbix`
+- [ ] Save As to `08_Templates\Base_Report.pbix`
 - [ ] Test template with next report generation
 
 ---
@@ -105,7 +105,7 @@ When you run `Run_SCRPA_Report_Folder.bat`:
 ## Alternative: Update Template Manually
 
 If you prefer to update the existing template manually:
-1. Open `15_Templates\Base_Report.pbix`
+1. Open `08_Templates\Base_Report.pbix`
 2. Copy M code from current report to template
 3. Update each query one by one
 4. Save template
@@ -116,4 +116,4 @@ If you prefer to update the existing template manually:
 
 **Date**: 2026-01-06  
 **Status**: ✅ Recommended Approach  
-**Template Location**: `15_Templates\Base_Report.pbix`
+**Template Location**: `08_Templates\Base_Report.pbix`

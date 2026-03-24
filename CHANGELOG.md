@@ -16,6 +16,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.1] - 2026-03-24
+
+### Changed
+- **Documentation sync** — Regenerated canonical `Documentation/` outputs (`PROJECT_SUMMARY`, `data_dictionary`, `claude.md`, template `SCRPA_Report_Summary.md`) via `generate_documentation.py` so data flow, ChatGPT workflow, and cycle file list match the current pipeline.
+- **ChatGPT tactical briefing** — Docs now describe four attachments: `CHATGPT_SESSION_PROMPT.md`, `CHATGPT_BRIEFING_PROMPT.md`, `SCRPA_Report_Summary.md`, and `HPD_REPORT_STYLE_BLOCK.md` (START–END excerpt from `HPD_Report_Style_Prompt.md`).
+- **Root guides** — `README.md` and `SUMMARY.md` updated for cycle `Documentation/` contents, `Base_Report.pbix` source path (`08_Templates\`), and HTML template references.
+- **claude.md** — Aligned with canonical spec; added explicit HTML template paths (ArcPy theme vs HPD ChatGPT styles).
+
+### Repository layout
+- Historical markdown moved from repo root into `doc/` (workflow, verification, and reference notes); root remains the primary entrypoints (`README.md`, `CHANGELOG.md`, `SUMMARY.md`, `claude.md`, `BI_WEEKLY_CYCLE_SETUP.md`).
+
+---
+
 ## [2.0.0] - 2026-02-10
 
 ### Added
@@ -294,7 +307,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Power BI Template Updated**
   - Updated `Base_Report.pbix` template with new M code versions
   - All queries updated: `all_crimes`, `q_CallTypeCategories`, `q_CycleCalendar`, `q_RMS_Source`
-  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
   - New template includes: LagDays calculation fix, standardized headers, and all recent improvements
   - Future reports generated from this template will automatically include all fixes
 

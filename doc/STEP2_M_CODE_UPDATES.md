@@ -173,7 +173,7 @@ After updating Power BI:
 
 4. ✅ **Save Template**
    - Save updated Power BI template
-   - Location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+   - Location: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
 
 ---
 

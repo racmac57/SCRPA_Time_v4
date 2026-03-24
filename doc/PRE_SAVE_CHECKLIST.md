@@ -1,7 +1,7 @@
 # Pre-Save Checklist - Power BI Template
 
 **Date**: 2026-01-26  
-**Before Saving**: `15_Templates\Base_Report.pbix`
+**Before Saving**: `08_Templates\Base_Report.pbix`
 
 ---
 
@@ -93,7 +93,7 @@ These can be done later:
 
 1. **Save the template**:
    - File → Save As
-   - Location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+   - Location: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
    - Overwrite existing file (or create backup first)
 
 2. **Optional**: Create a backup before overwriting:

@@ -161,7 +161,7 @@ After running the workflow for **01/27/2026**, the following was verified and co
 
 | Location | Status |
 |----------|--------|
-| **Root** | `26C01W04_26_01_27.pbix` — added (was missing; template copied from `15_Templates\Base_Report.pbix`). |
+| **Root** | `26C01W04_26_01_27.pbix` — added (was missing; template copied from `08_Templates\Base_Report.pbix`). |
 | **Data/** | ✅ `SCRPA_7Day_Detailed.csv`, `SCRPA_7Day_Summary.csv`, `*_ReportDate_Last7` & full RMS CSVs, `SCRPA_Briefing_Ready_*`, `README_7day_outputs.md`. |
 | **Reports/** | ✅ `2026_01_27_14_06_37_rms_summary.html`, `SCRPA_Combined_Executive_Summary_20260127_*.html`. Removed `2025_12_09_*_rms_summary.pdf` and `2026_01_12_*_rms_summary.html` (wrong cycles). |
 | **Documentation/** | ✅ `CHATGPT_BRIEFING_PROMPT.md`, `SCRPA_Report_Summary.md`. |

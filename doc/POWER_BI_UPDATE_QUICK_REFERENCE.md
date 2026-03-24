@@ -78,7 +78,7 @@
 
 4. **Save Template**
    - Save updated `.pbix` file
-   - Location: `15_Templates\Base_Report.pbix`
+   - Location: `08_Templates\Base_Report.pbix`
 
 ---
 

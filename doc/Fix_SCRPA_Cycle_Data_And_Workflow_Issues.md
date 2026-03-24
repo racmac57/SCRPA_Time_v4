@@ -4076,7 +4076,7 @@ Scripts are configured to avoid Windows console UnicodeEncodeError by forcing UT
 
 The workflow copies Power BI template files from OneDrive. If you encounter "cloud file provider not running" errors:
 
-1. Right-click `Base_Report.pbix` in `15_Templates` folder
+1. Right-click `Base_Report.pbix` in `08_Templates` folder
 2. Select "Always keep on this device"
 3. Wait for OneDrive to finish syncing
 4. Re-run the workflow

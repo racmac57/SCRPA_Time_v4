@@ -1,0 +1,578 @@
+---
+
+### ⚠️ Queries That NEED Updates (2 of 5)
+
+**1. All_Crimes** (Line 1-167)
+- 🔴 **NEEDS UPDATE** - Currently hardcoded to old cycle path
+- Current path (line 36): `26C01W04_26_01_28` ← **OLD CYCLE**
+- **Solution:** Replace with automatic path detection
+
+**2. Export_Formatting** (Line 169-418)
+- ✅ **NO CHANGE NEEDED** - This is a utility function library
+- It doesn't load data, just provides functions
+
+---
+
+## 🔧 What Needs to Be Fixed
+
+**Only ONE query needs updating:** `All_Crimes`
+
+### Current Problem (Line 36):
+```m
+FilePath = "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Data\SCRPA_All_Crimes_Enhanced.csv",
+```
+
+### Replace Lines 23-36 With:
+
+```m
+    // ===========================================
+    // AUTOMATIC PATH DETECTION (No manual editing needed!) // ===========================================
+    // Base directory for all SCRPA reports
+    BaseDir = "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based",
+    
+    // Get the current year
+    CurrentYear = Number.ToText(Date.Year(DateTime.LocalNow())),
+    
+    // Build path to current year's folder
+    YearFolder = BaseDir & "\" & CurrentYear,
+    
+    // Get all folders in the year directory
+    AllFolders = Folder.Files(YearFolder),
+    
+    // Filter to only cycle folders (start with year, e.g., "26C" or "26BW")
+    CycleFolders = Table.SelectRows(AllFolders, each Text.StartsWith([Name], Text.End(CurrentYear, 2))),
+    
+    // Sort by date modified (most recent first)
+    SortedFolders = Table.Sort(CycleFolders, {{"Date modified", Order.Descending}}),
+    
+    // Get the most recent cycle folder path
+    LatestCyclePath = SortedFolders{0}[Folder Path],
+    
+    // Build full path to CSV
+    FilePath = LatestCyclePath & "Data\SCRPA_All_Crimes_Enhanced.csv",
+```
+
+---
+
+## 📝 Step-by-Step Instructions
+
+### In Power BI Desktop:
+
+1. Open: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+
+2. Go to: **Home** > **Transform Data**
+
+3. In the left pane, click on: **All_Crimes** query
+
+4. Click: **Advanced Editor** (top ribbon)
+
+5. Find the section starting at line 23 that says:
+   ```m
+   // ===========================================
+   // CONFIGURATION
+   // ===========================================
+   ```
+
+6. **Delete lines 23-36** (everything from `// CONFIGURATION` through the hardcoded FilePath)
+
+7. **Paste the new code** (from the "Replace Lines 23-36 With" section above)
+
+8. Click **Done**
+
+9. Click **Close & Apply**
+
+10. **Save the template**: File > Save
+
+---
+
+## ✨ Summary
+
+**Good News:** Your template is mostly already set up correctly! - ✅ **3 queries are perfect** - q_CallTypeCategories, q_CycleCalendar, q_RMS_Source
+- ✅ **1 query is just functions** - Export_Formatting
+- ⚠️ **1 query needs the automatic path fix** - All_Crimes
+
+After this one update, you'll have a true "copy and refresh" template with **zero manual editing** required! Would you like me to create a more detailed step-by-step guide with screenshots descriptions of exactly where to click? ---
+
+**User**
+
+is this version correct
+// 2026_02_10
+// Project: m_code/All_Crimes_Simple.m
+// Author: R. A. Carucci
+// Purpose: Simplified Power Query that imports Python-generated SCRPA_All_Crimes_Enhanced.csv. //          AUTOMATIC PATH DETECTION - No manual editing needed each cycle! //
+// HOW IT WORKS:
+// This M code automatically finds the CSV file in the Data folder relative to the PBIX location. // When you copy Base_Report.pbix to a new cycle folder, it automatically uses that cycle's data. //
+// USAGE:
+// 1. Run Python pipeline: python scripts/run_scrpa_pipeline.py rms_export.csv --report-date MM/DD/YYYY
+// 2. Pipeline copies Base_Report.pbix to cycle folder (e.g., 26C02W06_26_02_10/26C02W06_26_02_10.pbix)
+// 3. Open the PBIX and click Refresh - it automatically finds the correct CSV! //
+// NO MANUAL PATH EDITING REQUIRED! let
+    // ===========================================
+    // AUTOMATIC PATH DETECTION
+    // ===========================================
+    // Since Power BI doesn't provide a reliable "current file path" function,
+    // we use a folder-based dynamic approach to find the latest data. // Base directory for all SCRPA reports
+    BaseDir = "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based",
+    
+    // Get the current year (e.g., 2026)
+    CurrentYear = Number.ToText(Date.Year(DateTime.LocalNow())),
+    
+    // Build path to current year's folder
+    YearFolder = BaseDir & "\" & CurrentYear,
+    
+    // Get all folders in the year directory and find the most recent one
+    AllFolders = Folder.Files(YearFolder),
+    
+    // Filter to only cycle folders (start with year suffix, e.g., "26C" or "26BW")
+    CycleFolders = Table.SelectRows(AllFolders, each Text.StartsWith([Name], Text.End(CurrentYear, 2))),
+    
+    // Sort by date modified (most recent first)
+    SortedFolders = Table.Sort(CycleFolders, {{"Date modified", Order.Descending}}),
+    
+    // Get the most recent cycle folder path
+    LatestCyclePath = SortedFolders{0}[Folder Path],
+    
+    // Build full path to CSV
+    FilePath = LatestCyclePath & "Data\SCRPA_All_Crimes_Enhanced.csv",
+
+    // ===========================================
+    // LOAD CSV
+    // ===========================================
+    Source = Csv.Document(
+        File.Contents(FilePath),
+        [
+            Delimiter = ",",
+            Columns = 66,  // Must match Python output (includes Report_Date_ForLagday)
+            Encoding = 65001,  // UTF-8
+            QuoteStyle = QuoteStyle.Csv
+        ]
+    ),
+
+    // Promote first row to headers
+    PromotedHeaders = Table.PromoteHeaders(Source, [PromoteAllScalars = true]),
+
+    // ===========================================
+    // TYPE CONVERSIONS
+    // ===========================================
+    // Apply correct types to columns - no transformations, just typing
+    TypedTable = Table.TransformColumnTypes(
+        PromotedHeaders,
+        {
+            // Original RMS columns
+            {"Case Number", type text},
+            {"Incident Date", type text},  // Keep as text, Python has formatted it
+            {"Incident Time", type text},
+            {"Incident Date_Between", type text},
+            {"Incident Time_Between", type text},
+            {"Report Date", type text},
+            {"Report Time", type text},
+            {"Incident Type_1", type text},
+            {"Incident Type_2", type text},
+            {"Incident Type_3", type text},
+            {"FullAddress", type text},
+            {"Grid", type text},
+            {"Zone", type text},
+            {"Narrative", type text},
+            {"Total Value Stolen", type number},
+            {"Total Value Recover", type number},
+            {"Registration 1", type text},
+            {"Make1", type text},
+            {"Model1", type text},
+            {"Reg State 1", type text},
+            {"Registration 2", type text},
+            {"Reg State 2", type text},
+            {"Make2", type text},
+            {"Model2", type text},
+            {"Reviewed By", type text},
+            {"CompleteCalc", type text},
+            {"Officer of Record", type text},
+            {"Squad", type text},
+            {"Det_Assigned", type text},
+            {"Case_Status", type text},
+            {"NIBRS Classification", type text},
+
+            // Computed columns from Python
+            {"BestTimeValue", type time},
+            {"TimeSource", type text},
+            {"Incident_Time", type text},  // HH:MM:SS formatted
+            {"Incident_Date", type text},  // MM/DD/YY formatted
+            {"Incident_Date_Date", type date},
+            {"Report_Date", type date},
+            {"Report_Date_ForLagday", type date},
+            {"Report_Date_Text", type text},
+            {"IncidentToReportDays", Int64.Type},
+            {"Period", type text},
+            {"_Period_Debug", type text},
+            {"Period_SortKey", Int64.Type},
+            {"cycle_name", type text},
+            {"Backfill_7Day", type logical},
+            {"cycle_name_adjusted", type text},
+            {"IsCurrent7DayCycle", type logical},
+            {"IsLagDay", type logical},
+            {"LagDays", Int64.Type},
+            {"StartOfHour", type text},
+            {"TimeOfDay", type text},
+            {"TimeOfDay_SortKey", Int64.Type},
+            {"ALL_INCIDENTS", type text},
+            {"Crime_Category", type text},
+            {"Incident_Type_1_Norm", type text},
+            {"Incident_Type_2_Norm", type text},
+            {"Incident_Type_3_Norm", type text},
+            {"Vehicle_1", type text},
+            {"Vehicle_2", type text},
+            {"Vehicle_1_and_Vehicle_2", type text},
+            {"Clean_Address", type text},
+            {"IncidentKey", type text},
+            {"Category_Type", type text},
+            {"Response_Type", type text},
+            {"Time_Validation", type text}
+        }
+    ),
+
+    // ===========================================
+    // RESULT
+    // ===========================================
+    Result = TypedTable
+in
+    Result
+
+// ===========================================
+// NOTES FOR POWER BI DEVELOPERS
+// ===========================================
+//
+// AUTOMATIC PATH DETECTION:
+// This query automatically finds the most recent cycle folder in the current year
+// and loads the SCRPA_All_Crimes_Enhanced.csv from its Data subfolder. //
+// HOW IT WORKS:
+// 1. Looks in: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\[CURRENT_YEAR]
+// 2. Finds all folders starting with year (e.g., "26C" or "26BW")
+// 3. Sorts by last modified date (most recent first)
+// 4. Loads CSV from: [Most Recent Folder]\Data\SCRPA_All_Crimes_Enhanced.csv
+//
+// BENEFITS:
+// ✅ No manual path editing needed each cycle
+// ✅ Always uses the most recent data automatically
+// ✅ Template can be copied and refreshed without modification
+//
+// WORKFLOW:
+// 1. Run pipeline: python scripts/run_scrpa_pipeline.py input.csv --report-date MM/DD/YYYY
+// 2. Pipeline creates new cycle folder with data
+// 3. Pipeline copies Base_Report.pbix to cycle folder
+// 4. Open PBIX and click Refresh - automatically uses new cycle data! //
+// Key computed columns now available directly from Python:
+// - Period: 7-Day, 28-Day, YTD, Prior Year, Historical (based on Incident_Date)
+// - LagDays: CycleStart_7Day - Incident_Date (NOT Report_Date - Incident_Date)
+// - IsLagDay: True if incident occurred before the report cycle
+// - Backfill_7Day: True if incident before cycle, reported during current 7-day
+// - Crime_Category: Motor Vehicle Theft, Burglary Auto, Robbery, etc. // - TimeOfDay: Late Night, Early Morning, Morning, Afternoon, Evening Peak, Night
+// - Clean_Address: Street address only (for map labels)
+
+---
+
+**Cursor**
+
+## ❌ Almost Perfect, But One Critical Error! Your M code has the **right approach** but uses the **wrong function** on line 39. Let me explain:
+
+### The Problem (Line 39):
+
+```m
+AllFolders = Folder.Files(YearFolder),
+```
+
+**Issue:** `Folder.Files()` returns **FILES only**, not folders! This will fail because you're trying to find cycle **folders**, not files. ### The Fix:
+
+You need to use `Folder.Contents()` instead, which returns both files AND folders, then filter for folders only. ---
+
+## ✅ Here's the Corrected Version:
+
+Replace lines 27-48 with this:
+
+```m
+    // ===========================================
+    // AUTOMATIC PATH DETECTION
+    // ===========================================
+    // Base directory for all SCRPA reports
+    BaseDir = "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based",
+    
+    // Get the current year (e.g., 2026)
+    CurrentYear = Number.ToText(Date.Year(DateTime.LocalNow())),
+    
+    // Build path to current year's folder
+    YearFolder = BaseDir & "\" & CurrentYear,
+    
+    // Get all items (files and folders) in the year directory
+    AllItems = Folder.Contents(YearFolder),
+    
+    // Filter to only folders (not files)
+    AllFolders = Table.SelectRows(AllItems, each [Folder Path] <> null),
+    
+    // Filter to only cycle folders (start with year suffix, e.g., "26C" or "26BW")
+    CycleFolders = Table.SelectRows(AllFolders, each Text.StartsWith([Name], Text.End(CurrentYear, 2))),
+    
+    // Sort by date modified (most recent first)
+    SortedFolders = Table.Sort(CycleFolders, {{"Date modified", Order.Descending}}),
+    
+    // Get the most recent cycle folder's full path
+    LatestCycleFolder = SortedFolders{0}[Folder Path] & SortedFolders{0}[Name],
+    
+    // Build full path to CSV
+    FilePath = LatestCycleFolder & "\Data\SCRPA_All_Crimes_Enhanced.csv",
+```
+
+---
+
+## Key Changes Explained:
+
+### 1. **Line 39:** `Folder.Files()` → `Folder.Contents()`
+- `Folder.Contents()` returns BOTH files and folders
+- `Folder.Files()` returns ONLY files
+
+### 2. **Added Line 42:** Filter to folders only
+```m
+AllFolders = Table.SelectRows(AllItems, each [Folder Path] <> null),
+```
+This ensures we only look at folders, not files. ### 3. **Line 51:** Build full path correctly
+```m
+LatestCycleFolder = SortedFolders{0}[Folder Path] & SortedFolders{0}[Name],
+```
+Need to combine `[Folder Path]` + `[Name]` to get the complete cycle folder path. ---
+
+## Complete Corrected M Code:
+
+Perfect! I've updated the file with the corrected version. ## ✅ Summary of What Was Fixed:
+
+### The Bug in Your Version:
+```m
+AllFolders = Folder.Files(YearFolder),  // ❌ Returns files, not folders! ```
+
+### The Fix in Corrected Version:
+```m
+AllItems = Folder.Contents(YearFolder),                                      // ✓ Get all items
+AllFolders = Table.SelectRows(AllItems, each [Folder Path] <> null),       // ✓ Filter to folders only
+```
+
+---
+
+## 🎯 What This Does:
+
+1. **Folder.Contents()** gets both files AND folders
+2. **Filter by [Folder Path] <> null** keeps only folders (folders have a Folder Path, files don't)
+3. **Filter by name** keeps only cycle folders (start with "26")
+4. **Sort by date** puts most recent first
+5. **Load CSV** from that folder's Data subfolder
+
+---
+
+## 📋 Next Steps:
+
+1. Open your template: `15_Templates\Base_Report.pbix`
+2. Go to: **Transform Data** > **All_Crimes** query
+3. Click **Advanced Editor**
+4. Copy the corrected M code from `m_code\All_Crimes_Simple.m`
+5. Paste it, replacing all existing code
+6. Click **Done** > **Close & Apply**
+7. Save the template
+
+**Then test it:**
+- Open the PBIX
+- Click Refresh
+- It should load your cycle `26C02W06_26_02_10` data (252 records)
+
+This is now **production-ready**! 🎉
+
+---
+
+**User**
+
+provide the coreect filters for the map I have for burglary - Auto
+also to display the street address only I though you had to add "Street Address Only" to the tooltips but I can't get the lable to show the text
+
+---
+
+**Cursor**
+
+Looking at your screenshot, I can see two issues to fix:
+
+## 1️⃣ Correct Filters for Burglary Auto Map
+
+### Current Issues:
+- ❌ Filter says `ALL_INCIDENTS contains 'Auto'` - This is filtering on the wrong field
+- ⚠️ Period is set to "7-Day" only - This only shows 1 incident (the 02/03 incident)
+
+### ✅ Correct Filters:
+
+**Option A: Show Both 7-Day and 28-Day Incidents**
+```
+Filters on this visual:
+- Crime_Category: is "Burglary Auto"  ← Change from ALL_INCIDENTS
+- Period: Select both 7-Day AND 28-Day  ← Shows all 3 Burglary Auto incidents
+```
+
+**Option B: Show Only 7-Day Incidents**
+```
+Filters on this visual:
+- Crime_Category: is "Burglary Auto"
+- Period: is 7-Day  ← Shows only the 1 incident from 02/03
+```
+
+### How to Fix:
+1. In the Filters pane, find `ALL_INCIDENTS`
+2. Click the X to remove this filter
+3. Click "Add data fields here" under "Filters on this visual"
+4. Drag `Crime_Category` into the filters
+5. Select: `Burglary Auto`
+6. For Period filter, check both `7-Day` and `28-Day` (or just 7-Day if you only want current cycle)
+
+---
+
+## 2️⃣ How to Display Street Address Labels on Map
+
+The issue is that **labels are NOT in Tooltips** - they're in a separate section called **"Data labels"**. ### Step-by-Step Instructions:
+
+1. **Click on your map visual** to select it
+
+2. **Go to the Visualizations pane** (right side of Power BI)
+
+3. **Find the "Data labels" section** (looks like a label icon 🏷️)
+   - It should be in the Format section (paint roller icon)
+   - Expand "Data labels"
+
+4. **Turn Data labels ON**
+   - Toggle the switch to ON
+
+5. **Configure the label field:**
+   - In the Visualizations pane, look for "Build visual" section
+   - Find either:
+     - **"Values"** or
+     - **"Data labels"** field well
+   - Drag `Clean_Address` into this field
+
+### Alternative Method (If Above Doesn't Work):
+
+If you can't find the Data labels field well, try this:
+
+1. Click on the map visual
+2. Click the **Format** button (paint roller icon) in Visualizations pane
+3. Scroll down to find **"Data labels"**
+4. Turn it **ON**
+5. Expand "Data labels" section
+6. Look for "Fields" or "Values" dropdown
+7. Select `Clean_Address`
+
+### Important Notes:
+
+- ✅ Use `Clean_Address` (street only) - **NOT** `FullAddress` (includes city/state/zip)
+- ✅ Use `Clean_Address` (street only) - **NOT** "Street Address Only" (if that's a different field)
+- ⚠️ **Tooltips** show on hover - **Data labels** show always on the map
+- 💡 You may need to adjust label font size if they overlap
+
+---
+
+## 🎯 Expected Result After Fixes:
+
+**If filtering for 7-Day + 28-Day:**
+- Map shows **3 points** (all Burglary Auto incidents)
+- Each point labeled with street address (e.g., "[ADDRESS-REDACTED]")
+
+**If filtering for 7-Day only:**
+- Map shows **1 point** (02/03 incident in Afternoon)
+- Point labeled with street address
+
+---
+
+## 📸 Quick Visual Reference:
+
+**Your Filters Should Look Like:**
+```
+Filters on this visual:
+├─ Crime_Category
+│  └─ is "Burglary Auto"
+├─ Period
+│  ☑ 7-Day (1)
+│  ☑ 28-Day (2)
+│  ☐ YTD (2)
+│  ☐ Prior Year (59)
+└─ [Remove ALL_INCIDENTS filter]
+```
+
+**Your Map Visualization Settings:**
+```
+Location: [Your location field]
+Values: [Your count field]
+Data labels: ON
+  └─ Fields: Clean_Address
+```
+
+---
+
+Would you like me to create a step-by-step guide with more detailed screenshots descriptions for setting up the map labels? ---
+
+**User**
+
+the map only shows incidents that happened during the 7-Day period
+
+---
+
+**Cursor**
+
+Perfect! That makes sense - the map should show **only current 7-Day incidents** for tactical awareness. ## ✅ Correct Filters for Burglary Auto Map (7-Day Only)
+
+### Filter Setup:
+
+```
+Filters on this visual:
+├─ Crime_Category
+│  └─ is "Burglary Auto"
+└─ Period
+   └─ is 7-Day  ← Only show current week incidents
+```
+
+### How to Fix:
+
+1. **Remove the wrong filter:**
+   - Find `ALL_INCIDENTS contains 'Auto'`
+   - Click the **X** to remove it
+
+2. **Add Crime_Category filter:**
+   - Click "Add data fields here"
+   - Drag `Crime_Category` to filters
+   - In the dropdown, select: **"Burglary Auto"**
+   - Click "Apply filter"
+
+3. **Set Period to 7-Day only:**
+   - In Period filter, **uncheck** all boxes
+   - **Check only:** `7-Day`
+   - Click "Apply filter"
+
+---
+
+## 🗺️ Expected Map Result:
+
+For cycle `26C02W06_26_02_10` with these filters, your map should show:
+
+**1 point** (the only 7-Day Burglary Auto incident):
+- **Date:** 02/03/2026
+- **Time:** Afternoon (12:00-15:59)
+- **Location:** Should display the street address as label
+
+If you're seeing **0 incidents** or the wrong incident, that means Power BI is still loading data from the old cycle folder (`26C01W04_26_01_28`). ---
+
+## 🏷️ Street Address Labels - Correct Configuration:
+
+Since you want labels showing on the map, here's the setup:
+
+### For Map Visual - Data Labels:
+
+1. **Select the map visual**
+
+2. **In Visualizations pane, go to "Format visual"** (paint roller icon)
+
+3. **Find "Data labels"** section and expand it
+
+4. **Turn ON** the toggle
+
+5. **Set the content:**
+   - Look for "Values" or "Label contents" dropdown
+   - Select: `Clean_Address`
+
+6.

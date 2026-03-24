@@ -1,6 +1,6 @@
 # Template Update Checklist
 
-**Template Location**: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`  
+**Template Location**: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`  
 **Date**: 2026-01-06
 
 ## ✅ Pre-Update Checklist

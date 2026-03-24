@@ -5302,7 +5302,7 @@ Reports follow this naming pattern:
 
 ### Paths
 - **Reports Base**: `16_Reports\SCRPA\Time_Based\`
-- **Template Source**: `15_Templates\Base_Report.pbix`
+- **Template Source**: `08_Templates\Base_Report.pbix`
 - **Exports**: `05_EXPORTS\_RMS\scrpa\`
 - **Output**: `SCRPA_ArcPy\06_Output\`
 
@@ -6235,7 +6235,7 @@ Reports follow this naming pattern:
 
 ### Paths
 - **Reports Base**: `16_Reports\SCRPA\Time_Based\`
-- **Template Source**: `15_Templates\Base_Report.pbix`
+- **Template Source**: `08_Templates\Base_Report.pbix`
 - **Exports**: `05_EXPORTS\_RMS\scrpa\`
 - **Output**: `SCRPA_ArcPy\06_Output\`
 
@@ -7311,7 +7311,7 @@ The M code is ready. After you refresh, the label will show as "Prior Year" inst
 I am gonna use 7F92A2 for the proior year.  I am gonna update the templet version of the project with the updated colors, m code etc and then just run the .bat to over write the current project.  Is this a good idea?
 
 Base_Report.pbix
-C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix
+C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix
 
 ---
 
@@ -7428,7 +7428,7 @@ After choosing a color:
 ```markdown
 # Template Update Checklist
 
-**Template Location**: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`  
+**Template Location**: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`  
 **Date**: 2026-01-06
 
 ## ✅ Pre-Update Checklist
@@ -12866,7 +12866,7 @@ Reports follow this naming pattern:
 
 ### Paths
 - **Reports Base**: `16_Reports\SCRPA\Time_Based\`
-- **Template Source**: `15_Templates\Base_Report.pbix`
+- **Template Source**: `08_Templates\Base_Report.pbix`
 - **Exports**: `05_EXPORTS\_RMS\scrpa\`
 - **Output**: `SCRPA_ArcPy\06_Output\`
 
@@ -13172,7 +13172,7 @@ Reports follow this naming pattern:
 
 ### Paths
 - **Reports Base**: `16_Reports\SCRPA\Time_Based\`
-- **Template Source**: `15_Templates\Base_Report.pbix`
+- **Template Source**: `08_Templates\Base_Report.pbix`
 - **Exports**: `05_EXPORTS\_RMS\scrpa\`
 - **Output**: `SCRPA_ArcPy\06_Output\`
 
@@ -13442,7 +13442,7 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ### Input Files
 - **Excel Exports**: `05_EXPORTS\_RMS\scrpa\*.xlsx`
-- **Templates**: `15_Templates\Base_Report.pbix`
+- **Templates**: `08_Templates\Base_Report.pbix`
 
 ### Processing Locations
 - **ETL Scripts**: `02_ETL_Scripts\SCRPA\`
@@ -13546,7 +13546,7 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ### Updates
 - **Scripts**: Located in `02_ETL_Scripts\SCRPA\`
-- **Templates**: Located in `15_Templates\`
+- **Templates**: Located in `08_Templates\`
 - **Documentation**: Located in `16_Reports\SCRPA\doc\`
 
 ---
@@ -13794,7 +13794,7 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ### Input Files
 - **Excel Exports**: `05_EXPORTS\_RMS\scrpa\*.xlsx`
-- **Templates**: `15_Templates\Base_Report.pbix`
+- **Templates**: `08_Templates\Base_Report.pbix`
 
 ### Processing Locations
 - **ETL Scripts**: `02_ETL_Scripts\SCRPA\`
@@ -13898,7 +13898,7 @@ The SCRPA Reporting System automates the weekly generation of crime analysis rep
 
 ### Updates
 - **Scripts**: Located in `02_ETL_Scripts\SCRPA\`
-- **Templates**: Located in `15_Templates\`
+- **Templates**: Located in `08_Templates\`
 - **Documentation**: Located in `16_Reports\SCRPA\doc\`
 
 ---
@@ -15079,7 +15079,7 @@ Reports follow this naming pattern:
 
 ### Paths
 - **Reports Base**: `16_Reports\SCRPA\Time_Based\`
-- **Template Source**: `15_Templates\Base_Report.pbix`
+- **Template Source**: `08_Templates\Base_Report.pbix`
 - **Exports**: `05_EXPORTS\_RMS\scrpa\`
 - **Output**: `SCRPA_ArcPy\06_Output\`
 
@@ -19173,7 +19173,7 @@ Since your current report `.pbix` file already contains all the updated M code f
 
 ### 4. Save As New Template
 - **File** → **Save As**
-- Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\`
+- Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\`
 - **File name**: `Base_Report.pbix`
 - Click **Save**
 - **Confirm overwrite** if prompted (backup old template first if needed)
@@ -19235,7 +19235,7 @@ When you run `Run_SCRPA_Report_Folder.bat`:
 - [ ] Period values are calculating correctly
 - [ ] Visuals display correctly
 - [ ] Old template backed up (if desired)
-- [ ] Save As to `15_Templates\Base_Report.pbix`
+- [ ] Save As to `08_Templates\Base_Report.pbix`
 - [ ] Test template with next report generation
 
 ---
@@ -19243,7 +19243,7 @@ When you run `Run_SCRPA_Report_Folder.bat`:
 ## Alternative: Update Template Manually
 
 If you prefer to update the existing template manually:
-1. Open `15_Templates\Base_Report.pbix`
+1. Open `08_Templates\Base_Report.pbix`
 2. Copy M code from current report to template
 3. Update each query one by one
 4. Save template
@@ -19254,7 +19254,7 @@ If you prefer to update the existing template manually:
 
 **Date**: 2026-01-06  
 **Status**: ✅ Recommended Approach  
-**Template Location**: `15_Templates\Base_Report.pbix`
+**Template Location**: `08_Templates\Base_Report.pbix`
 
 ```
 
@@ -19267,7 +19267,7 @@ Yes. Saving the current `.pbix` as the new template is the simplest approach sin
 
 2. Save As new template:
    - File → Save As
-   - Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\`
+   - Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\`
    - File name: `Base_Report.pbix`
    - Click Save
    - Confirm overwrite if prompted

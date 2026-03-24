@@ -4729,7 +4729,7 @@ git push origin main
 
 **User**
 
-add that all_crimes, q_CallTypeCategories, q_CycleCalendar, and q_RMS_Source queries had their M Code updated to the new versions in the Power Bi Template C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix has 
+add that all_crimes, q_CallTypeCategories, q_CycleCalendar, and q_RMS_Source queries had their M Code updated to the new versions in the Power Bi Template C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix has 
 
 ---
 
@@ -4798,7 +4798,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Power BI Template Updated**
   - Updated `Base_Report.pbix` template with new M code versions
   - All queries updated: `all_crimes`, `q_CallTypeCategories`, `q_CycleCalendar`, `q_RMS_Source`
-  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
   - New template includes: LagDays calculation fix, standardized headers, and all recent improvements
   - Future reports generated from this template will automatically include all fixes
 
@@ -5223,7 +5223,7 @@ Added a new section under "Changed" documenting that the Power BI template was u
 - **Power BI Template Updated**
   - Updated `Base_Report.pbix` template with new M code versions
   - All queries updated: `all_crimes`, `q_CallTypeCategories`, `q_CycleCalendar`, `q_RMS_Source`
-  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
   - New template includes: LagDays calculation fix, standardized headers, and all recent improvements
   - Future reports generated from this template will automatically include all fixes
 ```
@@ -5245,7 +5245,7 @@ Ready to push when you are.
 - **Power BI Template Updated**
   - Updated `Base_Report.pbix` template with new M code versions
   - All queries updated: `all_crimes`, `q_CallTypeCategories`, `q_CycleCalendar`, `q_RMS_Source`
-  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
   - New template includes: LagDays calculation fix, standardized headers, and all recent improvements
   - Future reports generated from this template will automatically include all fixes
 ```
