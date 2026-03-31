@@ -1,5 +1,26 @@
 Shared context preamble for all SCRPA Claude skills. Every skill references this file and must read the listed files before acting.
 
+## Skill Stack — Full Cycle Execution Order
+
+Run these skills in order for a complete cycle QA + report generation pass:
+
+| Step | Skill | Purpose |
+|------|-------|---------|
+| 1 | `check_cycle_calendar` | Validate cycle calendar dates and windows |
+| 2 | `check_period_logic` | Verify Period classification rules and priority |
+| 3 | `validate_cycle_output` | Confirm row counts, period sums, file integrity |
+| 4 | `check_lag_logic` | Validate LagDays, IsLagDay, Backfill_7Day fields |
+| 5 | `check_html_template_sync` | Verify HPD style block matches authoritative template |
+| 6 | `generate_report_summary` | Produce SCRPA_Report_Summary.md from enhanced CSV |
+| 7 | `preview_cycle_info` | Display cycle metadata for confirmation |
+| 8 | `generate_cycle_report` | Generate full HTML tactical briefing (replaces ChatGPT workflow) |
+| 9 | `generate_cycle_email` | Produce EMAIL_TEMPLATE.txt for bi-weekly send |
+
+Steps 1–4 are validation gates — if any fails, stop and fix before proceeding.
+Steps 5–9 are generation/output steps.
+
+---
+
 ## Required Files — Read Before Every Skill Invocation
 
 ### 1. CLAUDE.md (repo root)
