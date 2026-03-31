@@ -44,7 +44,14 @@ Resolve `{CYCLE_FOLDER}` to the current cycle path before reading:
 
 ### Step 1 — Load and confirm input files
 Read all 5 files. Confirm each loaded successfully.
-If any file is missing, STOP and report which file is absent.
+
+**HPD style block fallback:** If `{CYCLE_FOLDER}\Documentation\HPD_REPORT_STYLE_BLOCK.md` does not exist, fall back to:
+`C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Report_Styles\html\HPD_Report_Style_Prompt.md`
+
+If neither file exists, STOP and report:
+"HPD_REPORT_STYLE_BLOCK.md not found in cycle folder or template directory. Run the pipeline to regenerate, or verify 08_Templates path."
+
+For all other files, if any is missing, STOP and report which file is absent.
 
 ### Step 2 — Parse role and task instructions
 - Read `CHATGPT_BRIEFING_PROMPT.md` as your assigned role and operational context
