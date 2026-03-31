@@ -96,25 +96,50 @@ def generate_lagday_summary(
 ) -> Dict[str, Any]:
     """
     Generate comprehensive summary metadata for lag day tracking.
+    
+    IMPORTANT: This function tracks TWO DIFFERENT types of "lag":
+    
+    1. REPORTING LAG (delay-based):
+       - Incidents in 7-Day period where report date != incident date
+       - Measured by: IncidentToReportDays > 0
+       - Example: Incident on 02/03, reported on 02/08 = 5 days reporting lag
+       - Used for: lag_incidents count, lag_by_category, lagdays_distribution
+    
+    2. BACKFILL LAG (cycle-based):
+       - Incidents that occurred BEFORE the cycle but were reported DURING the cycle
+       - Marked by: Backfill_7Day = True
+       - Example: Incident on 01/20, reported on 02/08 (current cycle)
+       - Used for: backfill_7day count
+    
+    These are tracked separately because they represent different reporting patterns.
 
     Args:
         df_full: Full enriched DataFrame
-        df_7day: Filtered 7-day + lag DataFrame
-        df_lag_only: Backfill lag only DataFrame
+        df_7day: Filtered 7-day + lag DataFrame (includes both Period='7-Day' and Backfill_7Day=True)
+        df_lag_only: Backfill lag only DataFrame (Backfill_7Day=True)
         cycle_info: Optional dict with cycle details
 
     Returns:
         Dictionary with summary metadata
     """
     # Extract date range from data
-    if 'Incident_Date_Date' in df_7day.columns and len(df_7day) > 0:
-        incident_dates = df_7day['Incident_Date_Date'].dropna()
-        if len(incident_dates) > 0:
-            # Convert to date if needed
-            if hasattr(incident_dates.iloc[0], 'date'):
-                incident_dates = incident_dates.apply(lambda x: x.date() if hasattr(x, 'date') else x)
-            min_incident = min(incident_dates)
-            max_incident = max(incident_dates)
+    # BUG FIX #3: Only use 7-Day period incidents for date range (not backfill)
+    # This clarifies that incident_date_range shows the actual 7-Day reporting period,
+    # not the extended window that includes backfill incidents from prior cycles.
+    if 'Incident_Date_Date' in df_7day.columns and 'Period' in df_7day.columns and len(df_7day) > 0:
+        # Filter to only incidents that occurred in the 7-Day period (Period='7-Day')
+        # Excludes backfill incidents (Backfill_7Day=True) that occurred before the cycle
+        df_7day_period_only = df_7day[df_7day['Period'] == '7-Day'].copy()
+        if len(df_7day_period_only) > 0:
+            incident_dates = df_7day_period_only['Incident_Date_Date'].dropna()
+            if len(incident_dates) > 0:
+                # Convert to date if needed
+                if hasattr(incident_dates.iloc[0], 'date'):
+                    incident_dates = incident_dates.apply(lambda x: x.date() if hasattr(x, 'date') else x)
+                min_incident = min(incident_dates)
+                max_incident = max(incident_dates)
+            else:
+                min_incident = max_incident = None
         else:
             min_incident = max_incident = None
     else:
@@ -145,9 +170,23 @@ def generate_lagday_summary(
             cycle_name = names[0]
 
     # Crime category breakdown for lag incidents
+    # BUG FIX #2: Count 7-Day period incidents with reporting delay (IncidentToReportDays > 0)
+    # NOT backfill incidents (Backfill_7Day=True)
+    # 
+    # IMPORTANT DISTINCTION:
+    # - Backfill lag (df_lag_only): Incident occurred BEFORE cycle, reported DURING cycle
+    # - Reporting lag: Delay between incident date and report date (IncidentToReportDays > 0)
+    # 
+    # The lag_analysis section should track reporting delays within the 7-Day period,
+    # not cycle-based backfill incidents.
     lag_by_category = {}
-    if 'Crime_Category' in df_lag_only.columns and len(df_lag_only) > 0:
-        lag_by_category = df_lag_only['Crime_Category'].value_counts().to_dict()
+    if 'Period' in df_7day.columns and 'Crime_Category' in df_7day.columns and 'IncidentToReportDays' in df_7day.columns:
+        # Filter to only 7-Day period incidents (not backfill)
+        df_7day_period_only = df_7day[df_7day['Period'] == '7-Day'].copy()
+        # Get incidents with reporting delay (IncidentToReportDays > 0)
+        lag_incidents_only = df_7day_period_only[df_7day_period_only['IncidentToReportDays'] > 0]
+        if len(lag_incidents_only) > 0:
+            lag_by_category = lag_incidents_only['Crime_Category'].value_counts().to_dict()
 
     # 7-Day by Crime_Category: TotalCount and LagDayCount per category + TOTAL row
     by_crime_category = []
@@ -221,7 +260,17 @@ def generate_lagday_summary(
             'total_all_crimes': len(df_full),
             'total_7day_window': len(df_7day),
             'incidents_in_7day_period': len(df_7day[df_7day['Period'] == '7-Day']) if 'Period' in df_7day.columns else 0,
-            'lag_incidents': len(df_lag_only),
+            # BUG FIX #1: Count 7-Day period incidents with reporting delay (IncidentToReportDays > 0)
+            # NOT backfill incidents (Backfill_7Day=True)
+            # 
+            # IMPORTANT DISTINCTION:
+            # - lag_incidents: Incidents in 7-Day period with REPORTING DELAY (IncidentToReportDays > 0)
+            # - backfill_7day: Incidents that occurred BEFORE cycle but reported DURING cycle
+            # 
+            # These are two different types of "lag":
+            # 1. Reporting lag (delay-based): Time between incident and report
+            # 2. Backfill lag (cycle-based): Incident from prior cycle reported in current cycle
+            'lag_incidents': len(df_7day[(df_7day['Period'] == '7-Day') & (df_7day['IncidentToReportDays'] > 0)]) if 'Period' in df_7day.columns and 'IncidentToReportDays' in df_7day.columns else 0,
             'backfill_7day': len(df_lag_only),
         },
         'lag_analysis': {
