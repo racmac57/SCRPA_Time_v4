@@ -65,6 +65,7 @@ from scrpa_transform import (
 from prepare_7day_outputs import save_7day_outputs
 from generate_documentation import (
     write_report_summary_with_data,
+    write_hpd_report_style_block,
     write_chatgpt_briefing_prompt,
     write_chatgpt_session_prompt,
 )
@@ -76,7 +77,7 @@ from generate_documentation import (
 
 BASE_DIR = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA")
 TIME_BASED_DIR = BASE_DIR / "Time_Based"
-TEMPLATE_DIR = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates")
+TEMPLATE_DIR = Path(r"C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates")
 POWERBI_TEMPLATE = TEMPLATE_DIR / "Base_Report.pbix"
 
 
@@ -246,6 +247,26 @@ class _ExecSummaryPatch:
     range_start: str
     range_end: str
     version: str
+    biweekly_start: str = ""
+    biweekly_end: str = ""
+
+    def range_pill_inner(self) -> str:
+        """Text inside the Range pill: 7-day window; add bi-weekly span when applicable."""
+        if self.biweekly_start and self.biweekly_end:
+            return (
+                f"7-Day: {self.range_start} - {self.range_end} · "
+                f"Bi-Weekly: {self.biweekly_start} - {self.biweekly_end}"
+            )
+        return f"{self.range_start} - {self.range_end}"
+
+    def footer_range_en(self) -> str:
+        """Footer range line (en dash between start/end per segment)."""
+        if self.biweekly_start and self.biweekly_end:
+            return (
+                f"7-Day: {self.range_start} – {self.range_end} | "
+                f"Bi-Weekly: {self.biweekly_start} – {self.biweekly_end}"
+            )
+        return f"{self.range_start} – {self.range_end}"
 
 
 def _first_present(d: Mapping[str, Any], keys: list[str], default: str = "") -> str:
@@ -331,10 +352,19 @@ def _normalize_cycle_info(cycle_info: Mapping[str, Any], arcpy_root: Path) -> _E
         ["cycle_id", "biweekly", "biweekly_name", "cycle", "cycle_name", "name"],
         "Auto-Detected",
     )
-    range_start = _first_present(cycle_info, ["range_start", "start_bw", "start_7", "start_date"], "Auto-Detected")
-    range_end = _first_present(cycle_info, ["range_end", "end_bw", "end_7", "end_date"], "Current")
+    range_start = _first_present(cycle_info, ["start_7", "range_start", "start_date"], "Auto-Detected")
+    range_end = _first_present(cycle_info, ["end_7", "range_end", "end_date"], "Current")
+    biweekly_start = _first_present(cycle_info, ["start_bw"], "")
+    biweekly_end = _first_present(cycle_info, ["end_bw"], "")
     version = _first_present(cycle_info, ["version"], _read_version_file(arcpy_root, default=""))
-    return _ExecSummaryPatch(cycle_id=cycle_id, range_start=range_start, range_end=range_end, version=version)
+    return _ExecSummaryPatch(
+        cycle_id=cycle_id,
+        range_start=range_start,
+        range_end=range_end,
+        version=version,
+        biweekly_start=biweekly_start,
+        biweekly_end=biweekly_end,
+    )
 
 
 def _inline_patch_exec_summary_html(
@@ -363,7 +393,7 @@ def _inline_patch_exec_summary_html(
     # Use \g<1>/\g<3> to avoid \1 + digits (e.g. "26") being interpreted as octal escape
     text = pill_cycle.sub(r"\g<1>" + patch.cycle_id + r"\g<3>", text, count=1)
     text = pill_range.sub(
-        r"\g<1>" + f"{patch.range_start} - {patch.range_end}" + r"\g<3>", text, count=1
+        r"\g<1>" + patch.range_pill_inner() + r"\g<3>", text, count=1
     )
     if patch.version:
         text = pill_version.sub(r"\g<1>" + patch.version + r"\g<3>", text, count=1)
@@ -380,7 +410,7 @@ def _inline_patch_exec_summary_html(
         range_start=patch.range_start,
         range_end=patch.range_end,
         range_hy=f"{patch.range_start} - {patch.range_end}",
-        range_en=f"{patch.range_start} – {patch.range_end}",
+        range_en=patch.footer_range_en(),
         version=patch.version,
     )
     text = footer_first_div.sub(r"\g<1>" + footer_text + r"\g<3>", text, count=1)
@@ -411,11 +441,15 @@ def patch_scrpa_combined_exec_summary_after_copy(
     script_dir = Path(__file__).resolve().parent
     arcpy_root = _discover_scrpa_arcpy_root(script_dir)
     version = _resolve_version_for_fallback(cycle_info, arcpy_root)
+    bw_s = _first_present(cycle_info, ["start_bw"], "")
+    bw_e = _first_present(cycle_info, ["end_bw"], "")
     patch = _ExecSummaryPatch(
         cycle_id=_first_present(cycle_info, ["biweekly", "cycle_id", "cycle", "name"], "Auto-Detected"),
-        range_start=_first_present(cycle_info, ["start_bw", "start_7", "range_start"], "Auto-Detected"),
-        range_end=_first_present(cycle_info, ["end_bw", "end_7", "range_end"], "Current"),
+        range_start=_first_present(cycle_info, ["start_7", "range_start"], "Auto-Detected"),
+        range_end=_first_present(cycle_info, ["end_7", "range_end"], "Current"),
         version=version or _first_present(cycle_info, ["version"], ""),
+        biweekly_start=bw_s,
+        biweekly_end=bw_e,
     )
 
     if arcpy_root:
@@ -856,6 +890,8 @@ def run_pipeline(
             paths['documentation'], cycle_info, summary_data
         )
         results['files_created'].append(str(report_summary_path))
+        hpd_block_path = write_hpd_report_style_block(paths['documentation'])
+        results['files_created'].append(str(hpd_block_path))
         # Build 7-day incident list with narrative for briefing prompt
         df_7day = df_enhanced[df_enhanced['Period'] == '7-Day'] if 'Period' in df_enhanced.columns else pd.DataFrame()
         seven_day_incidents = []

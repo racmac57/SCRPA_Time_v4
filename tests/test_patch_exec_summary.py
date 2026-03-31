@@ -50,6 +50,23 @@ def sample_html_file(tmp_path):
     return html_path
 
 
+def test_exec_summary_patch_range_pill_biweekly():
+    """When bi-weekly bounds exist, range pill shows both 7-day and bi-weekly windows."""
+    patch = _ExecSummaryPatch(
+        cycle_id="26BW06",
+        range_start="03/17/2026",
+        range_end="03/23/2026",
+        version="v1.9.4",
+        biweekly_start="03/10/2026",
+        biweekly_end="03/23/2026",
+    )
+    inner = patch.range_pill_inner()
+    assert "7-Day: 03/17/2026 - 03/23/2026" in inner
+    assert "Bi-Weekly: 03/10/2026 - 03/23/2026" in inner
+    assert "7-Day:" in patch.footer_range_en()
+    assert "Bi-Weekly:" in patch.footer_range_en()
+
+
 def test_inline_patch_updates_cycle_range_version_footer(sample_html_file):
     """Patch updates Cycle, Range, Version pills and footer; leaves .bak."""
     patch = _ExecSummaryPatch(

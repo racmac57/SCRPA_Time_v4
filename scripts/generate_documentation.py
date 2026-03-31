@@ -19,7 +19,7 @@ import yaml
 import json
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 import argparse
 
 
@@ -379,10 +379,10 @@ def get_project_summary(cycle_info: Optional[Dict] = None) -> Dict[str, Any]:
                 '1. RMS Export (.xlsx) -> Raw crime incident data',
                 '2. scrpa_transform.py -> SCRPA_All_Crimes_Enhanced.csv (cycle, lag days, period, etc.)',
                 '3. prepare_7day_outputs.py -> SCRPA_7Day_With_LagFlags.csv + SCRPA_7Day_Summary.json',
-                '4. generate_documentation.py -> SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt',
+                '4. generate_documentation.py -> SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, HPD_REPORT_STYLE_BLOCK.md, EMAIL_TEMPLATE.txt',
                 '5. SCRPA_ArcPy HTML generator -> SCRPA_Combined_Executive_Summary.html',
                 '6. Power BI (All_Crimes_Simple.m) -> Simple CSV import, no transformations',
-                '7. [Manual] ChatGPT: paste CHATGPT_SESSION_PROMPT.md, attach 2 .md files -> 7Day tactical briefing HTML',
+                '7. [Manual] ChatGPT: paste CHATGPT_SESSION_PROMPT.md, attach briefing + summary + HPD_REPORT_STYLE_BLOCK.md -> 7Day tactical briefing HTML',
                 '8. [Optional] clean_chatgpt_html.py -> strip ChatGPT code-fence artifacts from HTML output'
             ],
             'diagram': '''
@@ -398,6 +398,7 @@ RMS Export (.xlsx)
 [generate_documentation.py] -> SCRPA_Report_Summary.md
     |                          CHATGPT_BRIEFING_PROMPT.md
     |                          CHATGPT_SESSION_PROMPT.md  <- paste into ChatGPT
+    |                          HPD_REPORT_STYLE_BLOCK.md  <- attach (START–END CSS)
     |                          EMAIL_TEMPLATE.txt
     |                          PROJECT_SUMMARY.yaml/json
     v
@@ -407,8 +408,8 @@ RMS Export (.xlsx)
 [Power BI - All_Crimes_Simple.m] --> Import CSVs (no transforms)
 
 ChatGPT 7-Day Briefing workflow (manual, each cycle):
-  1. Paste CHATGPT_SESSION_PROMPT.md into ChatGPT project chat
-  2. Attach CHATGPT_BRIEFING_PROMPT.md + SCRPA_Report_Summary.md
+  1. Paste CHATGPT_SESSION_PROMPT.md into ChatGPT project chat (or attach it)
+  2. Attach CHATGPT_BRIEFING_PROMPT.md + SCRPA_Report_Summary.md + HPD_REPORT_STYLE_BLOCK.md
   3. Save HTML output to Reports/
   4. Run Clean_ChatGPT_HTML.bat to strip any code-fence artifacts
 
@@ -474,6 +475,7 @@ Canonical docs (Documentation/ folder):
                     'SCRPA_Report_Summary.md (per-cycle, populated with real counts)',
                     'CHATGPT_BRIEFING_PROMPT.md (per-cycle, with 7-day narratives)',
                     'CHATGPT_SESSION_PROMPT.md (per-cycle, paste-and-go ChatGPT prompt)',
+                    'HPD_REPORT_STYLE_BLOCK.md (per-cycle, START–END excerpt for ChatGPT)',
                     'EMAIL_TEMPLATE.txt (per-cycle, ready-to-send email)'
                 ],
                 'dependencies': ['pyyaml']
@@ -487,7 +489,7 @@ Canonical docs (Documentation/ folder):
                     '2. Create output directory; copy Power BI template',
                     '3. Run scrpa_transform -> SCRPA_All_Crimes_Enhanced.csv',
                     '4. Run prepare_7day_outputs -> SCRPA_7Day_With_LagFlags.csv + SCRPA_7Day_Summary.json',
-                    '5. Write cycle docs (SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt)',
+                    '5. Write cycle docs (SCRPA_Report_Summary.md, HPD_REPORT_STYLE_BLOCK.md, CHATGPT_BRIEFING_PROMPT.md, CHATGPT_SESSION_PROMPT.md, EMAIL_TEMPLATE.txt)',
                     '6. Generate HTML report via SCRPA_ArcPy; copy to Reports/'
                 ],
                 'entry_point': 'Run_SCRPA_Pipeline.bat (auto-selects latest RMS .xlsx)'
@@ -530,6 +532,7 @@ Time_Based/YYYY/{CYCLE_NAME}_{YY_MM_DD}/
 │   ├── SCRPA_Report_Summary.md            # Cycle summary with real counts
 │   ├── CHATGPT_BRIEFING_PROMPT.md         # Attach to ChatGPT (narratives + params)
 │   ├── CHATGPT_SESSION_PROMPT.md          # Paste into ChatGPT chat (the prompt)
+│   ├── HPD_REPORT_STYLE_BLOCK.md          # Attach — START–END HPD CSS/skeleton
 │   ├── EMAIL_TEMPLATE.txt                 # Ready-to-send email
 │   ├── PROJECT_SUMMARY.json               # Project overview (canonical copy)
 │   └── PROJECT_SUMMARY.yaml
@@ -622,6 +625,10 @@ The Strategic Crime Reduction Plan Analysis (SCRPA) system processes crime incid
 - Power BI imports pre-processed CSV files (no complex M code)
 - Bi-weekly reporting cycles with 7-day and 28-day analysis windows
 
+**HTML:** ArcPy combined reports use `08_Templates/Themes/HTML/scrpa_html.md`. ChatGPT tactical briefings use per-cycle **`HPD_REPORT_STYLE_BLOCK.md`** (START–END excerpt) or the full **`08_Templates/Report_Styles/html/HPD_Report_Style_Prompt.md`** as attachment **#4**.
+
+**PDF / print (tactical HTML):** After Lag Day, **close** `<div class="content">`. Wrap **7-Day Incident Highlights** (`h2` + **`table.incident-highlights`**) and the **`.footer`** in `<div class="report-tail">` (optional **`report-tail-landscape`** for landscape). The **`.footer` must stay inside** that same `div` so browser PDF does not place the footer alone on the next portrait page. Full CSS (`@page`, `.report-tail`, `table.incident-highlights`) comes from the style file above.
+
 ## Critical Logic Rules
 
 ### 1. Cycle Resolution (3-Tier Lookup)
@@ -705,6 +712,7 @@ Backfill_7Day = (
 | `CHATGPT_BRIEFING_PROMPT.md` | **Attach** to ChatGPT — cycle params + 7-day narratives |
 | `CHATGPT_SESSION_PROMPT.md` | **Paste** into ChatGPT chat — the per-cycle prompt |
 | `SCRPA_Report_Summary.md` | **Attach** to ChatGPT — authoritative counts + category table |
+| `HPD_REPORT_STYLE_BLOCK.md` | **Attach** — START–END excerpt from `HPD_Report_Style_Prompt.md` |
 
 > Note: `SCRPA_7Day_Lag_Only.csv` and `SCRPA_7Day_Summary.yaml` are no longer generated.
 > Backfill rows are included in `SCRPA_7Day_With_LagFlags.csv` (Backfill_7Day=TRUE).
@@ -713,8 +721,8 @@ Backfill_7Day = (
 
 Each cycle, after the pipeline runs:
 1. Open a new chat in the SCRPA ChatGPT project
-2. Copy all text from `CHATGPT_SESSION_PROMPT.md` → paste into the chat
-3. Attach `CHATGPT_BRIEFING_PROMPT.md` and `SCRPA_Report_Summary.md`
+2. Copy all text from `CHATGPT_SESSION_PROMPT.md` → paste into the chat (or attach it)
+3. Attach `CHATGPT_BRIEFING_PROMPT.md`, `SCRPA_Report_Summary.md`, and **one** style file: `HPD_REPORT_STYLE_BLOCK.md` (recommended) **or** full `HPD_Report_Style_Prompt.md` — whichever is attachment **#4**, per `CHATGPT_SESSION_PROMPT.md`
 4. Send — ChatGPT generates the HTML tactical briefing
 5. Save output as `[CYCLE]_scrpa_tac.html` in `Reports/`
 6. Run `Clean_ChatGPT_HTML.bat` on the file to remove any ``` artifacts
@@ -783,6 +791,108 @@ When validating Python output:
 
 
 # =============================================================================
+# HPD HTML REPORT STYLE (AI outputs — aligns with 08_Templates/Report_Styles)
+# =============================================================================
+
+HPD_REPORT_STYLE_PROMPT_PATH = (
+    r"C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Report_Styles"
+    r"\html\HPD_Report_Style_Prompt.md"
+)
+
+# Inserted into CHATGPT_* prompts; no brace characters (avoids str.format conflicts).
+MARKDOWN_HPD_HTML_STYLE_FOR_AI = f"""## HPD HTML design system (mandatory when generating HTML)
+
+**Full design system — paste the START–END block from this file into the AI (or follow it verbatim):**  
+`{HPD_REPORT_STYLE_PROMPT_PATH}`
+
+**Context:** `08_Templates\\Report_Styles\\README.md`, `Report_Styles\\CLAUDE.md`, `Report_Styles\\html\\README.md`
+
+**Rules**
+- **Self-contained HTML only** — all CSS in a `<style>` block in `<head>`; no external stylesheets, fonts, or scripts.
+- **Palette:** Navy `#1a2744`, Gold `#c8a84b`, Dark green `#2e7d32`, Dark red `#b71c1c`; page background `#f5f5f0`, card `#ffffff`, meta bar `#eef0f5`, body text `#2c2c3e`.
+- **Structure:** `.page` → `.header` → `.meta-bar` → `.content` (through Lag Day) → **close `.content`** → `.report-tail` with **7-Day Incident Highlights** + **`table.incident-highlights`** + **`.footer`** (see SCRPA closing note in the style prompt). Do not place `.footer` alone outside the same wrapper as a landscape highlights block.
+- **Typography:** Segoe UI / Arial, 13.5px body; `h2` uppercase with gold underline.
+- **Executive callouts:** **Key Findings** (not “Bottom Line”) — use `.alert` with `<span class="alert-icon">&#9654;</span> <strong>Key Findings:</strong>` per the prompt.
+- **Prepared by:** R. A. Carucci #261, Principal Analyst | Safe Streets Operations Control Center | Hackensack Police Department.
+- **Tables:** Navy header row, alternating rows; add `primary-crimes` / `table-notes` classes when needed; **incident highlights:** `class="incident-highlights"` (and `table-notes` if synopsis column is wide).
+- **Print / PDF:** Include the full CSS from the style block (`@page`, `@page landscape`, `.report-tail`, `.report-tail-landscape`, `table.incident-highlights` split rules). Prefer keeping footer inside `.report-tail` with the highlights table.
+"""
+
+
+def _report_summary_hpd_note() -> str:
+    """Single line for SCRPA_Report_Summary Notes (data-only file; points AI to HTML style)."""
+    return (
+        f"- **HTML tactical briefings:** Use the Hackensack PD design system in "
+        f"`{HPD_REPORT_STYLE_PROMPT_PATH}` (self-contained HTML, Key Findings callout, "
+        f"navy/gold palette, meta bar + footer pattern, `@media print`). "
+        f"Same folder: `HPD_REPORT_STYLE_BLOCK.md` (START–END excerpt for ChatGPT)."
+    )
+
+
+# Per-cycle file: excerpt between markers in HPD_Report_Style_Prompt.md
+HPD_REPORT_STYLE_BLOCK_FILENAME = "HPD_REPORT_STYLE_BLOCK.md"
+
+
+def extract_hpd_style_block_markdown(source_path: Optional[Path] = None) -> Tuple[str, str]:
+    """
+    Extract markdown between START OF STYLE BLOCK and END OF STYLE BLOCK markers.
+
+    Returns:
+        (body, error_message). body is empty if error_message is non-empty.
+    """
+    src = Path(source_path or HPD_REPORT_STYLE_PROMPT_PATH)
+    if not src.is_file():
+        return "", f"Style source not found: {src}"
+    lines = src.read_text(encoding="utf-8", errors="replace").splitlines()
+    start_idx: Optional[int] = None
+    end_idx: Optional[int] = None
+    for i, line in enumerate(lines):
+        if start_idx is None and "START OF STYLE BLOCK" in line:
+            start_idx = i + 1
+            continue
+        if "END OF STYLE BLOCK" in line:
+            end_idx = i
+            break
+    if start_idx is None or end_idx is None or end_idx <= start_idx:
+        return "", "Could not find START/END OF STYLE BLOCK markers in style prompt file."
+    body = "\n".join(lines[start_idx:end_idx]).strip()
+    return body, ""
+
+
+def write_hpd_report_style_block(
+    output_dir: Path, source_path: Optional[Path] = None
+) -> Path:
+    """
+    Write HPD_REPORT_STYLE_BLOCK.md — START–END excerpt from HPD_Report_Style_Prompt.md
+    for attaching to ChatGPT alongside session/briefing/summary.
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    body, err = extract_hpd_style_block_markdown(source_path)
+    header = f"""# HPD HTML style — START–END block
+
+Pipeline copy for this cycle. Excerpt is between the markers in:
+
+`{HPD_REPORT_STYLE_PROMPT_PATH}`
+
+Attach with **CHATGPT_SESSION_PROMPT.md**, **CHATGPT_BRIEFING_PROMPT.md**, and **SCRPA_Report_Summary.md**.
+
+---
+
+"""
+    if err:
+        body = (
+            f"**Could not extract style block:** {err}\n\n"
+            f"Copy the START–END section manually from `{HPD_REPORT_STYLE_PROMPT_PATH}` "
+            "or fix `HPD_REPORT_STYLE_PROMPT_PATH` in `scripts/generate_documentation.py`."
+        )
+    out_path = output_dir / HPD_REPORT_STYLE_BLOCK_FILENAME
+    out_path.write_text(header + body + "\n", encoding="utf-8")
+    print(f"  Created: {out_path.name}")
+    return out_path
+
+
+# =============================================================================
 # REPORT SUMMARY TEMPLATE
 # =============================================================================
 
@@ -848,6 +958,7 @@ def get_report_summary_template(cycle_info: Optional[Dict] = None) -> str:
 - Generated by: `scripts/generate_documentation.py`
 - Data Source: SCRPA_All_Crimes_Enhanced.csv
 - Report Period: Bi-weekly ({start_bw} - {end_bw})
+{_report_summary_hpd_note()}
 '''
 
 
@@ -1069,6 +1180,7 @@ def get_report_summary_with_data(
 - Generated by: `scripts/generate_documentation.py`
 - Data Source: SCRPA_All_Crimes_Enhanced.csv
 - Report Period: Bi-weekly ({start_bw} - {end_bw})
+{_report_summary_hpd_note()}
 '''
 
 
@@ -1113,12 +1225,14 @@ Use this prompt with ChatGPT (or similar) for the Strategic Crime Reduction brie
 | 7-Day Window | {date_range_7} |
 | Bi-Weekly Period | {date_range_bw} |
 
+{hpd_html_style}
+
 ## Instructions
 
 1. Use the attached/pasted SCRPA 7-day data for this cycle.
 2. Summarize key incidents by category (Burglary - Auto, Motor Vehicle Theft, Robbery, Sexual Offenses, Burglary - Commercial, Burglary - Residence).
 3. Insert the date range from the Reporting Parameters in any generated output (MM/DD/YYYY - MM/DD/YYYY).
-4. Footer for generated content: **HPD | SSOCC | SCRPA Report | Cycle: {cycle_id}**
+4. For **HTML** output: follow **HPD HTML design system** above (`HPD_REPORT_STYLE_BLOCK.md` or full `HPD_Report_Style_Prompt.md`). For tactical PDF: close **.content** after Lag Day; wrap **7-Day Incident Highlights** + **`table.incident-highlights`** + **`.footer`** in **`.report-tail`** (optional **`.report-tail-landscape`**). For plain-text or email snippets, footer line: **HPD | SSOCC | SCRPA Report | Cycle: {cycle_id}**
 
 ---
 Generated by SCRPA pipeline for cycle {cycle_id}. Report due: {report_due}.
@@ -1165,7 +1279,8 @@ def write_chatgpt_briefing_prompt(
         biweekly=biweekly,
         report_due=report_due,
         date_range_7=date_range_7,
-        date_range_bw=date_range_bw
+        date_range_bw=date_range_bw,
+        hpd_html_style=MARKDOWN_HPD_HTML_STYLE_FOR_AI,
     )
     # Insert 7-day incident narratives section if provided
     if seven_day_incidents:
@@ -1190,21 +1305,45 @@ def write_chatgpt_briefing_prompt(
 CHATGPT_SESSION_PROMPT_TEMPLATE = """\
 SCRPA TACTICAL BRIEFING — CYCLE {cycle_id}
 
-ATTACHED FILES (2)
-  1. CHATGPT_BRIEFING_PROMPT.md
-  2. SCRPA_Report_Summary.md
+--- PASTE THIS USER MESSAGE FIRST (then attach the files listed under ATTACHED FILES) ---
+SCRPA tactical briefing — Cycle **{cycle_id}**. I am attaching:
+1. CHATGPT_SESSION_PROMPT.md — full task spec (same as this paste; attach if easier)
+2. CHATGPT_BRIEFING_PROMPT.md — cycle parameters and 7-day incident narratives
+3. SCRPA_Report_Summary.md — Data Summary counts and category table
+4. **One** style file — either **HPD_REPORT_STYLE_BLOCK.md** (same Documentation folder; recommended) **or** the full **`HPD_Report_Style_Prompt.md`** from Templates (`{hpd_style_path}`). Whichever file is attachment **#4**, use it as the complete CSS + print rules source.
+
+Deliverable: one self-contained HTML tactical briefing per TASK below. Copy the **FULL CSS BLOCK** from attachment (4) into `<style>` (including `@page` / `@page landscape` / `.report-tail` rules if present).
+---
+
+ATTACHED FILES (4 — same cycle Documentation folder for 1–3; for #4 use BLOCK **or** full prompt, not both unless you clarify)
+  1. CHATGPT_SESSION_PROMPT.md — this file (paste or attach)
+  2. CHATGPT_BRIEFING_PROMPT.md
+  3. SCRPA_Report_Summary.md
+  4. HPD_REPORT_STYLE_BLOCK.md **or** HPD_Report_Style_Prompt.md — must include updated print/PDF rules (incident-highlights + report-tail)
 
 TASK
 Generate a standalone HTML tactical briefing for the 7-day window defined in
 CHATGPT_BRIEFING_PROMPT.md. This report is submitted to a police captain —
 keep it concise, professional, and operationally focused.
 
+HACKENSACK PD HTML DESIGN SYSTEM (mandatory)
+  Primary source: attachment **#4** (HPD_REPORT_STYLE_BLOCK.md **or** full `{hpd_style_path}`) — copy the **entire** FULL CSS BLOCK and follow the SCRPA closing structure in that file.
+  Non-negotiable:
+    • Self-contained HTML only — all CSS in <style> in <head>; no external stylesheets, fonts, or scripts.
+    • DOM order: .page → .header → .meta-bar → .content (Executive Summary through Lag Day only) → **close .content** → **.report-tail** (required) containing: h2 "7-Day Incident Highlights" + **table.incident-highlights** (add **table-notes** if synopsis column is wide) + **.footer** with the exact footer line from section 8 below.
+    • **PDF / print:** The **.footer must not** sit outside the same wrapper as the incident highlights when using **landscape** for that section. Use **<div class="report-tail report-tail-landscape">** only if you use landscape; otherwise **<div class="report-tail">** (portrait). Footer stays **inside** .report-tail in both cases.
+    • Palette and typography per that file (body #2c2c3e, page #f5f5f0, tables with navy headers, alternating rows).
+    • Executive callout label: Key Findings (not "Bottom Line") — .alert with alert-icon pattern from the prompt.
+    • Meta bar — Prepared by: R. A. Carucci #261, Principal Analyst | Safe Streets Operations Control Center | Hackensack Police Department.
+    • Include **all** print rules from the CSS block: default **@page** portrait, **@page landscape**, @media print, **table.incident-highlights** (allows multi-page table), **.report-tail** / **.report-tail-landscape**.
+  CHATGPT_BRIEFING_PROMPT.md repeats a short checklist; attachment #4 is authoritative for CSS/layout.
+
 BEFORE WRITING, EXTRACT:
   From CHATGPT_BRIEFING_PROMPT.md:
     → Cycle ({cycle_id}), Bi-Weekly ({biweekly}), Report Due ({report_due})
     → 7-Day Window ({date_range_7})
     → Bi-Weekly Period ({date_range_bw})
-    → All "7-Day Incidents" narratives (use these verbatim, redacted, for Section 6)
+    → All "7-Day Incidents" narratives (use these verbatim, redacted, for incident highlights)
 
   From SCRPA_Report_Summary.md:
     → All Data Summary counts
@@ -1214,51 +1353,42 @@ BEFORE WRITING, EXTRACT:
 CRIME CATEGORIES (only these five — never include "Other")
   Motor Vehicle Theft | Burglary Auto | Burglary - Comm & Res | Robbery | Sexual Offenses
 
-HTML SECTIONS (generate in this exact order — no additional sections):
+HTML SECTIONS (this order; use class names from HPD_REPORT_STYLE_BLOCK.md)
 
-1. HEADER
-   Title: "SCRPA Tactical Briefing"
-   Cycle: {cycle_id} | Bi-Weekly: {biweekly}
-   7-Day Window: {date_range_7} | Report Due: {report_due}
+1. HEADER (.header)
+   .dept: City of Hackensack | Police Department | Safe Streets Operations Control Center
+   h1: SCRPA Tactical Briefing
+   .subtitle: Cycle {cycle_id} | Bi-Weekly {biweekly} | 7-Day: {date_range_7} | Bi-Weekly period: {date_range_bw} | Report Due: {report_due}
 
-2. EXECUTIVE SUMMARY
-   2-4 bullets describing only what DID occur in the 7-day window.
-   Do NOT list categories with zero 7-day incidents.
-   Note backfill activity only if Backfill 7-Day count is greater than zero.
+2. META BAR (.meta-bar)
+   Prepared by (author line above); Date; Subject: SCRPA Tactical Briefing; Status (.status-final or .status-review)
 
-3. KEY METRICS TABLE (source: SCRPA_Report_Summary.md Data Summary)
-   Rows: Total Incidents | 7-Day | 28-Day | YTD | Prior Year |
-         Lag Incidents | Backfill 7-Day
+3. EXECUTIVE SUMMARY (.content, h2)
+   2–4 bullets: only what occurred in the 7-day window; omit zero-count categories.
+   Optional: .alert Key Findings for the main takeaway.
+   Note backfill only if Backfill 7-Day > 0 in Data Summary.
 
-4. CATEGORY BREAKDOWN TABLE (source: SCRPA_Report_Summary.md)
-   Columns: Category | 7-Day | 28-Day | YTD
-   Include only the five official categories listed above.
+4. KEY METRICS TABLE (h2 + table from SCRPA_Report_Summary.md Data Summary)
+   Rows: Total Incidents | 7-Day | 28-Day | YTD | Prior Year | Lag Incidents | Backfill 7-Day
 
-5. LAG DAY SUMMARY (source: SCRPA_Report_Summary.md Lag Day Analysis)
-   Mean / Median / Max lag days + one plain-language sentence explaining
-   what a lag incident means operationally.
+5. CATEGORY BREAKDOWN TABLE (h2 + table)
+   Columns: Category | 7-Day | 28-Day | YTD — five categories only.
 
-6. 7-DAY INCIDENT HIGHLIGHTS
-   Use only the narratives from the "7-Day Incidents" section of
-   CHATGPT_BRIEFING_PROMPT.md. Do not invent or add incidents.
-   For each: Category | Incident Date | Redacted synopsis | Tactical note
-   (1 sentence: what to monitor or follow up on).
-   If no narratives are listed, write: "No 7-day incident narratives available."
+6. LAG DAY SUMMARY (h2)
+   Mean / Median / Max + one plain-language operational sentence.
+   Then close the **.content** div (Lag Day is the last block inside .content).
 
-7. FOOTER
-   Use this exact text:
-   Hackensack Police Department - Safe Streets Operations Control Center | Cycle: {biweekly} | Range: {date_range_bw} | Version: 1.0
+7–8. After .content, still inside .page, open **.report-tail** (optional class **report-tail-landscape** for landscape PDF — footer must stay inside this same div):
+   • h2: 7-Day Incident Highlights
+   • table with **class="incident-highlights"** (add **table-notes** if synopsis column is wide). Rows from CHATGPT_BRIEFING_PROMPT.md; columns: Category | Incident Date | Redacted synopsis | Tactical note. If none: one row or short note.
+   • **.footer** with exact line: Hackensack Police Department - Safe Streets Operations Control Center | Cycle: {biweekly} | Range: 7-Day: {date_range_7} | Bi-Weekly: {date_range_bw} | Version: 1.0
+   • Close .report-tail
 
-OUTPUT RULES (CRITICAL — follow exactly)
-  • Your entire response MUST be raw HTML only.
-  • Start your response with the characters: <!DOCTYPE html>
-  • End your response with the characters: </html>
-  • Do NOT wrap output in code fences (no ``` or ```html before or after).
-  • Do NOT add any commentary, explanation, or text outside the HTML tags.
-  • Use a <style> block with inline CSS: navy/white color scheme, clean tables,
-    readable typography, print-friendly layout (max-width 960px).
-  • Never display "Other" as a crime category.
-  • Never invent data — if a value is absent, show "—".
+OUTPUT RULES (CRITICAL)
+  • Raw HTML only; first line <!DOCTYPE html>; last line </html>; no code fences or extra commentary.
+  • Apply full HPD CSS from attachment #4 (.page max-width ~900px; include @page / landscape / .report-tail rules).
+  • Never display "Other" as a crime category; never invent data — use "—" if absent.
+  • **Print-to-PDF:** Do not place **.footer** as a direct child of **.page** after a landscape-only inner wrapper — that orphans the footer. **.footer** must be the last child inside **.report-tail** alongside the incident table.
 
 Now generate the HTML tactical briefing.
 """
@@ -1270,8 +1400,9 @@ def write_chatgpt_session_prompt(
 ) -> Path:
     """
     Write CHATGPT_SESSION_PROMPT.md — the per-cycle paste-and-go prompt for
-    ChatGPT. Paste this text into the ChatGPT chat each session (do not attach
-    it; attach the two data files listed inside it instead).
+    ChatGPT. Paste this text into the chat (or attach it) and attach
+    CHATGPT_BRIEFING_PROMPT.md, SCRPA_Report_Summary.md, and
+    HPD_REPORT_STYLE_BLOCK.md from the same Documentation folder.
 
     Args:
         output_dir: Documentation folder path
@@ -1307,6 +1438,7 @@ def write_chatgpt_session_prompt(
         report_due=report_due,
         date_range_7=date_range_7,
         date_range_bw=date_range_bw,
+        hpd_style_path=HPD_REPORT_STYLE_PROMPT_PATH,
     )
 
     md_path = output_dir / 'CHATGPT_SESSION_PROMPT.md'
