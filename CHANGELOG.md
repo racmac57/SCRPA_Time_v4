@@ -16,6 +16,140 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.2] - 2026-03-24
+
+### Changed
+- **ChatGPT tactical HTML (PDF)** — Documentation describes **`.report-tail`** (optional **`.report-tail-landscape`**), **`table.incident-highlights`**, and keeping the **`.footer`** inside the same wrapper as incident highlights so print-to-PDF does not orphan the footer on a portrait page.
+- **Style attachment** — Session/workflow docs note attachment **#4** may be **`HPD_REPORT_STYLE_BLOCK.md`** *or* the full **`HPD_Report_Style_Prompt.md`** (same CSS source of truth).
+- **Canonical `Documentation/`** — Regenerated `PROJECT_SUMMARY`, `data_dictionary`, `claude.md`, and template `SCRPA_Report_Summary.md` to refresh timestamps and align narrative with `generate_documentation.py` outputs.
+- **`claude.md` (root + `Documentation/`)** — Combined ArcPy HTML theme path with ChatGPT tactical / PDF guidance.
+
+### Notes
+- Live template CSS and SCRPA closing-structure prose live under `08_Templates/Report_Styles/html/HPD_Report_Style_Prompt.md` (outside this repo if not linked); pipeline **`HPD_REPORT_STYLE_BLOCK.md`** copies the START–END excerpt on each run.
+
+---
+
+## [2.0.1] - 2026-03-24
+
+### Changed
+- **Documentation sync** — Regenerated canonical `Documentation/` outputs (`PROJECT_SUMMARY`, `data_dictionary`, `claude.md`, template `SCRPA_Report_Summary.md`) via `generate_documentation.py` so data flow, ChatGPT workflow, and cycle file list match the current pipeline.
+- **ChatGPT tactical briefing** — Docs now describe four attachments: `CHATGPT_SESSION_PROMPT.md`, `CHATGPT_BRIEFING_PROMPT.md`, `SCRPA_Report_Summary.md`, and `HPD_REPORT_STYLE_BLOCK.md` (START–END excerpt from `HPD_Report_Style_Prompt.md`).
+- **Root guides** — `README.md` and `SUMMARY.md` updated for cycle `Documentation/` contents, `Base_Report.pbix` source path (`08_Templates\`), and HTML template references.
+- **claude.md** — Aligned with canonical spec; added explicit HTML template paths (ArcPy theme vs HPD ChatGPT styles).
+
+### Repository layout
+- Historical markdown moved from repo root into `doc/` (workflow, verification, and reference notes); root remains the primary entrypoints (`README.md`, `CHANGELOG.md`, `SUMMARY.md`, `claude.md`, `BI_WEEKLY_CYCLE_SETUP.md`).
+
+---
+
+## [2.0.0] - 2026-02-10
+
+### Added
+- **HTML Report Auto-Generation Integration**
+  - Pipeline now automatically calls SCRPA_ArcPy to generate fresh HTML reports before copying
+  - Added `_generate_html_report_via_arcpy()` function to `run_scrpa_pipeline.py`
+  - Sets `REPORT_DATE` environment variable for correct cycle lookup
+  - 5-minute timeout with graceful error handling
+  - Ensures HTML reports always contain current cycle data
+  - Eliminates need for manual SCRPA_ArcPy execution
+
+- **Dynamic M Code for Power BI Template**
+  - M code (`All_Crimes_Simple.m`) now automatically finds the latest cycle folder
+  - Uses `Folder.Contents()` to scan `Time_Based/[CURRENT_YEAR]` directory
+  - Identifies most recently modified cycle folder
+  - Constructs path to `SCRPA_All_Crimes_Enhanced.csv` dynamically
+  - Eliminates manual path editing each cycle
+
+### Changed
+- **YAML to JSON Migration**
+  - Replaced YAML with JSON for 7-day summary output
+  - Changed `SCRPA_7Day_Summary.yaml` → `SCRPA_7Day_Summary.json`
+  - Updated `prepare_7day_outputs.py` to write JSON (`json.dump()`)
+  - Updated `run_scrpa_pipeline.py` to read JSON (`json.load()`)
+  - Benefits: Built-in Python support, faster parsing, better compatibility, no external dependencies
+
+- **Pipeline Structure - Step 6 Enhanced**
+  - Step 6 now has two sub-steps:
+    - 6a: Generate HTML report via SCRPA_ArcPy (NEW)
+    - 6b: Copy HTML to cycle folder (existing)
+  - Ensures HTML is freshly generated before copying
+
+### Fixed
+- **LagDays vs IncidentToReportDays Confusion (Critical Fix - 2026-02-10)**
+  - Fixed `prepare_7day_outputs.py` using wrong field for reporting delay statistics
+  - **Root Cause**: System has two "lag" concepts that were confused:
+    - `LagDays` = CycleStart - Incident_Date (backfill metric, ≤0 for 7-Day incidents)
+    - `IncidentToReportDays` = Report_Date - Incident_Date (reporting delay metric)
+  - Crime category breakdown now uses `IncidentToReportDays` (was using `LagDays`)
+  - Lag statistics now use `IncidentToReportDays` (was using `LagDays`)
+  - **Impact**: Previously, lag counts were always 0 for 7-Day incidents; now correctly shows reporting delays
+  - See `doc/raw/LAGDAYS_REPORTING_DELAY_FIX_2026_02_10.md` for detailed analysis
+
+- **7-Day Counting Bug (Critical Fix)**
+  - Fixed `prepare_7day_outputs.py` incorrectly counting backfill incidents in 7-Day totals
+  - Crime category breakdown now filters to `Period='7-Day'` only (excludes backfill)
+  - Lag statistics now calculated from actual 7-Day period incidents (not backfill)
+  - Changed from `IsLagDay` flag (broken) to `IncidentToReportDays > 0` check (correct)
+  - Fixed lag statistics calculation to exclude backfill incidents
+
+- **HTML Report Data Mismatch**
+  - HTML reports were showing stale data from previous cycles
+  - Root cause: Pipeline only copied existing HTML, didn't ensure fresh generation
+  - Fixed by integrating SCRPA_ArcPy HTML generation into pipeline
+  - HTML now generated automatically with correct cycle data
+
+- **Documentation Data Errors**
+  - Fixed EMAIL_TEMPLATE.txt showing wrong date range (01/27 instead of 02/03)
+  - Fixed SCRPA_Report_Summary.md showing incorrect 7-Day counts (3 instead of 2)
+  - Fixed lag statistics showing backfill data (14 days) instead of actual 7-Day lag (3.0 days)
+
+- **Configuration Management Issues (2026-02-10 PM)**
+  - Removed `.claude/settings.local.json` from version control (developer-specific file)
+  - Fixed malformed file paths in copy commands (missing backslash separators)
+  - Updated `.gitignore` to prevent future commits of `.local` configuration files
+  - See `doc/raw/LOCAL_CONFIG_REMOVAL_2026_02_10.md` for configuration best practices
+
+### Breaking Changes
+- **Output Format Change**: `SCRPA_7Day_Summary.yaml` no longer generated per cycle; replaced with `SCRPA_7Day_Summary.json`
+- **Reduced YAML Dependency**: `pyyaml` now only required for canonical documentation generation (`generate_documentation.py`), not for cycle-specific outputs
+
+### Documentation
+- Created `LAGDAYS_REPORTING_DELAY_FIX_2026_02_10.md` - Complete analysis of LagDays vs IncidentToReportDays confusion
+- Created `LOCAL_CONFIG_REMOVAL_2026_02_10.md` - Configuration management best practices and local file removal rationale
+- Created `HTML_INTEGRATION_IMPLEMENTATION.md` - Complete documentation of HTML generation integration
+- Created `PIPELINE_BUG_FIX_2026_02_10.md` - Details of 7-day counting bug fix
+- Created `YAML_TO_JSON_MIGRATION.md` - Migration documentation and benefits
+- Created `ROOT_CAUSE_HTML_MISMATCH.md` - Analysis of HTML data mismatch issue
+- Updated `BI_WEEKLY_WORKFLOW.md` - Added HTML auto-generation step
+
+### Technical
+- **Subprocess Integration**: Pipeline now uses `subprocess.run()` to execute SCRPA_ArcPy script
+- **Environment Variables**: Passes `REPORT_DATE` to SCRPA_ArcPy for cycle-aware processing
+- **Error Handling**: Graceful degradation if HTML generation fails (falls back to copying existing)
+- **Timeout Protection**: 5-minute timeout prevents hanging on SCRPA_ArcPy execution
+
+[2.0.0]: https://github.com/racmac57/SCRPA_Time_v4/compare/v1.9.4...v2.0.0
+
+---
+
+## [1.9.4] - 2026-01-28
+
+### Changed
+- **Documentation streamlining**: The pipeline (`run_scrpa_pipeline.py`) no longer writes `data_dictionary.yaml/json`, `PROJECT_SUMMARY.yaml/json`, or `claude.md` into each cycle's Documentation folder. These canonical docs live only in `16_Reports/SCRPA/Documentation`. Regenerate with `python scripts/generate_documentation.py -o path/to/SCRPA/Documentation`.
+- **Cycle Documentation contents**: Each cycle's Documentation/ now receives only: `SCRPA_Report_Summary.md` (populated from pipeline data), `CHATGPT_BRIEFING_PROMPT.md` (cycle placeholders filled), and `EMAIL_TEMPLATE.txt`.
+
+### Added
+- **SCRPA_Report_Summary.md populated**: Report summary is now filled with real counts (total incidents, 7-Day/28-Day/YTD/Prior Year, lag/backfill counts, lag mean/median/max) and the 7-day-by-crime-category table from the 7-day YAML. Implemented via `write_report_summary_with_data()` and `get_report_summary_with_data()` in `generate_documentation.py`.
+- **CHATGPT_BRIEFING_PROMPT.md per cycle**: Pipeline generates `CHATGPT_BRIEFING_PROMPT.md` in each cycle's Documentation/ with cycle ID, bi-weekly, report due, and 7-day/bi-weekly date ranges; footer "HPD | SSOCC | SCRPA Report | Cycle: …". Implemented via `write_chatgpt_briefing_prompt()` and `CHATGPT_BRIEFING_TEMPLATE` in `generate_documentation.py`.
+
+### Documentation
+- README: Canonical vs per-cycle documentation clarified; Python pipeline Quick Start and File Types > Documentation updated.
+- SUMMARY: Python-first workflow diagram added; v1.9.4 improvements and Maintenance/Updates sections updated; version set to 1.9.4.
+
+[1.9.4]: https://github.com/racmac57/SCRPA_Time_v4/compare/v1.9.3...v1.9.4
+
+---
+
 ## [1.9.3] - 2026-01-27
 
 ### Fixed
@@ -186,7 +320,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Power BI Template Updated**
   - Updated `Base_Report.pbix` template with new M code versions
   - All queries updated: `all_crimes`, `q_CallTypeCategories`, `q_CycleCalendar`, `q_RMS_Source`
-  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+  - Template location: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
   - New template includes: LagDays calculation fix, standardized headers, and all recent improvements
   - Future reports generated from this template will automatically include all fixes
 
@@ -589,7 +723,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-**Last Updated**: 2026-01-26  
-**Current Version**: 1.9.0  
+**Last Updated**: 2026-02-10  
+**Current Version**: 2.0.0  
 **Maintained By**: R. A. Carucci
 

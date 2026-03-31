@@ -1,0 +1,39 @@
+{
+  "tags": [
+    "ai",
+    "conversation",
+    "data",
+    "docs",
+    "excel",
+    "it-ops",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "2026",
+        "report",
+        "scrpa",
+        "users",
+        "carucci_r",
+        "onedrive"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# First report under new schedule\n_Exported on 1/27/2026 at 18:23:01 EST from Cursor (2.4.21)_\n\n---\n\n**User**\n\nread the README, SUMMARY AND CHANGELOG. This will be the first report I submitt after the reporting window has been changed to...",
+      "first_line": "# First report under new schedule"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-27T18:23:37.596550",
+  "department": "admin"
+}

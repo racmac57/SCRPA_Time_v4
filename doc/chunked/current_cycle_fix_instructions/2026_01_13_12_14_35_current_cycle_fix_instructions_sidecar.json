@@ -1,0 +1,69 @@
+{
+  "source_file": "current_cycle_fix_instructions.md",
+  "source_path": "C:\\_chunker\\02_data\\current_cycle_fix_instructions.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\current_cycle_fix_instructions\\2026_01_13_12_14_35_current_cycle_fix_instructions.origin.json",
+  "created_at": "2026_01_13_12_14_35",
+  "tags": [
+    "code",
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "cycle",
+      "currentcycletbl",
+      "today",
+      "hascurrentcycle",
+      "fix",
+      "7_day_end"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "// 2025-12-30-15-05-00\n# SCRPA_Time_v3/current_cycle_fix_instructions.md\n# Author: R. A.",
+    "first_line": "// 2025-12-30-15-05-00"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-13T12:14:35+00:00_current_cycle_fix_instructions_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "7_day_end",
+        "code",
+        "currentcycletbl",
+        "cycle",
+        "data",
+        "docs",
+        "hascurrentcycle",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "sql",
+        "today"
+      ],
+      "key_terms": [
+        "cycle",
+        "currentcycletbl",
+        "today",
+        "hascurrentcycle",
+        "fix",
+        "7_day_end"
+      ],
+      "summary": "// 2025-12-30-15-05-00\n# SCRPA_Time_v3/current_cycle_fix_instructions.md\n# Author: R.",
+      "char_length": 6652,
+      "byte_length": 6925
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

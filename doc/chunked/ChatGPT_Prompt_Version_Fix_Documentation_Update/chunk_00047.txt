@@ -1,0 +1,616 @@
+cycle_start_date = cycle_start_dt.date()
+        cycle_end_date = cycle_end_dt.date()
+        print(f"   ⚠️  Using min/max Report Date from data (cycle calendar not available)")
+
+    print(f"Cycle Start: {cycle_start_date}")
+    print(f"Cycle End: {cycle_end_date}")
+
+    # Calculate lagday fields (use datetime version for calculations)
+    is_lag = dfw["_IncidentDate"] < cycle_start_dt
+    lag_days_cycle = (cycle_start_dt - dfw["_IncidentDate"]).dt.days
+    lag_days_cycle = lag_days_cycle.where(is_lag, 0).astype("Int64")
+
+    # QA field (kept because downstream analysts use it to spot report delays)
+    incident_to_report_days = (dfw["_ReportDate"] - dfw["_IncidentDate"]).dt.days.astype("Int64")
+
+    # Add derived + cycle bounds (preserve all original columns)
+    dfw["CycleStartDate"] = cycle_start_date
+    dfw["CycleEndDate"] = cycle_end_date
+    dfw["IsLagDay"] = is_lag.fillna(False)
+    dfw["LagDays"] = lag_days_cycle
+    dfw["IncidentToReportDays"] = incident_to_report_days
+
+    # Normalize incident type (for display)
+    if summary_key:
+        dfw["IncidentType"] = dfw[summary_key].apply(normalize_incident_type)
+    else:
+        dfw["IncidentType"] = ""
+    
+    # Add Crime_Category (matches all_crimes.m logic)
+    # Note: Category mapping happens BEFORE normalization in M code, so we use original incident types
+    print("   Mapping Crime_Category (using original incident types, before normalization)...")
+    dfw["Crime_Category"] = dfw.apply(get_crime_category, axis=1, verbose=False)
+    
+    # Validation: Check for potential issues
+    category_counts = dfw["Crime_Category"].value_counts()
+    other_count = category_counts.get("Other", 0)
+    tracked_count = len(dfw) - other_count
+    
+    print(f"   Crime_Category distribution: {tracked_count} tracked, {other_count} 'Other'")
+    
+    # Warn if high percentage of "Other"
+    if len(dfw) > 0 and (other_count / len(dfw)) > 0.5:
+        print(f"   ⚠️  Warning: {other_count/len(dfw)*100:.1f}% of incidents classified as 'Other'")
+        print(f"      This may indicate missing incident types or category mapping issues")
+    
+    # Warn if Narrative is missing for Motor Vehicle Theft cases
+    mvt_rows = dfw[dfw["Crime_Category"].isin(["Burglary Auto", "Motor Vehicle Theft"])]
+    if len(mvt_rows) > 0:
+        missing_narrative = mvt_rows[mvt_rows["Narrative"].isna() | (mvt_rows["Narrative"] == "")]
+        if len(missing_narrative) > 0:
+            print(f"   ⚠️  Warning: {len(missing_narrative)} Motor Vehicle Theft cases missing Narrative")
+            print(f"      May affect classification accuracy (needed for 'Burglary Auto' vs 'Motor Vehicle Theft')")
+
+    # Drop helper tmp cols
+    dfw = dfw.drop(columns=[c for c in dfw.columns if c.startswith("_")], errors="ignore")
+    
+    # Ensure cycle dates are date objects (not datetime) for CSV output
+    # Only process if dataframe is not empty
+    if len(dfw) > 0:
+        if 'CycleStartDate' in dfw.columns:
+            if isinstance(dfw['CycleStartDate'].iloc[0], pd.Timestamp):
+                dfw['CycleStartDate'] = pd.to_datetime(dfw['CycleStartDate']).dt.date
+        if 'CycleEndDate' in dfw.columns:
+            if isinstance(dfw['CycleEndDate'].iloc[0], pd.Timestamp):
+                dfw['CycleEndDate'] = pd.to_datetime(dfw['CycleEndDate']).dt.date
+    
+    # Check if dataframe is empty after filtering
+    if len(dfw) == 0:
+        print("⚠️  Warning: All incidents were filtered out. No data to process.") print("   This may indicate:")
+        print("   - Incorrect cycle date range")
+        print("   - All incidents have Report Date outside the cycle range")
+        print("   - Cycle calendar lookup found wrong cycle")
+        # Return empty dataframe with expected columns
+        return dfw
+    
+    lagday_count = int(dfw["IsLagDay"].sum())
+    print(f"LagDay incidents: {lagday_count} of {len(dfw)} total")
+    
+    return dfw
+
+def build_summary(df_detailed: pd.DataFrame) -> pd.DataFrame:
+    """
+    Build summary CSV with 3 columns: Crime_Category, LagDayCount, TotalCount
+    - Only includes Crime_Category values (excludes "Other")
+    - Only includes categories that appear in the filtered data
+    - Column order: Crime_Category, LagDayCount, TotalCount
+    - Includes total row at bottom
+    """
+    if "Crime_Category" not in df_detailed.columns:
+        raise KeyError("Detailed dataset missing Crime_Category.") if "IsLagDay" not in df_detailed.columns:
+        raise KeyError("Detailed dataset missing IsLagDay.") # Filter out "Other" category and group by Crime_Category
+    df_filtered = df_detailed[df_detailed["Crime_Category"] != "Other"].copy()
+    
+    if len(df_filtered) == 0:
+        # No tracked incidents found
+        other_count = len(df_detailed[df_detailed["Crime_Category"] == "Other"])
+        print(f"⚠️  Warning: No tracked incidents found (all {other_count} incidents classified as 'Other')")
+        print("   Summary will be empty. Check incident type data and category mapping logic.") out = pd.DataFrame({
+            "Crime_Category": [],
+            "LagDayCount": [],
+            "TotalCount": []
+        })
+        return out
+    
+    grp = df_filtered.groupby("Crime_Category", dropna=False)
+    out = pd.DataFrame({
+        "Crime_Category": grp.size().index,
+        "LagDayCount": grp["IsLagDay"].sum().astype(int).values,
+        "TotalCount": grp.size().values,
+    })
+    
+    # Sort by TotalCount descending, then by Crime_Category ascending
+    out = out.sort_values(["TotalCount", "Crime_Category"], ascending=[False, True], ignore_index=True)
+    
+    # Add total row at bottom
+    total_row = pd.DataFrame({
+        "Crime_Category": ["TOTAL"],
+        "LagDayCount": [int(df_filtered["IsLagDay"].sum())],
+        "TotalCount": [len(df_filtered)]
+    })
+    out = pd.concat([out, total_row], ignore_index=True)
+    
+    category_count = len(out) - 1  # Exclude total row
+    print(f"Summary: {category_count} crime categories (plus total row)")
+    
+    # Validation: Check for expected categories
+    expected_categories = ["Burglary Auto", "Motor Vehicle Theft", "Burglary - Comm & Res", 
+                          "Robbery", "Sexual Offenses"]
+    found_categories = set(out[out["Crime_Category"] != "TOTAL"]["Crime_Category"].tolist())
+    missing_expected = set(expected_categories) - found_categories
+    
+    if missing_expected:
+        print(f"   ℹ️  Note: Expected categories not present in this cycle: {', '.join(sorted(missing_expected))}")
+    
+    return out
+
+def write_data_dictionary(df_original: pd.DataFrame, path: Path, reference_path: Path = None) -> None:
+    """Write data dictionary markdown file. If reference_path exists, copy from there instead of regenerating.""" # Check if reference dictionary already exists
+    if reference_path and reference_path.exists():
+        # Copy from reference location instead of regenerating
+        import shutil
+        shutil.copy2(reference_path, path)
+        print(f"Data dictionary copied from reference location: {reference_path}")
+        print(f"  → {path}")
+        return
+    
+    # Generate new dictionary (only if reference doesn't exist)
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    lines = []
+    lines.append(f"# SCRPA 7-Day Outputs — Data Dictionary\n\n**Generated:** {now}\n")
+    lines.append("## Overview\nThis dictionary documents the new 7-Day outputs replacing `SCRPA_7Day_Filtered.csv`:\n")
+    lines.append("- **Detailed:** `SCRPA_7Day_Detailed.csv`")
+    lines.append("- **Summary:** `SCRPA_7Day_Summary.csv`\n")
+    lines.append("### Cycle Logic\n- The 7-Day cycle is defined by **Report Date** values present in the file.") lines.append("- `CycleStartDate` = minimum `Report Date` in the dataset.") lines.append("- `CycleEndDate` = maximum `Report Date` in the dataset.") lines.append("- **LagDay**: incidents with `Incident Date` **before** `CycleStartDate`.\n")
+    lines.append("### Key Definitions")
+    lines.append("- `IsLagDay` *(boolean)*: `true` when `Incident Date` < `CycleStartDate`.") lines.append("- `LagDays` *(integer)*: days incident precedes `CycleStartDate` (0 if not lagday).") lines.append("- `IncidentToReportDays` *(integer)*: days between `Report Date` and `Incident Date` (QA metric).") lines.append("- `IncidentType` *(text)*: normalized from `Incident Type_1` by removing statute suffix and replacing 'Attempted Burglary' with 'Burglary' (e.g., `\"Burglary - 2C:18-2\"` → `\"Burglary\"`).") lines.append("- `Crime_Category` *(text)*: crime category matching `all_crimes.m` logic. Only tracked categories (excluding 'Other') appear in Summary.\n")
+
+    lines.append("## Detailed Dataset — `SCRPA_7Day_Detailed.csv`\n")
+    lines.append("| Column | Type | Description |")
+    lines.append("|---|---|---|")
+    for col in df_original.columns:
+        dtype_str = str(df_original[col].dtype)
+        lines.append(f"| {col} | {dtype_str} | **Source**: original 7-Day export. |")
+    lines.extend([
+        "| CycleStartDate | date | Start date of the current 7-Day cycle (by Report Date). |",
+        "| CycleEndDate | date | End date of the current 7-Day cycle (by Report Date). |",
+        "| IsLagDay | boolean | True if Incident Date precedes CycleStartDate. |",
+        "| LagDays | integer | Days Incident Date precedes CycleStartDate (0 if not lagday). |",
+        "| IncidentToReportDays | integer | Days between Report Date and Incident Date. |",
+        "| IncidentType | text | Normalized incident type from `Incident Type_1` (for reference). |",
+        "| Crime_Category | text | Crime category matching `all_crimes.m` logic: 'Burglary Auto', 'Motor Vehicle Theft', 'Burglary - Comm & Res', 'Robbery', 'Sexual Offenses', or 'Other'. |",
+        "",
+        "## Summary Dataset — `SCRPA_7Day_Summary.csv`",
+        "",
+        "| Column | Type | Description |",
+        "|---|---|---|",
+        "| Crime_Category | text | Crime category aligned with `all_crimes.m` logic (excludes 'Other'). |",
+        "| LagDayCount | integer | Count of those incidents where `IsLagDay = true`. |",
+        "| TotalCount | integer | Number of incidents in the 7-Day cycle (by Report Date). |",
+        "",
+        "## Reconciliation",
+        "- `sum(Summary.TotalCount excluding TOTAL row) = rowcount(Detailed where Crime_Category != 'Other')`",
+        "- `sum(Summary.LagDayCount excluding TOTAL row) = count(Detailed.IsLagDay = true where Crime_Category != 'Other')`",
+        "- Summary includes a TOTAL row at the bottom with aggregated counts",
+        "",
+        "## Backward Compatibility",
+        "- All original columns from `SCRPA_7Day_Filtered.csv` are preserved in **Detailed**. ",
+        "- The previous file is **deprecated** in favor of the two new outputs. ",
+        ""
+    ])
+    # Write to reference location first (if it doesn't exist)
+    if reference_path and not reference_path.exists():
+        reference_path.parent.mkdir(parents=True, exist_ok=True)
+        reference_path.write_text("\n".join(lines), encoding="utf-8")
+        print(f"✅ Data dictionary created in reference location: {reference_path}")
+        print(f"   (This will be reused for all future reports)")
+    
+    # Always write to local path for current report
+    path.write_text("\n".join(lines), encoding="utf-8")
+    print(f"Data dictionary written: {path}")
+
+def write_readme(path: Path) -> None:
+    """Write migration README"""
+    text = """# SCRPA 7-Day Outputs — Migration Notes
+
+**Changes**
+- Deprecated: `SCRPA_7Day_Filtered.csv`
+- New: `SCRPA_7Day_Detailed.csv`, `SCRPA_7Day_Summary.csv`
+
+**Consumers**
+- Update any references to use `SCRPA_7Day_Detailed.csv` for incident-level reporting. - Use `SCRPA_7Day_Summary.csv` for high-level counts, no further Power BI transforms required. **Lagday Visibility**
+- `IsLagDay` and `LagDays` make backfilled incidents explicit. - Cycle bounds carried in each row: `CycleStartDate`, `CycleEndDate`. **Derivation**
+- IncidentType = `Incident Type_1` with statute suffix removed (e.g., `" - 2C:..."`). **Validation**
+- Ensure summary counts match Detailed. - Run reconciliation checks: `sum(Summary.TotalCount) = rowcount(Detailed)`
+- Run lagday check: `sum(Summary.LagDayCount) = count(Detailed.IsLagDay = true)`
+"""
+    path.write_text(text, encoding="utf-8")
+    print(f"README written: {path}")
+
+def main() -> None:
+    """Main execution function"""
+    print("=" * 60)
+    print("SCRPA 7-Day Export Restructure")
+    print("=" * 60)
+    print()
+    
+    if not INPUT_CSV:
+        print("ERROR: Could not find input CSV file.") print(f"  Looked in current dir: {Path.cwd()}")
+        print(f"  Looked in: {ROOT}")
+        print(f"  Looked in: {RMS_EXPORT_DIR}")
+        print("  Expected: SCRPA_7Day_Filtered.csv or *_ReportDate_Last7.csv")
+        sys.exit(1)
+    
+    try:
+        df_orig = load_input(INPUT_CSV)
+        incident_col, report_col, summary_key = pick_columns(df_orig)
+        print(f"Using columns: Incident={incident_col}, Report={report_col}, SummaryKey={summary_key}")
+        
+        # Get cycle info from calendar
+        cycle_info = get_cycle_info_from_calendar()
+        
+        df_detailed = build_detailed(df_orig, incident_col, report_col, summary_key, cycle_info)
+        df_summary = build_summary(df_detailed)
+
+        # Write outputs
+        output_dir = Path.cwd()
+        print(f"\nWriting outputs to: {output_dir}")
+        df_detailed.to_csv(OUT_DETAILED, index=False)
+        print(f"  ✓ Detailed CSV: {OUT_DETAILED.name} ({len(df_detailed)} rows)")
+        
+        df_summary.to_csv(OUT_SUMMARY, index=False)
+        print(f"  ✓ Summary CSV: {OUT_SUMMARY.name} ({len(df_summary)} rows)")
+        
+        write_data_dictionary(df_orig, OUT_DICT, REFERENCE_DICT)
+        write_readme(OUT_README)
+
+        # Basic reconciliation check (exclude total row and "Other" category)
+        df_summary_no_total = df_summary[df_summary["Crime_Category"] != "TOTAL"]
+        total_count_sum = df_summary_no_total["TotalCount"].sum()
+        # Only count non-"Other" incidents in detailed
+        detailed_filtered = df_detailed[df_detailed["Crime_Category"] != "Other"]
+        detailed_count = len(detailed_filtered)
+        lagday_summary = df_summary_no_total["LagDayCount"].sum()
+        lagday_detailed = int(detailed_filtered["IsLagDay"].sum())
+        
+        print(f"\n=== Reconciliation ===")
+        print(f"Detailed rows (tracked categories only): {detailed_count}")
+        print(f"Summary TotalCount sum (excluding total row): {total_count_sum}")
+        print(f"Detailed IsLagDay count (tracked only): {lagday_detailed}")
+        print(f"Summary LagDayCount sum (excluding total row): {lagday_summary}")
+        
+        if detailed_count != total_count_sum:
+            print(f"⚠️  WARNING: TotalCount mismatch! {detailed_count} != {total_count_sum}")
+            print(f"   This indicates a data integrity issue. Check category filtering logic.") else:
+            print("✓ TotalCount reconciliation: PASS")
+            
+        if lagday_detailed != lagday_summary:
+            print(f"⚠️  WARNING: LagDayCount mismatch! {lagday_detailed} != {lagday_summary}")
+            print(f"   This indicates a data integrity issue. Check lagday calculation logic.") else:
+            print("✓ LagDayCount reconciliation: PASS")
+        
+        # Additional validation: Check total row matches
+        if len(df_summary) > 0 and df_summary.iloc[-1]["Crime_Category"] == "TOTAL":
+            total_row_total = df_summary.iloc[-1]["TotalCount"]
+            total_row_lag = df_summary.iloc[-1]["LagDayCount"]
+            if total_row_total != detailed_count:
+                print(f"⚠️  WARNING: TOTAL row TotalCount ({total_row_total}) != filtered detailed count ({detailed_count})")
+            if total_row_lag != lagday_detailed:
+                print(f"⚠️  WARNING: TOTAL row LagDayCount ({total_row_lag}) != filtered lagday count ({lagday_detailed})")
+            if total_row_total == detailed_count and total_row_lag == lagday_detailed:
+                print("✓ TOTAL row validation: PASS")
+        
+        print("\n✅ Restructure complete!") except Exception as e:
+        print(f"\n❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
+
+```
+
+Fixing the PowerShell syntax and testing again:
+
+
+Verifying the files were created:
+
+
+The script works when `REPORT_DATE` is set. Summary of fixes:
+
+## Issues fixed
+
+### 1. Variable name error
+- Problem: Code referenced `cycle_start` but it was renamed to `cycle_start_dt`
+- Fix: Updated references to use `cycle_start_dt` for datetime calculations
+
+### 2. Empty dataframe handling
+- Problem: When all incidents were filtered out, accessing `iloc[0]` caused an error
+- Fix: Added check for empty dataframe before processing cycle dates
+
+### 3. Missing REPORT_DATE environment variable
+- Problem: `organize_report_files.py` wasn't passing `REPORT_DATE` to the restructure script
+- Fix: Updated `organize_report_files.py` to pass `REPORT_DATE` as an environment variable when calling the restructure script
+
+### 4. Wrong cycle lookup
+- Problem: Script was finding cycle 25C13W50 (12/09-12/15) instead of 25C13W52 (12/23-12/29)
+- Fix: Now correctly uses `REPORT_DATE` from environment variable to find the right cycle
+
+## Results
+
+With `REPORT_DATE=12/30/2025`, the script now:
+- Finds the correct cycle: 25C13W52 (12/23/2025 to 12/29/2025)
+- Filters correctly: Excluded 4 incidents from 12/22, kept 4 from 12/23-12/29
+- Generated files:
+  - `SCRPA_7Day_Detailed.csv` (4 rows with lagdays and robust columns)
+  - `SCRPA_7Day_Summary.csv` (4 rows)
+  - `SCRPA_7Day_Data_Dictionary.md` (copied from reference)
+  - `README_7day_outputs.md`
+
+## Next steps
+
+When you run the workflow again, `organize_report_files.py` will:
+1. Extract the report date from the folder name
+2. Pass it as `REPORT_DATE` environment variable to the restructure script
+3. The restructure script will find the correct cycle and generate Detailed CSV
+
+The Detailed CSV is now available and includes all the robust columns (lagdays, cycle dates, crime categories) that `prepare_briefing_csv.py` will use. ---
+
+**User**
+
+@Time_Based/2025/25C13W52_25_12_30 this version has all the files added that were recientily removed such as SCRPA_7Day_Data_Dictionary.md, SCRPA_7Day_Filtered.csv, SCRPA_7Day_Summary.csv
+are all of these needed? C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2025\25C13W52_25_12_30\Documentation\CHATGPT_BRIEFING_PROMPT.md
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2025\25C13W52_25_12_30\Documentation\CHATGPT_PROMPT_GUIDE.md
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2025\25C13W52_25_12_30\Documentation\README_7day_outputs.md
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2025\25C13W52_25_12_30\Documentation\SCRPA_7Day_Data_Dictionary.md
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2025\25C13W52_25_12_30\Documentation\SCRPA_Report_Summary.md
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2025\25C13W52_25_12_30\Documentation\SCRPA_WORKFLOW_USER_GUIDE.md
+
+---
+
+**Cursor**
+
+Checking what's in the folders and identifying which files are needed:
+
+
+Clarifying which files are needed and updating the script to exclude optional files:
+
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SCRPA Report File Organization Script
+Author: R. A. Carucci
+Date: 2025-12-01
+Purpose: Organize all SCRPA report files into the report folder structure
+"""
+
+import os
+import sys
+import shutil
+import glob
+import subprocess
+from datetime import datetime
+from pathlib import Path
+# Ensure console can print Unicode safely on Windows
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+print("=" * 60)
+print("SCRPA REPORT FILE ORGANIZATION")
+print("=" * 60)
+print()
+
+# Configuration
+# Try lowercase first (actual folder name), fallback to uppercase
+_scrpa_export_lower = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+_scrpa_export_upper = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\SCRPA"
+RMS_EXPORT_DIR = _scrpa_export_lower if os.path.exists(_scrpa_export_lower) else _scrpa_export_upper
+SCRPA_OUTPUT_DIR = r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output"
+REPORT_BASE_DIR = r"C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based"
+
+def extract_date_from_folder_name(folder_name):
+    """
+    Extract report date from folder name. Format: YYCMMWww_YY_MM_DD (e.g., 25C13W51_25_12_23)
+    Returns: tuple (year, month, day) or None
+    """
+    try:
+        # Split by underscore to get date suffix
+        parts = folder_name.split('_')
+        if len(parts) >= 4:
+            # Last 3 parts should be YY, MM, DD
+            yy = parts[-3]
+            mm = parts[-2]
+            dd = parts[-1]
+            # Convert 2-digit year to 4-digit
+            year = int("20" + yy) if len(yy) == 2 else int(yy)
+            return (year, int(mm), int(dd))
+    except:
+        pass
+    return None
+
+def find_latest_report_folder():
+    """Find the most recently created report folder"""
+    try:
+        # Get current year folder
+        current_year = datetime.now().strftime("%Y")
+        year_folder = os.path.join(REPORT_BASE_DIR, current_year)
+        
+        if not os.path.exists(year_folder):
+            print(f"❌ Year folder not found: {year_folder}")
+            return None
+        
+        # Get all report folders
+        folders = [f for f in os.listdir(year_folder) 
+                  if os.path.isdir(os.path.join(year_folder, f))]
+        
+        if not folders:
+            print(f"❌ No report folders found in {year_folder}")
+            return None
+        
+        # Sort by modification time, newest first
+        folders_with_time = []
+        for folder in folders:
+            folder_path = os.path.join(year_folder, folder)
+            mtime = os.path.getmtime(folder_path)
+            folders_with_time.append((folder_path, mtime))
+        
+        # Return most recent
+        latest = max(folders_with_time, key=lambda x: x[1])
+        folder_name = os.path.basename(latest[0])
+        print(f"✅ Found latest report folder: {folder_name}")
+        return latest[0]
+        
+    except Exception as e:
+        print(f"❌ Error finding report folder: {e}")
+        return None
+
+def collect_csv_files(report_date_tuple=None):
+    """
+    Collect CSV files from RMS export directory, optionally filtered by report date. Args:
+        report_date_tuple: Optional tuple (year, month, day) to filter files by date
+    """
+    csv_files = []
+    
+    # Full export CSVs (from Excel conversion)
+    pattern = os.path.join(RMS_EXPORT_DIR, "*.csv")
+    all_csv_files = glob.glob(pattern)
+    
+    # Exclude files already in archive
+    all_csv_files = [f for f in all_csv_files if "archive" not in f]
+    
+    # Filter by date if report_date_tuple is provided
+    if report_date_tuple:
+        year, month, day = report_date_tuple
+        # Create date string patterns to match (YYYY_MM_DD or YY_MM_DD)
+        date_pattern_4digit = f"{year:04d}_{month:02d}_{day:02d}"
+        date_pattern_2digit = f"{year % 100:02d}_{month:02d}_{day:02d}"
+        
+        filtered_files = []
+        for csv_file in all_csv_files:
+            filename = os.path.basename(csv_file)
+            # Check if filename contains the date pattern
+            if date_pattern_4digit in filename or date_pattern_2digit in filename:
+                filtered_files.append(csv_file)
+        
+        csv_files = filtered_files
+        if len(csv_files) == 0:
+            print(f"⚠️  No CSV files found matching date {year}-{month:02d}-{day:02d}")
+            print(f"   Found {len(all_csv_files)} total CSV file(s), but none match the report date")
+            print(f"   Note: Excel files must be converted to CSV first using convert_all_xlsx.bat")
+        else:
+            print(f"📊 Found {len(csv_files)} CSV file(s) matching report date {year}-{month:02d}-{day:02d}")
+    else:
+        # No date filter - copy all (backward compatibility)
+        csv_files = all_csv_files
+        if len(csv_files) == 0:
+            print(f"⚠️  No CSV files found in {RMS_EXPORT_DIR}")
+            print(f"   Note: Excel files must be converted to CSV first using convert_all_xlsx.bat")
+            print(f"   Excel files found: {len(glob.glob(os.path.join(RMS_EXPORT_DIR, '*.xlsx')))}")
+        else:
+            print(f"📊 Found {len(csv_files)} CSV file(s) to copy (no date filter)")
+    
+    return csv_files
+
+def collect_excel_files(report_date_tuple=None):
+    """
+    Collect Excel files from RMS export directory and archive, optionally filtered by report date. Args:
+        report_date_tuple: Optional tuple (year, month, day) to filter files by date
+    """
+    excel_files = []
+    
+    # Excel files (source files) - check main folder first
+    pattern = os.path.join(RMS_EXPORT_DIR, "*.xlsx")
+    all_excel_files = glob.glob(pattern)
+    
+    # Also check archive folder for Excel files (they may have been archived before organize step)
+    archive_dir = os.path.join(RMS_EXPORT_DIR, "archive")
+    if os.path.exists(archive_dir):
+        archive_pattern = os.path.join(archive_dir, "**", "*.xlsx")
+        archive_files = glob.glob(archive_pattern, recursive=True)
+        all_excel_files.extend(archive_files)
+    
+    # Note: We include archive files because they may have been archived before organize step
+    
+    # Filter by date if report_date_tuple is provided
+    if report_date_tuple:
+        year, month, day = report_date_tuple
+        # Create date string patterns to match (YYYY_MM_DD or YY_MM_DD)
+        # Excel files have format: YYYY_MM_DD_HH_MM_SS_SCRPA_RMS.xlsx
+        date_pattern_4digit = f"{year:04d}_{month:02d}_{day:02d}"
+        date_pattern_2digit = f"{year % 100:02d}_{month:02d}_{day:02d}"
+        
+        filtered_files = []
+        for excel_file in all_excel_files:
+            filename = os.path.basename(excel_file)
+            # Check if filename contains the date pattern
+            if date_pattern_4digit in filename or date_pattern_2digit in filename:
+                filtered_files.append(excel_file)
+        
+        excel_files = filtered_files
+        if len(excel_files) == 0:
+            print(f"⚠️  No Excel files found matching date {year}-{month:02d}-{day:02d}")
+            print(f"   Found {len(all_excel_files)} total Excel file(s), but none match the report date")
+        else:
+            print(f"📊 Found {len(excel_files)} Excel file(s) matching report date {year}-{month:02d}-{day:02d}")
+    else:
+        # No date filter - copy all (backward compatibility)
+        excel_files = all_excel_files
+        print(f"📊 Found {len(excel_files)} Excel file(s) to copy (no date filter)")
+    
+    return excel_files
+
+def collect_report_files():
+    """Collect HTML and PDF files from SCRPA_ArcPy output - only latest versions of each report type"""
+    report_files = []
+    
+    # HTML files
+    html_pattern = os.path.join(SCRPA_OUTPUT_DIR, "*.html")
+    all_html = glob.glob(html_pattern)
+    
+    # PDF files
+    pdf_pattern = os.path.join(SCRPA_OUTPUT_DIR, "*.pdf")
+    all_pdf = glob.glob(pdf_pattern)
+    
+    # Exclude files in archive
+    all_html = [f for f in all_html if "archive" not in f and "99_archive" not in f]
+    all_pdf = [f for f in all_pdf if "archive" not in f and "99_archive" not in f]
+    
+    # Group by report type pattern and keep only the latest of each type
+    html_groups = {}
+    for html_file in all_html:
+        base_name = os.path.basename(html_file)
+        
+        # Determine report type pattern
+        if "_rms_summary.html" in base_name:
+            pattern = "*_rms_summary.html"  # Tactical reports
+        elif "SCRPA_Combined_Executive_Summary_" in base_name:
+            pattern = "SCRPA_Combined_Executive_Summary_*.html"  # Strategic reports
+        else:
+            pattern = base_name  # Unknown pattern, keep as-is
+        
+        # Keep only the latest file for each pattern
+        if pattern not in html_groups or os.path.getmtime(html_file) > os.path.getmtime(html_groups[pattern]):
+            html_groups[pattern] = html_file
+    
+    pdf_groups = {}
+    for pdf_file in all_pdf:
+        base_name = os.path.basename(pdf_file)
+        
+        # Determine report type pattern
+        if "_rms_summary.pdf" in base_name:
+            pattern = "*_rms_summary.pdf"  # Tactical reports
+        elif "SCRPA_Combined_Executive_Summary_" in base_name:
+            pattern = "SCRPA_Combined_Executive_Summary_*.pdf"  # Strategic reports
+        else:
+            pattern = base_name  # Unknown pattern, keep as-is
+        
+        # Keep only the latest file for each pattern
+        if pattern not in pdf_groups or os.path.getmtime(pdf_file) > os.path.getmtime(pdf_groups[pattern]):
+            pdf_groups[pattern] = pdf_file
+    
+    # Add latest files
+    report_files.extend(html_groups.values())
+    report_files.extend(pdf_groups.values())
+    
+    print(f"📄 Found {len(report_files)} report file(s) to copy (latest versions only)")
+    return report_files
+
+def find_7day_csv(report_date_tuple=None):
+    """
+    Find the 7-day filtered CSV file, optionally filtered by report date.

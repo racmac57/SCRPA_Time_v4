@@ -169,7 +169,7 @@ CycleCalendarTyped = Table.TransformColumnTypes(
 - Period classification logic (7-Day, 28-Day, YTD, Prior Year) remains unchanged
 
 **Action Required:**
-1. Open Power BI template: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`
+1. Open Power BI template: `C:\Users\carucci_r\OneDrive - City of Hackensack\08_Templates\Base_Report.pbix`
 2. Review all page titles, visual titles, and text boxes
 3. Update any "weekly" terminology to "bi-weekly" or "reporting period"
 4. Save updated template

@@ -1,0 +1,130 @@
+## Solution
+Added a new calculated column `IsCurrent7DayCycle` to the `Updated_All_Crimes` query that automatically identifies rows belonging to the current 7-day cycle based on `Report_Date`. ## New Column: `IsCurrent7DayCycle`
+
+**Type:** Boolean (true/false)
+
+**Logic:**
+- `true` when `Report_Date` falls within the current cycle's start and end dates
+- `false` otherwise
+- Automatically updates based on "Today" - no manual date changes needed
+
+**Calculation:**
+```m
+IsCurrent7DayCycle = 
+    if HasCurrentCycle and Report_Date <> null then
+        Report_Date >= CurrentCycleStart and Report_Date <= CurrentCycleEnd
+    else false
+```
+
+## How to Use in Power BI
+
+### For the Map Visual:
+
+1. **Add Filter to Map:**
+   - Select the map visual
+   - Go to Visualizations pane → Filters on this visual
+   - Add filter: `IsCurrent7DayCycle`
+   - Set to: `IsCurrent7DayCycle = true`
+
+2. **That's it! ** The filter will automatically work for the current week without any manual updates. ### Alternative: Exclude Backfill Incidents
+
+If you want to exclude backfill incidents (incidents that occurred before the cycle but were reported during it):
+
+**Filter:**
+- `IsCurrent7DayCycle = true`
+- `Backfill_7Day = false`
+
+This shows only incidents that:
+- Were reported during the current 7-day cycle
+- AND occurred during the current 7-day cycle (not backfill)
+
+## Benefits
+
+✅ **No manual updates** - Automatically uses the current cycle based on "Today"
+✅ **Consistent with cycle logic** - Uses the same cycle calendar that defines your 7-day periods
+✅ **Matches chart/table** - Uses `Report_Date` like your other visuals
+✅ **Simple filter** - Just one boolean column to filter on
+
+## Column Location
+
+The `IsCurrent7DayCycle` column is added right after `cycle_name_adjusted` in the query, so it's available for all subsequent transformations and in your Power BI model. ## Testing
+
+After refreshing the query:
+1. Check that `IsCurrent7DayCycle` column appears in your table
+2. Verify it's `true` for incidents with `Report_Date` between 12/23/25 and 12/29/25
+3. Apply the filter to your map visual
+4. The map should now match your chart and table
+
+```
+
+Added a new column `IsCurrent7DayCycle` to the query that automatically identifies rows in the current 7-day cycle. ## What I Added
+
+**New Column:** `IsCurrent7DayCycle` (Boolean)
+- `true` when `Report_Date` falls within the current cycle (based on "Today")
+- `false` otherwise
+- Updates automatically each week — no manual date changes needed
+
+## How to Use in Power BI
+
+1. Refresh the `Updated_All_Crimes` query to get the new column
+2. On your map visual, add a filter:
+   - Filter: `IsCurrent7DayCycle`
+   - Value: `= true`
+
+That's it. The filter will automatically work for the current week and future weeks without manual updates. ## Optional: Exclude Backfill
+
+If you want to exclude backfill incidents (incidents that occurred before the cycle but were reported during it), add a second filter:
+- `Backfill_7Day = false`
+
+This shows only incidents that both occurred and were reported during the current 7-day cycle. The column uses the same cycle calendar logic as the rest of your query, so it stays in sync with your cycle definitions. After refreshing the query, apply the filter to your map visual. ---
+
+**User**
+
+the chart is incorrectly showing 2 incidents happening in the 7Day cycle where the only incident reported in the 7Day cycle happened on 12/20/25 which is 3 lag days. why is the chart showing the incorrect amount@all_crimes.csv @all_crimes.m 
+
+---
+
+**Cursor**
+
+Checking the data and chart filter logic. The chart may be using `Period = "7-Day"` (based on Incident Date) instead of `IsCurrent7DayCycle` (based on Report Date). The issue: `Period` is based on `Incident_Date_Date` (days from today), not `Report_Date`. The chart is likely filtering by `Period = "7-Day"`, which includes incidents that occurred recently but were reported outside the cycle. Checking which incidents are incorrectly included:
+
+
+The chart is using the wrong filter. `Period = "7-Day"` is based on Incident Date (days from today), not Report Date, so it can include incidents reported outside the cycle. ## The Problem
+
+**`Period` column** (line 165-177 in `all_crimes.m`):
+- Calculated from: `Incident_Date_Date` (when the incident occurred)
+- Logic: If incident occurred within 7 days of today → `Period = "7-Day"`
+- Problem: This includes incidents that occurred recently but were reported outside the 7-day cycle
+
+**`IsCurrent7DayCycle` column** (line 228-238 in `all_crimes.m`):
+- Calculated from: `Report_Date` (when the incident was reported)
+- Logic: If `Report_Date` falls within current cycle (12/23-12/29) → `IsCurrent7DayCycle = true`
+- Correct: This matches your cycle definition
+
+## The Solution
+
+Change the chart filter from:
+- `Period = "7-Day"` (incorrect — uses Incident Date)
+
+To:
+- `IsCurrent7DayCycle = true` (correct — uses Report Date)
+
+## How to Fix in Power BI
+
+1. Select the chart visual
+2. Open the Filters pane
+3. Find the `Period` filter and remove it
+4. Add a new filter: `IsCurrent7DayCycle`
+5. Set it to: `IsCurrent7DayCycle = true`
+
+This will show only incidents reported during the current 7-day cycle (12/23/25 - 12/29/25), matching your table and the cycle definition. The chart should then show only the 1 incident (the one with 3 lag days from 12/20/25 that was reported during the cycle), not 2. ---
+
+**User**
+
+The chart shows all periods YTD, 28-Day and 7-Day, showing only IsCurrent7DayCycle will only show the 7-Day incidents 
+
+---
+
+**Cursor**
+
+Updating the `Period` calculation so "7-Day" uses the current cycle (based on `IsCurrent7DayCycle`), while keeping "28-Day" and "YTD" unchanged. This ensures the chart shows all three periods correctly. Updating the `Period` calculation to make "7-Day" cycle-aware (based on `Report_Date`), while keeping "28-Day" and "YTD" unchanged.

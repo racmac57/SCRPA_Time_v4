@@ -1,0 +1,458 @@
+---
+
+## Confirmation
+
+**Yes. **
+
+- **You will use:**  
+  `16_Reports\SCRPA\scripts\run_scrpa_pipeline.py`  
+  (run as: `python scripts/run_scrpa_pipeline.py "<path_to_rms.xlsx>" --report-date MM/DD/YYYY`)
+
+- **You will not use:**
+  - `02_ETL_Scripts\Run_SCRPA_Report_Folder.bat`
+  - `02_ETL_Scripts\Run_SCRPA_Report_Folder.ps1`
+  - `02_ETL_Scripts\Run_SCRPA_Report_Folder (1).bat`
+
+---
+
+## Is `02_ETL_Scripts\SCRPA` still used? **No. ** All SCRPA report processing has moved to **`16_Reports\SCRPA`**. - The three runners in `02_ETL_Scripts` were the old entry points. They set `SCRPA_DIR=%WORK_ROOT%\SCRPA` (i.e. `02_ETL_Scripts\SCRPA`) and called scripts there (e.g. `generate_weekly_report.py`, `organize_report_files.py`, `scripts\generate_all_reports.bat`), then called `16_Reports\SCRPA\scripts\export_enriched_data_and_email.py`. - The new workflow uses only **`16_Reports\SCRPA`** and **`scripts\run_scrpa_pipeline.py`**. Nothing in `02_ETL_Scripts` is required for the current pipeline. So: **`02_ETL_Scripts\SCRPA` is legacy** and can be archived along with the three runners. ---
+
+## Archive plan (recommended: archive, don’t delete)
+
+**Recommendation:** Archive the old runners and the old `SCRPA` folder under `02_ETL_Scripts\_Archive` so you can revert or reference them later. 1. **Create archive folder**  
+   - `02_ETL_Scripts\_Archive\SCRPA_Legacy_2026\`
+
+2. **Move into it**
+   - The three runners (from `02_ETL_Scripts\`):
+     - `Run_SCRPA_Report_Folder.bat`
+     - `Run_SCRPA_Report_Folder.ps1`
+     - `Run_SCRPA_Report_Folder (1).bat`
+   - The whole legacy SCRPA tree:
+     - `02_ETL_Scripts\SCRPA\` → move to  
+       `02_ETL_Scripts\_Archive\SCRPA_Legacy_2026\SCRPA\`
+
+3. **Add a short README** in the archive  
+   - Path: `02_ETL_Scripts\_Archive\SCRPA_Legacy_2026\README.md`  
+   - Content: state that these are the pre–2026 SCRPA entry points and scripts; the **current** entry point is  
+     `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py`  
+     and all processing now lives under `16_Reports\SCRPA`. 4. **Optional**
+   - In `16_Reports\SCRPA\.claude\settings.local.json`, the key `Bash(cmd /c Run_SCRPA_Report_Folder.bat)` can be updated to run `run_scrpa_pipeline.py` instead (e.g. a command that runs the Python script with the right args), so your IDE/shortcuts match the new workflow. If you prefer **removal** instead of archive, the same files/folders would be deleted rather than moved; the rest of the answer stays the same. ---
+
+**Summary**
+
+| Question | Answer |
+|----------|--------|
+| Use only `run_scrpa_pipeline.py`? | Yes. |
+| Still use the three runners in `02_ETL_Scripts`? | No. |
+| Is `02_ETL_Scripts\SCRPA` still used? | No; processing is in `16_Reports\SCRPA`. |
+| Archive or remove old scripts? | Recommended: **archive** under `_Archive\SCRPA_Legacy_2026\` and add README; optional: update `.claude` to point at `run_scrpa_pipeline.py`. |
+
+If you tell me whether you want **archive** or **delete**, I can outline exact step-by-step commands (e.g. PowerShell) to run on your machine, or adapt this into a checklist for you to execute. ---
+
+**User**
+
+I want to archive to C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\_Archive please do steps 1-4
+
+---
+
+**Cursor**
+
+
+Creating the archive folder, moving the three runners and the SCRPA folder, adding the README, and updating `.claude/settings.local.json`. Updating `.claude/settings.local.json` to replace legacy bat permissions with the new pipeline. Summary of what was done:
+
+**1. Archive folder**  
+Created:  
+`C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\_Archive\SCRPA_Legacy_2026`
+
+**2. Runners moved**  
+Into that folder:
+- `Run_SCRPA_Report_Folder.bat`
+- `Run_SCRPA_Report_Folder.ps1`
+- `Run_SCRPA_Report_Folder (1).bat`
+
+**3. Legacy SCRPA tree moved**  
+`02_ETL_Scripts\SCRPA` (and its contents) is now:  
+`_Archive\SCRPA_Legacy_2026\SCRPA\`
+
+**4. README added**  
+`_Archive\SCRPA_Legacy_2026\README.md` explains that these are pre-2026 entry points and points to the current entry point:  
+`16_Reports\SCRPA\scripts\run_scrpa_pipeline.py`
+
+**5. `.claude` settings updated**  
+In `16_Reports\SCRPA\.claude\settings.local.json`, the old bat-based permissions were replaced with:  
+`"Bash(python scripts/run_scrpa_pipeline.py *)"`  
+so the allowed “run” action uses the new pipeline. Current layout under `_Archive\SCRPA_Legacy_2026`:
+- `README.md`
+- `Run_SCRPA_Report_Folder.bat`
+- `Run_SCRPA_Report_Folder.ps1`
+- `Run_SCRPA_Report_Folder (1).bat`
+- `SCRPA\` (legacy scripts: `generate_weekly_report.py`, `organize_report_files.py`, `scripts\`, `docs\`, etc.) Use the new workflow from `16_Reports\SCRPA` with:  
+`python scripts/run_scrpa_pipeline.py "<path_to_rms.xlsx>" --report-date MM/DD/YYYY`
+
+---
+
+**User**
+
+GREAT JOB!! Can you provide the main processing command so it may be run from any location
+
+---
+
+**Cursor**
+
+
+Main processing command that can be run from any location:
+
+
+
+Main processing command (run from any location):
+
+```powershell
+python "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py" "<path_to_rms.xlsx>" --report-date MM/DD/YYYY
+```
+
+**Example:**
+```powershell
+python "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py" "C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\2026_01_28_12_45_44_SCRPA_RMS.xlsx" --report-date 01/28/2026
+```
+
+**Optional arguments:**
+- `-o` or `--output-dir`: Specify custom output directory (default: auto-generated based on cycle and date)
+- `--validate`: Validate against a reference CSV
+- `--help`: Show full help
+
+**Quick reference:**
+- Script: `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py`
+- Input: RMS export (typically from `05_EXPORTS\_RMS\scrpa\*.xlsx`)
+- Output: `16_Reports\SCRPA\Time_Based\2026\<cycle>_<date>\`
+
+Should I create a batch file wrapper (e.g., `run_scrpa.bat`) so you can run it with a shorter command? ---
+
+**User**
+
+can you make a .bat so I only have to double click the file and the n enter the report date? ---
+
+**Cursor**
+
+
+Checking how the pipeline expects the RMS input so the batch file can prompt only for the report date. Creating a .bat that uses the latest RMS export in your exports folder and prompts only for the report date. Here's what the batch file does:
+
+**`16_Reports\SCRPA\Run_SCRPA_Pipeline.bat`**
+
+1. **Uses the latest RMS export**  
+   Looks in `05_EXPORTS\_RMS\scrpa` and picks the most recent `.xlsx` (by name/date). 2. **Asks only for the report date**  
+   Prompts: `Enter report date (MM/DD/YYYY):` — you type e.g. `01/28/2026`. 3. **Runs from any location**  
+   Uses full paths for the script and RMS folder, so you can run it by double‑clicking from Explorer or from any working directory. 4. **Keeps the window open**  
+   Pauses at the end so you can read the output; it also reports success or error. **Usage:**  
+Double‑click `Run_SCRPA_Pipeline.bat`, then enter the report date when prompted (e.g. `01/28/2026`). **If your RMS folder is different**  
+Edit the line in the batch file that sets `RMS_DIR` (around line 12) to your actual path, e.g. :
+
+```bat
+set "RMS_DIR=C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+```
+
+---
+
+**User**
+
+refrence to the RMS foer do you mean the folder the rms exports goes to? ---
+
+**Cursor**
+
+
+Yes. **RMS folder** in the batch file means **the folder where your RMS exports end up** after the watchdog moves them. In the script that’s:
+
+- **`C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa`**
+
+So the flow is:
+
+1. You export from RMS (e.g. to Desktop) and rename to something like `SCRPA_RMS_Export`. 2. The watchdog moves that file into **`05_EXPORTS\_RMS\scrpa`** and renames it with a timestamp (e.g. `2026_01_28_12_45_44_SCRPA_RMS.xlsx`). 3. The batch file uses that same folder and picks the **latest** `.xlsx` in it. If your watchdog is set to a different path (e.g. `05_EXPORTS\_RMS\SCRPA` with different casing, or another drive/folder), change this line in `Run_SCRPA_Pipeline.bat` to that path:
+
+```bat
+set "RMS_DIR=C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+```
+
+So: **RMS folder = the folder the RMS exports go to** (where the watchdog puts the timestamped `.xlsx` files). ---
+
+**User**
+
+will you know the folder as the watcher script moves the export to C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa
+
+---
+
+**Cursor**
+
+
+Yes. The batch file already uses that folder. In `Run_SCRPA_Pipeline.bat` you have:
+
+```bat
+set "RMS_DIR=C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+```
+
+So it’s already set to the same path the watcher uses: **`C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa`**. No change needed. ---
+
+**User**
+
+lets fix your missing context please review the chunked chatlog C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\doc\chunked\2026_01_28_cursor_scrpa_crime_reporting_system_pyt
+
+Then fix the error with the .bat script:
+============================================================
+SCRPA Enriched Data Export and Email Template Generator
+============================================================
+
+📁 Report folder: 26C01W04_26_01_28
+
+❌ Error: All_Crime preview CSV not found in C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28
+Traceback (most recent call last):
+  File "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\export_enriched_data_and_email.py", line 259, in main
+    preview_csv = find_preview_table_csv(report_folder)
+  File "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\export_enriched_data_and_email.py", line 69, in find_preview_table_csv
+    raise FileNotFoundError(f"All_Crime preview CSV not found in {report_folder}")
+FileNotFoundError: All_Crime preview CSV not found in C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28
+
+Γ¥î Script encountered an error. Press any key to continue . . . ---
+
+**Cursor**
+
+
+Reviewing the chunked chatlog and tracing the error: locating the chatlog, then inspecting the export script and how the .bat invokes it. Checking pipeline output filenames and the full export script flow:
+
+
+
+Checking the full `find_preview_table_csv` logic and pipeline output paths:
+
+
+
+Identifying the cause: the pipeline creates `SCRPA_All_Crimes_Enhanced.csv` in `Data/`, while `export_enriched_data_and_email.py` only looks for `All_Crime_*.csv` (Power BI preview). Updating `find_preview_table_csv` to also accept the pipeline output. Summary of what was wrong and what was changed:
+
+**Cause**
+- **run_scrpa_pipeline.py** (what your .bat runs) writes **`SCRPA_All_Crimes_Enhanced.csv`** into `Time_Based\2026\26C01W04_26_01_28\Data\`. - **export_enriched_data_and_email.py** was only looking for **`All_Crime_*.csv`** (the Power BI preview export), so it didn’t see the pipeline file and raised “All_Crime preview CSV not found”. **Change in `export_enriched_data_and_email.py`**
+- **`find_preview_table_csv()`** was updated so it can use either:
+  1. **Power BI preview:** `All_Crime_*.csv` (in report root or `Data\`), or  
+  2. **Pipeline output:** `SCRPA_All_Crimes_Enhanced.csv` or `SCRPA_All_Crimes_*.csv` in `Data\`. - It still picks the most recent file when several match. **Result**
+- After you run **Run_SCRPA_Pipeline.bat** (which runs `run_scrpa_pipeline.py`), the report folder contains `Data\SCRPA_All_Crimes_Enhanced.csv`. - When you run **export_enriched_data_and_email.py** (by hand or from another .bat), it will now find that file and run without the “All_Crime preview CSV not found” error. **Note:** Your **Run_SCRPA_Pipeline.bat** only runs **run_scrpa_pipeline.py**; it does not run **export_enriched_data_and_email.py**. So your flow is either:
+
+1. Run **Run_SCRPA_Pipeline.bat** → then run **export_enriched_data_and_email.py** (e.g. `python scripts/export_enriched_data_and_email.py`) when you want the email template and extra exports, or  
+2. If you want one double‑click to do both, we can add a second step in the .bat that runs **export_enriched_data_and_email.py** after the pipeline succeeds. Say if you want that and I’ll outline the .bat changes. ---
+
+**User**
+
+provide a simple list of what to do after exporting new rms data please
+
+---
+
+**Cursor**
+
+
+**After you have new RMS data**
+
+1. **Export from RMS**  
+   Export as usual; rename to `SCRPA_RMS_Export` (or whatever your watcher expects). 2. **Let the watcher run**  
+   It moves the file to  
+   `C:\...\05_EXPORTS\_RMS\scrpa`  
+   and renames it with a timestamp (e.g. `2026_01_28_12_45_44_SCRPA_RMS.xlsx`). 3. **Run the pipeline**  
+   Double‑click **`Run_SCRPA_Pipeline.bat`** in  
+   `16_Reports\SCRPA\`. When prompted, enter the **report date** (e.g. `01/28/2026`). Wait for it to finish. 4. **Refresh Power BI**  
+   Open the report and refresh so it uses the new CSV from  
+   `Time_Based\2026\<cycle>_<date>\Data\`. If the folder name changed (e.g. new date), update the **FilePath** in **`All_Crimes_Simple.m`** to that folder. 5. **Optional: email template and extra CSVs**  
+   If you use them, run:  
+   `python scripts/export_enriched_data_and_email.py`  
+   from `16_Reports\SCRPA` (or your shortcut). It will use the latest report folder and create/update the email template and filtered CSVs. 6. **Finish the report**  
+   Add or update visuals, export/save the report, and send the email using the template from step 5 if you ran it. ---
+
+**User**
+
+I did 1-3 .bat message 
+SCRPA Pipeline
+--------------
+RMS file: C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\2026_01_28_14_11_00_SCRPA_RMS.xlsx
+
+Enter report date (MM/DD/YYYY): 01/28/2026
+
+Running pipeline for report date 01/28/2026...
+
+======================================================================
+SCRPA PIPELINE - Python-First Crime Data Processing
+======================================================================
+
+[1/5] Loading data...
+  RMS Export: C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\2026_01_28_14_11_00_SCRPA_RMS.xlsx
+C:\Users\carucci_r\scoop\apps\python\current\Lib\site-packages\openpyxl\styles\stylesheet.py:237: UserWarning: Workbook contains no default style, apply openpyxl's default
+  warn("Workbook contains no default style, apply openpyxl's default")
+  Loaded 252 rows from RMS export
+  Cycle Calendar: C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv
+  Loaded 79 cycles
+  Resolved cycle: 26C01W04
+  Bi-Weekly cycle: 26BW02
+
+[2/5] Creating output structure...
+  Output directory: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28
+
+[3/5] Transforming data (scrpa_transform)... Generated 252 enriched rows
+  Saved: SCRPA_All_Crimes_Enhanced.csv
+
+[4/5] Generating 7-day outputs (prepare_7day_outputs)... Saved 7-Day filtered: SCRPA_7Day_With_LagFlags_20260128_141135.csv (5 rows)
+  Saved Lag-Only: SCRPA_7Day_Lag_Only_20260128_141135.csv (2 rows)
+  Saved YAML summary: SCRPA_7Day_Summary_20260128_141135.yaml
+  Saved JSON summary: SCRPA_7Day_Summary_20260128_141135.json
+  Saved stable-name copies (no timestamp)
+
+[5/5] Generating documentation (generate_documentation)... Generating documentation to: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28\Documentation
+  Created: data_dictionary.yaml
+  Created: data_dictionary.json
+  Created: PROJECT_SUMMARY.yaml
+  Created: PROJECT_SUMMARY.json
+  Created: claude.md
+  Created: SCRPA_Report_Summary.md
+
+Generated 6 documentation files
+  Created: EMAIL_TEMPLATE.txt
+
+======================================================================
+SCRPA PIPELINE EXECUTION SUMMARY
+======================================================================
+
+Cycle: 26C01W04
+Bi-Weekly: 26BW02
+Report Due: 01/27/2026
+7-Day Window: 01/20/2026 - 01/26/2026
+Bi-Weekly Period: 01/13/2026 - 01/26/2026
+
+Output Directory: C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W04_26_01_28
+
+Data Summary:
+  Total incidents: 252
+  Period breakdown:
+    Prior Year: 232
+    28-Day: 12
+    Historical: 4
+    7-Day: 3
+    YTD: 1
+  Lag incidents: 42
+  Backfill 7-Day: 2
+
+Generated Files:
+  Data/
+    - SCRPA_7Day_Lag_Only.csv
+    - SCRPA_7Day_Lag_Only_20260128_124847.csv
+    - SCRPA_7Day_Lag_Only_20260128_133303.csv
+    - SCRPA_7Day_Lag_Only_20260128_133345.csv
+    - SCRPA_7Day_Lag_Only_20260128_141019.csv
+    - SCRPA_7Day_Lag_Only_20260128_141135.csv
+    - SCRPA_7Day_Summary.json
+    - SCRPA_7Day_Summary.yaml
+    - SCRPA_7Day_Summary_20260128_124847.json
+    - SCRPA_7Day_Summary_20260128_124847.yaml
+    - SCRPA_7Day_Summary_20260128_133303.json
+    - SCRPA_7Day_Summary_20260128_133303.yaml
+    - SCRPA_7Day_Summary_20260128_133345.json
+    - SCRPA_7Day_Summary_20260128_133345.yaml
+    - SCRPA_7Day_Summary_20260128_141019.json
+    - SCRPA_7Day_Summary_20260128_141019.yaml
+    - SCRPA_7Day_Summary_20260128_141135.json
+    - SCRPA_7Day_Summary_20260128_141135.yaml
+    - SCRPA_7Day_With_LagFlags.csv
+    - SCRPA_7Day_With_LagFlags_20260128_124847.csv
+    - SCRPA_7Day_With_LagFlags_20260128_133303.csv
+    - SCRPA_7Day_With_LagFlags_20260128_133345.csv
+    - SCRPA_7Day_With_LagFlags_20260128_141019.csv
+    - SCRPA_7Day_With_LagFlags_20260128_141135.csv
+    - SCRPA_All_Crimes_Enhanced.csv
+    - SCRPA_All_Crimes_Enhanced_20260128_124847.csv
+    - SCRPA_All_Crimes_Enhanced_20260128_133303.csv
+    - SCRPA_All_Crimes_Enhanced_20260128_133345.csv
+    - SCRPA_All_Crimes_Enhanced_20260128_141019.csv
+    - SCRPA_All_Crimes_Enhanced_20260128_141135.csv
+  Documentation/
+    - claude.md
+    - data_dictionary.json
+    - data_dictionary.yaml
+    - EMAIL_TEMPLATE.txt
+    - PROJECT_SUMMARY.json
+    - PROJECT_SUMMARY.yaml
+    - SCRPA_Report_Summary.md
+======================================================================
+
+Pipeline completed successfully. Press any key to continue . . . the refreshed power bi returnes:Expression.Error: The column 'Report_Date_ForLagday' of the table wasn't found. Details:
+    Report_Date_ForLagday
+at the TypedTable step
+
+---
+
+**Cursor**
+
+
+Checking which columns the pipeline outputs and what Power BI expects for `Report_Date_ForLagday`:
+
+
+
+Checking which columns scrpa_transform writes to the CSV and the full TypedTable list in the M code:
+
+
+
+Checking where Report_Date_ForLagday is set and whether the CSV write could drop or rename it:
+
+
+
+Checking the CSV column count: Python appends `Report_Date_ForLagday` (66th column), while the M code uses `Columns = 65`, so the last column can be dropped. Identifying the cause: the Python CSV has 66 columns (Report_Date_ForLagday is the 66th); the M code uses Columns = 65, so Csv.Document drops the last column. Updating the M code to use 66 columns. Here’s what was going on and what was changed. **Cause**  
+The Python pipeline writes **66 columns** to the CSV (including `Report_Date_ForLagday` as the last one). `All_Crimes_Simple.m` was using **`Columns = 65`**, so Power Query only read the first 65 columns and dropped the 66th. After promoting headers, the table had no `Report_Date_ForLagday` column, which led to the error at the TypedTable step. **Change**  
+In **`m_code/All_Crimes_Simple.m`**, **`Columns = 65`** was updated to **`Columns = 66`** so the CSV is read with all 66 columns, including `Report_Date_ForLagday`. **What you should do**  
+1. In Power BI Desktop, open the query for the SCRPA CSV (the one using `All_Crimes_Simple.m`). 2. If you’re editing the M in Advanced Editor: replace the existing `All_Crimes_Simple` logic with the updated version from  
+   `16_Reports\SCRPA\m_code\All_Crimes_Simple.m`  
+   (so it uses `Columns = 66`). If the query is already from that file, pull the latest version or re-paste the M so it has `Columns = 66`. 3. Save and refresh the query/model. After that, the “column 'Report_Date_ForLagday' of the table wasn't found” error should be resolved. ---
+
+**User**
+
+@m_code/preview_tables/all_crimes/2026_01_28_14_18_49_All_Crimes_Simple.xlsx this is the preview table after the update to the All_Crimes_Simple.m The Sexual Offenses shows an incident ladbled as YTD The earilest sexual offense that happened this year is 26-005140 which was reported on 01/15/2026 and has an incident date of 01/15/2026, It should be labled as 28-Day not YTD. do these m codes need to be considered C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\m_code\Export_Formatting.m
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\m_code\q_CycleCalendar.m
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\m_code\q_RMS_Source.m
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\m_code\q_CallTypeCategories.m does the python script need updating? Or am I miss understanding something? ---
+
+**Cursor**
+
+
+Checking how the Python script classifies Period (28-Day vs YTD) so we can fix the misclassification. Inspecting the Period classification logic and how the 28-Day window is defined:
+
+
+
+Finding where the 28-day window (current_cycle_28_start / current_cycle_28_end) is set:
+
+
+
+Checking how the current cycle is resolved and the calendar's 28-day columns:
+
+
+
+Checking how the calendar is loaded and how cycle dates are parsed (types):
+
+
+
+Checking the cycle calendar format and whether we can add a fallback for the 28-day window:
+
+
+
+Checking how the cycle Series is used — values may be pandas Timestamp instead of date:
+
+
+
+Implementing two fixes: normalizing 28-day cycle bounds to Python dates and adding a fallback 28-day window when the calendar omits them. Adding a fallback for when the calendar's 28-day window equals the 7-day window (a common data entry error):
+
+
+
+Making _to_date handle Python date first (it has no .date() method):
+
+
+
+Checking for linter issues:
+
+
+
+Summary of what’s going on and what was changed:
+
+---
+
+**Why 26-005140 was YTD instead of 28-Day**
+
+- **Period** is set in **Python** (`scrpa_transform.py`), not in Power BI. - The pipeline uses the cycle calendar’s **28_Day_Start** and **28_Day_End** for the current cycle (26C01W04). - For incident date **01/15/2026**, the 28-day window for 26C01W04 should be **12/30/2025 – 01/26/2026**, so 01/15 should be **28-Day**. - So either:
+  1. The calendar’s 28-day window for that cycle is wrong (e.g. 28_Day_Start = 01/20 so 01/15 is outside), or  
+  2. 28-day bounds were missing/NaT, or  
+  3. Type/compare issues (e.g.

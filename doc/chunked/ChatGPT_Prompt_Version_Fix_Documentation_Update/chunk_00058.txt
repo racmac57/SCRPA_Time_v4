@@ -1,0 +1,185 @@
+else:
+            print("✓ LagDayCount reconciliation: PASS")
+        
+        # Additional validation: Check total row matches
+        if len(df_summary) > 0 and df_summary.iloc[-1]["Crime_Category"] == "TOTAL":
+            total_row_total = df_summary.iloc[-1]["TotalCount"]
+            total_row_lag = df_summary.iloc[-1]["LagDayCount"]
+            if total_row_total != detailed_count:
+                print(f"⚠️  WARNING: TOTAL row TotalCount ({total_row_total}) != filtered detailed count ({detailed_count})")
+            if total_row_lag != lagday_detailed:
+                print(f"⚠️  WARNING: TOTAL row LagDayCount ({total_row_lag}) != filtered lagday count ({lagday_detailed})")
+            if total_row_total == detailed_count and total_row_lag == lagday_detailed:
+                print("✓ TOTAL row validation: PASS")
+        
+        print("\n✅ Restructure complete!") except Exception as e:
+        print(f"\n❌ ERROR: {e}")
+        import traceback
+        traceback.print_exc()
+        sys.exit(1)
+
+if __name__ == "__main__":
+    main()
+
+
+```
+
+Verifying the column reordering is in the correct place and testing it:
+
+
+The file is locked (likely open in Excel). The code looks correct. Verifying the column order logic and checking for edge cases:
+
+
+The code looks correct. The permission error is because the CSV file is open. The column reordering logic will:
+
+1. Find `Report Date` in the column list
+2. Remove `IsLagDay` and `LagDays` from their current positions (currently at the end)
+3. Insert them right after `Report Date` (before `Report Time`)
+
+## Column reordering implementation
+
+The new column order will be:
+```
+... Incident Date_Between, Incident Time_Between, Report Date, IsLagDay, LagDays, Report Time, ...
+```
+
+Instead of the current:
+```
+... Report Date, Report Time, ... (other columns) ..., IsLagDay, LagDays, ...
+```
+
+## Benefits
+
+- Logical grouping: lagday info appears right after `Report Date`
+- Easier analysis: lagday fields are near the date fields
+- No breaking changes: only column order changes; data and column names are unchanged
+
+## Testing
+
+The code is ready. When you run the restructure script again (with the CSV file closed), it will:
+1. Generate the Detailed CSV with the new column order
+2. Print a message: "Reordered columns: IsLagDay and LagDays now appear after Report Date"
+
+This change is safe and only affects column order, not data or functionality. ```plaintext
+... Incident Date_Between, Incident Time_Between, Report Date, IsLagDay, LagDays, Report Time, ...
+```
+
+```plaintext
+... Report Date, Report Time, ... (other columns) ..., IsLagDay, LagDays, ...
+```
+
+---
+
+**User**
+
+@25C13W52_25_12_30.csv @Export_Formatting.m @all_crimes.m @Updated_All_Crimes.m @Updated_All_Crimes.csv The @Time_Based/2025/25C13W52_25_12_30/Data/SCRPA_7Day_Detailed.csv shows 25-113076 has a lagday of 3 but the All_Crimes shows diffrent. I provided the m codes for the queries in the power bi file and screen shots of the visual with the filters used. Please advise which of the queries All_Crimes or Updated_All_Crimes is the correct query to use and if I can delete the query not needed. If the query is not needed I assum the copy of the .pbix that is added when the .bat is run has to be updated. Please investigate also cjheck my blind spots
+
+---
+
+**Cursor**
+
+Investigating the discrepancy. Checking how `LagDays` is calculated in both systems and locating case 25-113076. Found a discrepancy: `LagDays` is calculated differently. Checking the case details and comparing the queries:
+
+
+Checking where the Power BI template is copied from:
+
+
+Identified a discrepancy: `LagDays` is calculated differently. Verifying the case details and locating the Power BI template:
+
+
+---
+
+**User**
+
+I closed all the excel files
+
+---
+
+**Cursor**
+
+Investigating the discrepancy. Checking the case details and comparing the LagDays calculations:
+
+
+Analyzing the discrepancy. The Power BI queries calculate `LagDays` incorrectly. Documenting the issue and preparing a fix:
+
+
+Found the issue: both Power BI queries calculate `LagDays` incorrectly. Creating a summary document and fixing the queries:
+
+
+```markdown
+# LagDays Calculation Discrepancy Analysis
+
+## Issue Summary
+
+Case **25-113076** shows different `LagDays` values:
+- **SCRPA_7Day_Detailed.csv**: `LagDays = 3` ✅ (Correct)
+- **Power BI Queries**: `LagDays = 8` ❌ (Incorrect)
+
+## Root Cause
+
+### Correct Calculation (Python Script)
+**Location**: `scrpa_7day_restructure.py` lines 318-321
+
+```python
+# Calculate lagday fields (use datetime version for calculations)
+is_lag = dfw["_IncidentDate"] < cycle_start_dt
+lag_days_cycle = (cycle_start_dt - dfw["_IncidentDate"]).dt.days
+lag_days_cycle = lag_days_cycle.where(is_lag, 0).astype("Int64")
+```
+
+**Definition**: `LagDays` = days incident precedes `CycleStartDate` (0 if not lagday)
+
+**For case 25-113076**:
+- Incident Date: 2025-12-20
+- Cycle Start (25C13W52): 2025-12-23
+- LagDays = 2025-12-23 - 2025-12-20 = **3 days** ✅
+
+### Incorrect Calculation (Power BI Queries)
+**Location**: `all_crimes.m` lines 323-330 and `Updated_All_Crimes.m` lines 174-178
+
+```m
+LagDays_Added = Table.AddColumn(
+    Report_Date_Text_Added,
+    "LagDays",
+    each 
+        if [Report_Date] <> null and [Incident_Date_Date] <> null then
+            Duration.Days([Report_Date] - [Incident_Date_Date])
+        else null,
+    Int64.Type
+)
+```
+
+**Problem**: This calculates `Report Date - Incident Date`, which is actually the **reporting delay**, not the lagday calculation. **For case 25-113076**:
+- Incident Date: 2025-12-20
+- Report Date: 2025-12-28
+- LagDays = 2025-12-28 - 2025-12-20 = **8 days** ❌ (This is actually IncidentToReportDays)
+
+## Data Dictionary Definition
+
+According to `SCRPA_7Day_Data_Dictionary.md`:
+- `LagDays` *(integer)*: days incident precedes `CycleStartDate` (0 if not lagday). - `IncidentToReportDays` *(integer)*: days between `Report Date` and `Incident Date` (QA metric). ## Solution
+
+The Power BI queries need to be updated to:
+1. Load the cycle calendar
+2. Determine the current cycle's start date
+3. Calculate `LagDays` as `CycleStartDate - Incident Date` (only for lagday incidents)
+4. Keep `IncidentToReportDays` as `Report Date - Incident Date` for QA purposes
+
+## Which Query to Use? Both queries (`all_crimes.m` and `Updated_All_Crimes.m`) have the same bug. We need to:
+1. Check which query is actually referenced in the Power BI template
+2. Fix the active query
+3. Consider deleting the unused one (if any)
+
+## Next Steps
+
+1. ✅ Identify which query is used in the Power BI template
+2. ✅ Fix the LagDays calculation in the active query
+3. ✅ Update the Power BI template if needed
+4. ✅ Test with case 25-113076 to verify the fix
+
+```
+
+Fixing both Power BI queries. Checking which one is used and updating the LagDays calculation:
+
+
+Fixing the `LagDays` calculation in both queries. `Updated_All_Crimes.m` already has cycle calendar logic, but `LagDays` is still calculated incorrectly.

@@ -1,0 +1,582 @@
+f.write("Replace all placeholders (shown as {{PLACEHOLDER}}) with actual data from the CSV:\n\n")
+            f.write("```html\n")
+            html_template = f"""<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Strategic Crime Reduction Briefing - Patrol Captain</title>
+
+<!-- Fonts: prefer DIN, fall back to system sans -->
+<style>
+  @font-face {{ font-family: "DIN"; src: local("DIN"); font-weight: normal; font-style: normal; }}
+  :root{{
+    --ink:#0d233c;           /* titles and section headers */
+    --text:#1f2937;          /* body text */
+    --muted:#6b7280;         /* subtle labels */
+    --bg:#f6f8fb;            /* page background */
+    --card:#ffffff;          /* card background */
+    --rule:#d1d5db;          /* dividers */
+    --accent:#0d233c;        /* accent same as titles */
+    --radius:12px;
+    --shadow:0 1px 2px rgba(0,0,0,.06), 0 4px 12px rgba(0,0,0,.04);
+    --small:12px;
+    --base:14px;             /* keep compact for 1-page */
+    --h1:22px;
+    --h2:16px;
+  }}
+  html,body{{height:100%;}}
+  body{{
+    margin:0; padding:24px;
+    background:var(--bg);
+    color:var(--text);
+    font: 400 var(--base)/1.45 "DIN","DIN Next","DINPro",Arial,Helvetica,sans-serif;
+  }}
+  .page{{
+    max-width: 820px;
+    margin:0 auto;
+    background:#fff;
+    padding:24px 28px;
+    box-shadow:var(--shadow);
+  }}
+  h1{{
+    margin:0 0 4px 0;
+    color:var(--ink);
+    font-size:var(--h1);
+    letter-spacing:.2px;
+  }}
+  .meta{{
+    display:grid; grid-template-columns: repeat(3, minmax(0,1fr));
+    gap:8px 16px; margin-bottom:16px; font-size: var(--small);
+  }}
+  .meta b{{color:var(--ink)}}
+  .divider{{
+    border-top:2px solid var(--rule);
+    margin:6px 0 14px 0;
+  }}
+  .section-title{{
+    color:var(--ink); font-weight:700; font-size:var(--h2);
+    margin:10px 0 8px 0;
+  }}
+  .case-card{{
+    background:var(--card); border:1px solid var(--rule);
+    border-radius:var(--radius); padding:12px 14px; margin-bottom:10px;
+    box-shadow:0 1px 1px rgba(0,0,0,.02);
+    page-break-inside: avoid;
+  }}
+  .case-head{{
+    font-weight:700; color:var(--text); margin-bottom:6px;
+  }}
+  .bullets{{margin:0; padding-left:18px;}}
+  .bullets li{{margin:2px 0;}}
+  .muted{{color:var(--muted);}}
+  table{{
+    width:100%; border-collapse:collapse; margin-top:8px; font-size: var(--base);
+    page-break-inside: avoid;
+  }}
+  th,td{{border:1px solid var(--rule); padding:6px 8px; text-align:left;}}
+  th{{background:#f3f4f6; color:var(--ink); font-weight:700;}}
+  tfoot td{{font-weight:700;}}
+  .footer{{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-top:12px; font-size:var(--small); color:var(--muted);
+  }}
+  /* Print: force single page if content fits; avoid orphans/widows */
+  @media print{{
+    @page {{ size: A4; margin: 10mm; }}
+    body{{ background:#fff; }}
+    .page{{ box-shadow:none; padding:0; }}
+    .case-card, .section {{ page-break-inside: avoid; }}
+    a[href]:after{{ content:""; }} /* remove URL prints */
+  }}
+</style>
+</head>
+<body>
+  <div class="page">
+    <h1>Strategic Crime Reduction Briefing - Patrol Captain</h1>
+    <div class="meta">
+      <div><b>Cycle:</b> {cycle_id}</div>
+      <div><b>Range:</b> {range_start} - {range_end}</div>
+      <div><b>Version:</b> 1.5.0</div>
+      <div><b>Prepared by:</b> P.O. R. A. Carucci</div>
+      <div><b>Submitted to:</b> Captain Smith</div>
+      <div><b>Date Generated:</b> {generated_date_str}</div>
+    </div>
+    <div class="divider"></div>
+
+    <!-- SECTIONS: I. Burglary - Auto, II. MV Theft, III. Robbery, IV. Sexual Offenses, V. Burglary - Commercial, VI. Burglary - Residence -->
+    
+    <!-- Each section follows this pattern. Duplicate case-card divs for each case in that category: -->
+    <div class="section">
+      <div class="section-title">I. Burglary - Auto</div>
+      <div class="case-card">
+        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} - {{Statute}}</div>
+        <ul class="bullets">
+          <li><b>Location:</b> {{FullAddress}} ({{Context}})</li>
+          <li><b>Grid/Zone:</b> {{Grid}} / {{Zone}}</li>
+          <li><b>Parking Location:</b> {{ParkingLocation}} (extract from Narrative: phrases like "parked in the parking lot", "parked on the street", "unassigned parking stall on the 4th level of the garage", "driveway", "street", "lot", "garage", "business")</li>
+          <li><b>Victim Vehicle:</b> {{VictimVehicleMake}} {{VictimVehicleModel}} ({{Plate}}, {{PlateState}})</li>
+          <li><b>Point of Entry:</b> {{PointOfEntry}} (extract from Narrative: door, window, bed cover, etc. )</li>
+          <li><b>Means of Entry:</b> {{MeansOfEntry}} (extract from Narrative: forced, unlocked, broken, etc. )</li>
+          <li><b>Suspect Description:</b> {{SuspectDesc}} (use "Data Incomplete" if blank)</li>
+          <li><b>Suspect Vehicle:</b> {{SuspectVehicle}} (use "Unknown" if blank)</li>
+          <li><b>Loss Items:</b> {{LossItems}} (extract from Narrative; use "No reported loss" if blank)</li>
+          <li><b>Loss Total:</b> {{LossTotal}} (calculate by summing all individual loss items; use "$0.00" if missing)</li>
+          <li><b>Status:</b> {{Status}}</li>
+        </ul>
+      </div>
+      <!-- Repeat case-card div for each case in this category -->
+    </div>
+
+    <div class="section">
+      <div class="section-title">II. Motor Vehicle Theft</div>
+      <div class="case-card">
+        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | Motor Vehicle Theft - {{Statute}}</div>
+        <ul class="bullets">
+          <li><b>Location:</b> {{FullAddress}}</li>
+          <li><b>Grid/Zone:</b> {{Grid}} / {{Zone}}</li>
+          <li><b>Parking Location:</b> {{ParkingLocation}} (extract from Narrative: phrases like "parked in the parking lot", "parked on the street", "unassigned parking stall on the 4th level of the garage", "driveway", "street", "lot", "garage", "business")</li>
+          <li><b>Victim Vehicle:</b> {{VictimVehicleMake}} {{VictimVehicleModel}} ({{Plate}}, {{PlateState}})</li>
+          <li><b>Suspect Description:</b> {{SuspectDesc}} (use "Data Incomplete" if blank)</li>
+          <li><b>Suspect Vehicle (used for theft):</b> {{SuspectVehicle}} (use "Unknown" if blank)</li>
+          <li><b>Method:</b> {{Method}} (extract from Narrative: how vehicle was taken)</li>
+          <li><b>Loss Total:</b> {{LossTotal}} (calculate by summing all individual loss items; use "$0.00" if missing)</li>
+          <li><b>Status:</b> {{Status}}</li>
+        </ul>
+      </div>
+      <!-- Repeat case-card div for each case in this category -->
+    </div>
+
+    <div class="section">
+      <div class="section-title">III. Robbery</div>
+      <div class="case-card">
+        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{Subtype}} - {{Statute}}</div>
+        <ul class="bullets">
+          <li><b>Location:</b> {{FullAddress}} ({{Context}})</li>
+          <li><b>Grid/Zone:</b> {{Grid}} / {{Zone}}</li>
+          <li><b>Suspect Description:</b> {{SuspectDesc}} (use "Data Incomplete" if blank)</li>
+          <li><b>Suspect Vehicle:</b> {{SuspectVehicle}} (use "Unknown" if blank)</li>
+          <li><b>Loss Items:</b> {{LossItems}} (extract from Narrative; use "No reported loss" if blank)</li>
+          <li><b>Loss Total:</b> {{LossTotal}} (calculate by summing all individual loss items; use "$0.00" if missing)</li>
+          <li><b>Status:</b> {{Status}}</li>
+        </ul>
+      </div>
+      <!-- Repeat case-card div for each case in this category -->
+    </div>
+
+    <div class="section">
+      <div class="section-title">IV. Sexual Offenses</div>
+      <div class="case-card">
+        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{Subtype}} - {{Statute}}</div>
+        <ul class="bullets">
+          <li><b>Location:</b> {{FullAddress}} ({{Context}})</li>
+          <li><b>Grid/Zone:</b> {{Grid}} / {{Zone}}</li>
+          <li><b>Victim:</b> {{VictimSex}}, {{VictimAdultJuvenile}} (extract from Narrative)</li>
+          <li><b>Suspect:</b> Relationship to victim and age group (adult or juvenile), extract from Narrative. Example: "known family associate, adult male"</li>
+          <li><b>Allegation:</b> {{Allegation}}</li>
+          <li><b>Status:</b> {{Status}}</li>
+        </ul>
+      </div>
+      <!-- Repeat case-card div for each case in this category -->
+    </div>
+
+    <div class="section">
+      <div class="section-title">V. Burglary - Commercial</div>
+      <div class="case-card">
+        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} - {{Statute}}</div>
+        <ul class="bullets">
+          <li><b>Location:</b> {{FullAddress}}</li>
+          <li><b>Grid/Zone:</b> {{Grid}} / {{Zone}}</li>
+          <li><b>Point of Entry:</b> {{PointOfEntry}} (extract from Narrative: door, window, bed cover, etc. )</li>
+          <li><b>Means of Entry:</b> {{MeansOfEntry}} (extract from Narrative: forced, unlocked, broken, etc. )</li>
+          <li><b>Suspect Description:</b> {{SuspectDesc}} (use "Data Incomplete" if blank)</li>
+          <li><b>Suspect Vehicle:</b> {{SuspectVehicle}} (use "Unknown" if blank)</li>
+          <li><b>Loss Items:</b> {{LossItems}} (extract from Narrative; use "No reported loss" if blank)</li>
+          <li><b>Loss Total:</b> {{LossTotal}} (calculate by summing all individual loss items; use "$0.00" if missing)</li>
+          <li><b>Status:</b> {{Status}}</li>
+        </ul>
+      </div>
+      <!-- Repeat case-card div for each case in this category -->
+    </div>
+
+    <div class="section">
+      <div class="section-title">VI. Burglary - Residence</div>
+      <div class="case-card">
+        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} - {{Statute}}</div>
+        <ul class="bullets">
+          <li><b>Location:</b> {{FullAddress}}</li>
+          <li><b>Grid/Zone:</b> {{Grid}} / {{Zone}}</li>
+          <li><b>Point of Entry:</b> {{PointOfEntry}} (extract from Narrative: door, window, bed cover, etc. )</li>
+          <li><b>Means of Entry:</b> {{MeansOfEntry}} (extract from Narrative: forced, unlocked, broken, etc. )</li>
+          <li><b>Suspect Description:</b> {{SuspectDesc}} (use "Data Incomplete" if blank)</li>
+          <li><b>Suspect Vehicle:</b> {{SuspectVehicle}} (use "Unknown" if blank)</li>
+          <li><b>Loss Items:</b> {{LossItems}} (extract from Narrative; use "No reported loss" if blank)</li>
+          <li><b>Loss Total:</b> {{LossTotal}} (calculate by summing all individual loss items; use "$0.00" if missing)</li>
+          <li><b>Status:</b> {{Status}}</li>
+        </ul>
+      </div>
+      <!-- Repeat case-card div for each case in this category -->
+    </div>
+
+    <!-- Key Takeaways Section -->
+    <div class="divider"></div>
+    <div class="section-title">Key Takeaways</div>
+    <ul class="bullets">
+      <li>Total cases by type (summarize from all sections)</li>
+      <li>Most common entry method (for burglaries)</li>
+      <li>Hot-spots (zones/grids with most activity)</li>
+      <li>Peak times/days</li>
+    </ul>
+
+    <!-- Summary Table -->
+    <div class="divider"></div>
+    <div class="section-title">Summary</div>
+    <table aria-label="Summary Table">
+      <thead>
+        <tr>
+          <th>Case #</th>
+          <th>Cycle</th>
+          <th>Type</th>
+          <th>Date/Time</th>
+          <th>Loss Total</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- One row per case, sorted chronologically -->
+        <tr>
+          <td>{{CaseNumber}}</td>
+          <td>{cycle_id}</td>
+          <td>{{IncidentType}}</td>
+          <td>{{MM/DD/YY HH:mm}}</td>
+          <td>{{LossTotal}}</td>
+          <td>{{Status}}</td>
+        </tr>
+        <!-- Repeat for each case -->
+      </tbody>
+    </table>
+
+    <div class="footer">
+      <div>HPD | SSOCC | SCRPA Report | Cycle: {cycle_id}</div>
+      <div>Generated: {generated_date_str}</div>
+    </div>
+  </div>
+</body>
+</html>
+"""
+            f.write(html_template)
+            f.write("```\n\n")
+            
+            # Formatting Requirements
+            f.write("### Formatting Requirements\n\n")
+            f.write("* **Font:** DIN\n")
+            f.write("* **Color for Titles/Headers:** HEX `#0d233c`\n")
+            f.write("* **Page Layout:** Aim for **single page** output suitable for PDF inclusion.\n\n")
+            f.write("* **Header block:** title, Cycle ID, date range, Prepared by, Submitted to, Version.\n\n")
+            f.write("* **Section numbering:** Use Roman numerals (I, II, III, IV, V, VI).\n\n")
+            f.write("* **Case header line format:** `Case {#} | {MM/DD/YY HH:mm} | {Incident Type} - {Statute}`.\n\n")
+            f.write("* **Grid/Zone format:** `H4 / 8` or `F3 / 6`. Zone must be a whole number (not decimal). ") f.write("If Zone appears as a decimal (e.g., 5.0, 8.0), convert it to a whole number (5, 8).\n\n")
+            f.write("* **Parking Location label:** Present for MV Theft and Burglary - Auto.\n\n")
+            f.write("* **Victim Vehicle:** Include make, model, and plate with state.\n\n")
+            f.write("* **Explicit \"Data Incomplete\":** Where any field is blank.\n\n")
+            f.write("* **Method field:** For MV Theft; Point/Means of Entry for burglaries.\n\n")
+            f.write("* **Status:** Accepts combos like `Active/Administratively Closed`.\n\n")
+            f.write("* **Summary table columns:** Case #, Cycle, Type, Date/Time, Loss Total, Status.\n\n")
+            f.write("* **Footer:** \"HPD | SSOCC | SCRPA Report | Cycle: {Cycle}\" and Generated date.\n\n")
+            f.write("* **Single-page layout:** Avoid page breaks inside cards or the table.\n\n")
+            f.write("---\n\n")
+            
+            # CSV Column Mapping
+            f.write("### CSV Column Mapping\n\n")
+            f.write("The CSV file contains the following columns. Use them as follows:\n\n")
+            f.write("**Direct Use (Pre-processed):**\n")
+            f.write("- `CaseNumber` → Use directly\n")
+            f.write("- `IncidentDateTime` → Format as MM/DD/YY HH:mm\n")
+            f.write("- `IncidentType` → Use for case categorization\n")
+            f.write("- `Subtype` → Use for specific incident type\n")
+            f.write("- `Statute` → Include in case header\n")
+            f.write("- `FullAddress` → Use for Location field\n")
+            f.write("- `Grid` → Format as Grid/Zone (e.g., \"H4 / 8\")\n")
+            f.write("- `Zone` → Format as Grid/Zone (e.g., \"H4 / 8\"). **IMPORTANT**: Zone must be a whole number. ") f.write("If Zone is a decimal (e.g., 5.0, 8.0), convert to whole number (5, 8).\n")
+            f.write("- `VictimVehicleMake` → Combine with Model and Plate\n")
+            f.write("- `VictimVehicleModel` → Combine with Make and Plate\n")
+            f.write("- `Plate` → Include with state\n")
+            f.write("- `PlateState` → Include with plate\n")
+            f.write("- `LossTotal` → Calculate by summing all individual loss item values from the Narrative.\n")
+            f.write("  If individual loss items are extracted, add their values together to get the total.\n")
+            f.write("  If LossTotal is provided in CSV, verify it matches the sum of individual items.\n")
+            f.write("- `Status` → Use directly\n")
+            f.write("- `CycleID` → Use in header and footer\n")
+            f.write("- `RangeStart` → Use in header\n")
+            f.write("- `RangeEnd` → Use in header\n\n")
+            f.write("**Extract from Narrative (AI Processing Required):**\n")
+            f.write("- `SuspectDesc` → Parse from Narrative column\n")
+            f.write("- `SuspectVehicle` → Parse from Narrative column\n")
+            f.write("- `LossItems` → Parse specific items and values from Narrative\n")
+            f.write("- `Method` → Extract method of theft (for MV Theft)\n")
+            f.write("- `PointOfEntry` → Extract entry point (for burglaries)\n")
+            f.write("- `MeansOfEntry` → Extract how entry was made (for burglaries)\n")
+            f.write("- `Allegation` → Extract nature of offense (for sexual offenses)\n")
+            f.write("- `VictimSex` → Extract from Narrative\n")
+            f.write("- `VictimAdultJuvenile` → Extract from Narrative\n")
+            f.write("- `ParkingLocation` → Extract context (driveway, street, lot, etc. )\n")
+            f.write("- `Context` → Extract location context\n\n")
+            f.write("---\n\n")
+            
+            # Data Processing Instructions
+            f.write("### Data Processing Instructions\n\n")
+            f.write("**From the CSV file, extract and process:**\n\n")
+            f.write("1. **Parse Narrative column** to extract:\n")
+            f.write("   - Suspect descriptions (clothing, physical traits, age, race, gender)\n")
+            f.write("   - Suspect vehicles (type, color, make/model if mentioned)\n")
+            f.write("   - Loss items (specific items stolen and their values)\n")
+            f.write("     **IMPORTANT**: Calculate Loss Total by summing all individual loss item values.\n")
+            f.write("   - Methods of entry (for burglaries)\n")
+            f.write("   - Point of entry (door, window, etc. )\n")
+            f.write("   - Means of entry (forced, unlocked, etc. )\n")
+            f.write("   - Allegations (for sexual offenses)\n")
+            f.write("   - Victim details (gender, adult/juvenile, relationship)\n")
+            f.write("   - Parking/location context (driveway, street, lot, garage, business)\n\n")
+            f.write("2. **Use pre-processed columns** directly:\n")
+            f.write("   - CaseNumber, IncidentDateTime, IncidentType, Statute\n")
+            f.write("   - FullAddress, Grid, Zone\n")
+            f.write("   - VictimVehicleMake, VictimVehicleModel, Plate, PlateState\n")
+            f.write("   - LossTotal, Status, Officer, Squad, Detective\n")
+            f.write("   - CycleID, RangeStart, RangeEnd\n\n")
+            f.write("3. **Format dates** as MM/DD/YY HH:mm\n\n")
+            f.write("4. **Format money** with commas and two decimals: $1,024.00\n")
+            f.write("   **Loss Total Calculation**: Loss Total must be calculated by adding the sum of all individual loss items.\n")
+            f.write("   Extract individual loss items and their values from the Narrative, then sum them to get the total.\n\n")
+            f.write("5. **Sort chronologically** within each section (oldest to newest)\n\n")
+            f.write("6. **Handle missing data**: Use \"Data Incomplete\" for blank suspect descriptions, ")
+            f.write("\"Unknown\" for missing vehicles, \"$0.00\" for missing loss values\n\n")
+            f.write("---\n\n")
+            
+            # Key Takeaways Section
+            f.write("### Key Takeaways\n\n")
+            f.write("At the end, include a **Key Takeaways** section with:\n\n")
+            f.write("* Total cases by type\n")
+            f.write("* Most common entry method (for burglaries)\n")
+            f.write("* Hot-spots (zones/grids with most activity)\n")
+            f.write("* Peak times/days\n\n")
+            f.write("---\n\n")
+            
+            # Final Instructions
+            f.write("## Final Instructions\n\n")
+            f.write("1. **Read the CSV file** I've uploaded\n")
+            f.write("2. **Process all cases** according to the instructions above\n")
+            f.write("3. **Generate HTML** using the template structure provided\n")
+            f.write("4. **Organize by category** (I-VI) with Roman numerals\n")
+            f.write("5. **Sort chronologically** within each section\n")
+            f.write("6. **Extract from Narrative** all missing details\n")
+            f.write("7. **Create summary table** with all cases\n")
+            f.write("8. **Add Key Takeaways** section\n")
+            f.write("9. **Output complete HTML** ready for PDF conversion\n\n")
+            f.write("**Important:** Use the exact HTML template structure provided above. ") f.write("Replace all placeholders with actual data from the CSV. ") f.write("Flag any missing data as \"Data Incomplete\". ") f.write("Ensure the output fits on a single page when printed.\n\n")
+            f.write("---\n\n")
+            f.write(f"**CSV File**: `{os.path.basename(csv_filename)}`\n")
+            f.write(f"**Total Cases**: {total_cases}\n")
+            f.write(f"**Cycle**: {cycle_id}\n")
+            f.write(f"**Date Range**: {range_start} to {range_end}\n")
+        
+        print(f"✅ ChatGPT prompt file created: {os.path.basename(prompt_file)}")
+        return prompt_file
+        
+    except Exception as e:
+        print(f"⚠️  Could not create ChatGPT prompt file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def create_instructions_file(output_folder, csv_filename):
+    """Create basic instruction file (legacy, kept for backward compatibility)"""
+    try:
+        instructions_file = os.path.join(output_folder, "BRIEFING_INSTRUCTIONS.txt")
+        
+        with open(instructions_file, 'w', encoding='utf-8') as f:
+            f.write("=" * 60 + "\n")
+            f.write("SCRPA BRIEFING GENERATION INSTRUCTIONS\n")
+            f.write("=" * 60 + "\n\n")
+            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("STEP 1: Upload CSV to ChatGPT\n")
+            f.write(f"File: {os.path.basename(csv_filename)}\n\n")
+            f.write("STEP 2: Use the ChatGPT Prompt File\n")
+            f.write("Open CHATGPT_BRIEFING_PROMPT.md and copy the entire prompt.\n")
+            f.write("Paste it into ChatGPT after uploading the CSV.\n\n")
+            f.write("STEP 3: ChatGPT Will Generate HTML\n")
+            f.write("ChatGPT will process the CSV and generate a complete HTML briefing\n")
+            f.write("matching the template structure provided in the prompt.\n\n")
+            f.write("OUTPUT:\n")
+            f.write("ChatGPT will return a complete HTML file ready for PDF conversion.\n")
+            f.write("=" * 60 + "\n")
+        
+        print(f"✅ Instructions file created: {os.path.basename(instructions_file)}")
+        
+    except Exception as e:
+        print(f"⚠️  Could not create instructions file: {e}")
+
+def main():
+    """Main execution"""
+    print("🚀 Starting SCRPA Briefing CSV Preparation\n")
+    
+    # Step 1: Find latest 7-day CSV
+    csv_path = find_latest_7day_csv()
+    if not csv_path:
+        print("\n❌ Cannot proceed without 7-day CSV file")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 2: Get cycle information
+    print("\n📅 Loading cycle information...")
+    # Check for REPORT_DATE environment variable (set by automation batch file)
+    report_date_str = os.environ.get('REPORT_DATE', None)
+    if report_date_str:
+        print(f"   Using Report Date from environment: {report_date_str}")
+        try:
+            report_date_obj = datetime.strptime(report_date_str, "%m/%d/%Y")
+            cycle_info = get_cycle_info_from_calendar(report_date_obj)
+        except ValueError:
+            print(f"   ⚠️  Invalid REPORT_DATE format: {report_date_str}, using today's date")
+            cycle_info = get_current_cycle_info()
+    else:
+        cycle_info = get_current_cycle_info()
+    
+    # Step 3: Transform CSV
+    print("\n🔄 Transforming CSV to briefing format...")
+    briefing_df = transform_to_briefing_format(csv_path, cycle_info)
+    
+    if briefing_df is None:
+        print("\n❌ Transformation failed")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 4: Save briefing CSV
+    print("\n💾 Saving briefing CSV...")
+    output_file = save_briefing_csv(briefing_df, OUTPUT_FOLDER)
+    
+    if not output_file:
+        print("\n❌ Failed to save CSV")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 5: Create ChatGPT prompt file
+    print("\n📝 Creating ChatGPT prompt file...")
+    prompt_file = create_chatgpt_prompt_file(OUTPUT_FOLDER, output_file, briefing_df, cycle_info)
+    
+    # Step 6: Create basic instructions file
+    print("\n📝 Creating instructions file...")
+    create_instructions_file(OUTPUT_FOLDER, output_file)
+    
+    # Success summary
+    print("\n" + "=" * 60)
+    print("✅ SUCCESS - BRIEFING CSV READY FOR CHATGPT")
+    print("=" * 60)
+    print(f"\n📂 Output Location: {OUTPUT_FOLDER}")
+    print(f"📄 CSV File: {os.path.basename(output_file)}")
+    print(f"📋 ChatGPT Prompt: CHATGPT_BRIEFING_PROMPT.md")
+    print(f"📋 Instructions: BRIEFING_INSTRUCTIONS.txt")
+    print("\n🤖 Next Steps:")
+    print("   1. Upload the CSV file to ChatGPT")
+    print("   2. Open CHATGPT_BRIEFING_PROMPT.md")
+    print("   3. Copy the entire prompt and paste it into ChatGPT")
+    print("   4. ChatGPT will generate the HTML briefing")
+    print("   5. Save the HTML output and convert to PDF")
+    print("\n" + "=" * 60)
+    
+    safe_input("\nPress Enter to exit...")
+    return True
+
+if __name__ == "__main__":
+    try:
+        success = main()
+        sys.exit(0 if success else 1)
+    except KeyboardInterrupt:
+        print("\n\n❌ Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        safe_input("\nPress Enter to exit...")
+        sys.exit(1)
+
+
+
+
+
+```
+
+```python
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+SCRPA Briefing CSV Preparation Script
+Author: R. A. Carucci
+Date: 2025-10-28
+Purpose: Transform RMS CSV export into ChatGPT-ready briefing format
+
+This script handles structural transformations and column mapping. AI (ChatGPT) will handle intelligent narrative parsing for:
+- Suspect descriptions
+- Loss items extraction
+- Methods, allegations, etc.
+""" import os
+import sys
+import pandas as pd
+import csv
+from datetime import datetime, timedelta
+# Ensure console can print Unicode safely on Windows
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
+print("=" * 60)
+print("SCRPA BRIEFING CSV PREPARATION")
+print("=" * 60)
+print()
+
+def safe_input(prompt=""):
+    """Handle input() calls in non-interactive mode (when called from batch)"""
+    try:
+        # Check if stdin is available and not redirected
+        if sys.stdin.isatty():
+            return input(prompt)
+        else:
+            # Non-interactive mode - just return empty string
+            return ""
+    except (EOFError, OSError):
+        # Handle EOFError when stdin is closed
+        return ""
+
+# Configuration
+# Check for lowercase 'scrpa' folder first (actual folder name), fallback to uppercase
+_scrpa_export_lower = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+_scrpa_export_upper = r"C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\SCRPA"
+RMS_FOLDER = _scrpa_export_lower if os.path.exists(_scrpa_export_lower) else _scrpa_export_upper
+CYCLE_CSV = r"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv"
+OUTPUT_FOLDER = r"C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output"
+
+def find_latest_7day_csv():
+    """Find the most recent *_ReportDate_Last7.csv file"""
+    try:
+        import glob
+        pattern = os.path.join(RMS_FOLDER, "*_ReportDate_Last7.csv")
+        files = glob.glob(pattern)
+        
+        if not files:
+            print(f"❌ No 7-day CSV files found matching: *_ReportDate_Last7.csv")
+            return None
+        
+        # Sort by modification time, newest first
+        latest_file = max(files, key=os.path.getmtime)
+        print(f"✅ Found 7-day CSV: {os.path.basename(latest_file)}")
+        return latest_file
+        
+    except Exception as e:
+        print(f"❌ Error finding CSV: {e}")
+        return None
+
+def get_cycle_info_from_calendar(report_due_date=None):
+    """
+    Get cycle information from cycle calendar based on Report_Due_Date. Args:
+        report_due_date: datetime object or date string (MM/DD/YYYY). If None, uses today's date.

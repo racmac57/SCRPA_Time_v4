@@ -1,0 +1,93 @@
+If dry_run, print planned steps and wait for approval. 2. Branch: If commit_to=main, checkout main and `git pull --ff-only`. Else create and switch to `docs/update-{YYYYMMDD-HHMM}` from main. 3. Version sync: Update version in VERSION, package.json, pyproject.toml, setup.cfg, or `**/__init__.py`. List changed files. 4. CHANGELOG.md: Create if missing. Keep "Unreleased" at top. Move "Unreleased" to v{version} with today's UTC date. Auto-build notes from Conventional Commits since last tag. Group by feat, fix, docs, refactor, perf, chore. Add compare link last_tag…v{version}. Add fresh "Unreleased" stub at top. 5. README.md: Update commands, paths, badges, version pins. Add "What changed in v{version}" with changelog link. Rebuild TOC if marker exists. 6. SUMMARY.md: Ensure concise project summary. List key directories and entry points. Add 3–6 bullets for changes in v{version}. 7. Formatting and lint: Enforce LF endings. Run markdownlint if present (apply safe fixes). Run prettier or mdformat if present. 8. Links: Check internal links and anchors across the three files. Fix or report broken links. 9. Git commit: Stage only edited docs and version files. Commit message: `docs: update CHANGELOG, README, SUMMARY for v{version} - {change_scope}`. Add footer lines: Refs (issue/PR links if any), Affects (list of files/dirs). Sign commit if GPG configured. 10. Tag and push: If tag_release=yes, create annotated tag v{version} with release notes from changelog (sign if possible). Push current branch. Push tags. 11. Pull request: If open_pr=yes and branch != main, create PR with title `docs: v{version} docs update - {change_scope}`. PR body includes changelog excerpt and checklist. Print PR URL. 12. CI: Print CI run URL if available. Poll once. Report status. 13. Report: Print branch, commit hash, tag, PR URL, CI status. Print JSON block: `{ "version": "...", "branch": "...", "commit": "...", "tag": "...", "pr_url": "...", "ci_status": "...", "files_changed": [...] }`
+
+**Rollbacks**
+- If staged only: `git restore --staged .` and restore backups
+- If committed only: `git reset --soft HEAD~1`
+- If pushed on branch: force push only after approval
+
+Begin by auto-detecting parameters, then proceed with the workflow. 3333333333333333333333333321
+
+---
+
+**Cursor**
+
+
+Checking repo state and finishing the PR, CI check, and report. Creating the PR via a body file, then fetching the CI run URL. Reporting workflow results. GitHub CLI is blocked by proxy (connection to 127.0.0.1:9 refused). Providing manual PR link and final report:
+
+
+
+---
+
+## Workflow report
+
+**Branch:** `docs/update-20260127-1900`  
+**Commit:** `876c070`  
+**Tag:** none (tag_release=no)  
+**PR:** Not created (gh CLI blocked by proxy). Create manually (see below). **CI:** Not checked (no PR; gh API unavailable). **Files changed:** `CHANGELOG.md`, `README.md`, `SUMMARY.md`, `VERSION`
+
+---
+
+### Create PR manually
+
+1. Open: **https://github.com/racmac57/SCRPA_Time_v4/pull/new/docs/update-20260127-1900**
+2. **Title:** `docs: v1.9.3 docs update - LagDays fix, bi-weekly email and briefing, crime breakdown script, report folder alignment`
+3. **Body:** use the checklist below (or your own summary). ```markdown
+## Summary
+Updates CHANGELOG, README, SUMMARY for v1.9.3. Adds VERSION file. ## Changes
+- **CHANGELOG**: [1.9.3] - 2026-01-27 with fix (LagDays/Report_Date_ForLagday, Backfill_7Day), added (crime breakdown script, SCRPA_All_Crimes_Full), changed (bi-weekly email/briefing, 7-day restructure calendar). Compare link. Fresh Unreleased stub. - **README**: Version 1.9.3, "What changed in v1.9.3" with CHANGELOG link, Recent Updates v1.9.3 bullets. - **SUMMARY**: Version 1.9.3, v1.9.3 (Latest) bullets. - **VERSION**: 1.9.3
+
+## Checklist
+- [x] CHANGELOG updated
+- [x] README version and recent updates
+- [x] SUMMARY version and recent improvements
+- [x] VERSION file added
+- [x] Conventional commit message
+- [x] Only docs and version files staged
+```
+
+---
+
+### JSON block
+
+```json
+{
+  "version": "1.9.3",
+  "branch": "docs/update-20260127-1900",
+  "commit": "876c070bedb0167570d002d1eacc91a7f9f09603",
+  "tag": null,
+  "pr_url": "https://github.com/racmac57/SCRPA_Time_v4/pull/new/docs/update-20260127-1900",
+  "ci_status": "skipped",
+  "files_changed": ["CHANGELOG.md", "README.md", "SUMMARY.md", "VERSION"]
+}
+```
+
+---
+
+### gh proxy issue
+
+`gh` is using a proxy (`127.0.0.1:9`) that is refusing connections. To fix:
+
+- Clear or correct `HTTP_PROXY` / `HTTPS_PROXY` (and `http_proxy` / `https_proxy` if set). - Or run `gh pr create` from a terminal where those are unset, then use the same title and body as above. ---
+
+### Completed steps
+
+1. **Preflight:** Git repo OK, branch `main`, remote `origin`, user verified. 2. **Branch:** Created and switched to `docs/update-20260127-1900` from `main`. 3. **Version sync:** Added `VERSION` with `1.9.3`; no package.json/pyproject.toml. 4. **CHANGELOG:** [1.9.3] - 2026-01-27, fix/added/changed notes, compare link, new Unreleased section. 5. **README:** Version 1.9.3, “What changed in v1.9.3” + link, Recent Updates. 6. **SUMMARY:** Version 1.9.3, v1.9.3 bullets. 7. **Formatting:** LF respected; no markdownlint/prettier/mdformat run. 8. **Links:** Checked; README → CHANGELOG anchor OK.
+9. **Commit:** Only `CHANGELOG.md`, `README.md`, `SUMMARY.md`, `VERSION` staged and committed. 10. **Push:** Branch pushed to `origin`. 11. **PR:** Not created (gh blocked by proxy); manual link and body provided. 12. **CI:** Skipped. 13. **Report:** This summary and JSON above. ---
+
+**User**
+
+I'm preparing to export this chat. Please generate a descriptive filename that summarizes the main topic or task of this conversation. Requirements:
+• 4-8 words
+• Title Case (capitalize major words)
+• Replace spaces with underscores
+• Include .md extension
+• No dates or special characters
+
+Output only the filename, nothing else. After export, I'll process it using: scripts\quick_process_chatlog.bat
+
+---
+
+**Cursor**
+
+
+SCRPA_Docs_Update_Version_Sync_And_Release_Workflow.md

@@ -1,0 +1,349 @@
+in
+            if Text.Contains(L, "MOTOR VEHICLE THEFT") and (Text.Contains(N, "THEFT OF HIS PROPERTY") or Text.Contains(N, "THEFT FROM MOTOR VEHICLE")) then "Burglary Auto"
+            else if Text.Contains(L, "MOTOR VEHICLE THEFT") then "Motor Vehicle Theft"
+            else if List.AnyTrue({Text.Contains(L, "BURGLARY - AUTO"), Text.Contains(L, "ATTEMPTED BURGLARY - AUTO"), Text.Contains(L, "THEFT FROM MOTOR VEHICLE")}) then "Burglary Auto"
+            else if List.AnyTrue({Text.Contains(L, "BURGLARY - COMMERCIAL"), Text.Contains(L, "ATTEMPTED BURGLARY - COMMERCIAL"), Text.Contains(L, "BURGLARY - RESIDENCE"), Text.Contains(L, "ATTEMPTED BURGLARY - RESIDENCE")}) then "Burglary - Comm & Res"
+            else if Text.Contains(L, "ROBBERY") then "Robbery"
+            else if List.AnyTrue({Text.Contains(L, "SEXUAL"), Text.Contains(L, "RAPE")}) then "Sexual Offenses"
+            else "Other",
+        type text
+    ),
+
+    CleanIncidentTypes_Added = Table.TransformColumns(
+        CrimeCategory_Added,
+        {
+            {"Incident Type_1", each if _<>null then Text.BeforeDelimiter(_," - 2C") else _, type text},
+            {"Incident Type_2", each if _<>null then Text.BeforeDelimiter(_," - 2C") else _, type text},
+            {"Incident Type_3", each if _<>null then Text.BeforeDelimiter(_," - 2C") else _, type text}
+        }
+    ),
+
+    // ===========================================
+    // NORMALIZE "ATTEMPTED" BURGLARIES
+    // ===========================================
+    
+    Incident_Type_1_Norm_Added = Table.AddColumn(
+        CleanIncidentTypes_Added,
+        "Incident_Type_1_Norm",
+        each 
+            if [Incident Type_1] <> null then
+                Text.Replace([Incident Type_1], "Attempted Burglary", "Burglary")
+            else null,
+        type nullable text
+    ),
+    
+    Incident_Type_2_Norm_Added = Table.AddColumn(
+        Incident_Type_1_Norm_Added,
+        "Incident_Type_2_Norm",
+        each 
+            if [Incident Type_2] <> null then
+                Text.Replace([Incident Type_2], "Attempted Burglary", "Burglary")
+            else null,
+        type nullable text
+    ),
+    
+    Incident_Type_3_Norm_Added = Table.AddColumn(
+        Incident_Type_2_Norm_Added,
+        "Incident_Type_3_Norm",
+        each 
+            if [Incident Type_3] <> null then
+                Text.Replace([Incident Type_3], "Attempted Burglary", "Burglary")
+            else null,
+        type nullable text
+    ),
+
+    // ===========================================
+    // NARRATIVE CLEANING
+    // ===========================================
+    
+    Narrative_Cleaned = Table.TransformColumns(
+        Incident_Type_3_Norm_Added,
+        {{"Narrative", each 
+            if _ = null or _ = "" then null
+            else
+                let
+                    text = _,
+                    step1 = Text.Replace(Text.Replace(Text.Replace(text, "#(cr)#(lf)", " "), "#(lf)", " "), "#(cr)", " "),
+                    step2 = Text.Replace(Text.Replace(Text.Replace(step1, "    ", " "), "   ", " "), "  ", " "),
+                    step3 = Text.Clean(step2),
+                    step4 = Text.Trim(step3),
+                    final = if step4 = "" then null else step4
+                in final,
+            type text
+        }}
+    ),
+    
+    // ===========================================
+    // VEHICLE FORMATTING
+    // ===========================================
+    
+    Vehicle_1_Added = Table.AddColumn(
+        Narrative_Cleaned,
+        "Vehicle_1",
+        each 
+            let
+                regState = if [#"Reg State 1"] <> null then Text.From([#"Reg State 1"]) else "",
+                registration = if [#"Registration 1"] <> null then Text.From([#"Registration 1"]) else "",
+                make = if [Make1] <> null then Text.From([Make1]) else "",
+                model = if [Model1] <> null then Text.From([Model1]) else "",
+                hasData = regState <> "" or registration <> "" or make <> "" or model <> ""
+            in
+                if hasData then
+                    let
+                        stateReg = 
+                            if regState <> "" and registration <> "" then regState & " - " & registration
+                            else if registration <> "" then registration
+                            else if regState <> "" then regState
+                            else "",
+                        
+                        makeModel = 
+                            if make <> "" and model <> "" then make & "/" & model
+                            else if make <> "" then make
+                            else if model <> "" then model
+                            else "",
+                        
+                        result = 
+                            if stateReg <> "" and makeModel <> "" then stateReg & ", " & makeModel
+                            else if stateReg <> "" then stateReg
+                            else if makeModel <> "" then makeModel
+                            else ""
+                    in
+                        if result = "" then null else Text.Upper(result)
+                else null,
+        type nullable text
+    ),
+    
+    Vehicle_2_Added = Table.AddColumn(
+        Vehicle_1_Added,
+        "Vehicle_2",
+        each 
+            let
+                regState = if [#"Reg State 2"] <> null then Text.From([#"Reg State 2"]) else "",
+                registration = if [#"Registration 2"] <> null then Text.From([#"Registration 2"]) else "",
+                make = if [Make2] <> null then Text.From([Make2]) else "",
+                model = if [Model2] <> null then Text.From([Model2]) else "",
+                hasData = regState <> "" or registration <> "" or make <> "" or model <> ""
+            in
+                if hasData then
+                    let
+                        stateReg = 
+                            if regState <> "" and registration <> "" then regState & " - " & registration
+                            else if registration <> "" then registration
+                            else if regState <> "" then regState
+                            else "",
+                        
+                        makeModel = 
+                            if make <> "" and model <> "" then make & "/" & model
+                            else if make <> "" then make
+                            else if model <> "" then model
+                            else "",
+                        
+                        result = 
+                            if stateReg <> "" and makeModel <> "" then stateReg & ", " & makeModel
+                            else if stateReg <> "" then stateReg
+                            else if makeModel <> "" then makeModel
+                            else ""
+                    in
+                        if result = "" then null else Text.Upper(result)
+                else null,
+        type nullable text
+    ),
+    
+    Vehicle_Combined_Added = Table.AddColumn(
+        Vehicle_2_Added,
+        "Vehicle_1_and_Vehicle_2",
+        each 
+            if [Vehicle_1] <> null and [Vehicle_2] <> null then
+                [Vehicle_1] & " | " & [Vehicle_2]
+            else null,
+        type nullable text
+    ),
+
+    // ===========================================
+    // CLEAN ADDRESS (REMOVE CITY/STATE/ZIP)
+    // ===========================================
+    
+    Clean_Address_Added = Table.AddColumn(
+        Vehicle_Combined_Added,
+        "Clean_Address",
+        each 
+            if [FullAddress] <> null and [FullAddress] <> "" then
+                let
+                    address = Text.Trim([FullAddress]),
+                    cleaned = Text.BeforeDelimiter(address, ", Hackensack, NJ", {0, RelativePosition.FromStart})
+                in
+                    if cleaned <> "" then cleaned else address
+            else null,
+        type nullable text
+    ),
+
+    CallTypeCategories = Csv.Document(File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv")),
+    CallTypeCategoriesTable = Table.PromoteHeaders(CallTypeCategories),
+    
+    CategoryType_Added = Table.AddColumn(
+        Clean_Address_Added,
+        "Category_Type",
+        each
+            let
+                IncidentToMatch = if [ALL_INCIDENTS] <> null and [ALL_INCIDENTS] <> "" then [ALL_INCIDENTS] else [Incident Type_1],
+                MatchingCategory = 
+                    if IncidentToMatch = null or IncidentToMatch = "" then "Unknown"
+                    else
+                        let
+                            ExactMatch = Table.SelectRows(
+                                CallTypeCategoriesTable,
+                                each [Incident] = IncidentToMatch or [Incident_Norm] = IncidentToMatch
+                            ),
+                            PartialMatch = if Table.IsEmpty(ExactMatch) then
+                                Table.SelectRows(
+                                    CallTypeCategoriesTable,
+                                    each Text.Contains(IncidentToMatch, [Incident]) or Text.Contains([Incident], IncidentToMatch)
+                                )
+                            else ExactMatch,
+                            CategoryResult = 
+                                if Table.IsEmpty(ExactMatch) and Table.IsEmpty(PartialMatch) then "Unknown"
+                                else if not Table.IsEmpty(ExactMatch) then ExactMatch{0}[Category_Type]
+                                else PartialMatch{0}[Category_Type]
+                        in CategoryResult
+            in MatchingCategory,
+        type text
+    ),
+    
+    ResponseType_Added = Table.AddColumn(
+        CategoryType_Added,
+        "Response_Type",
+        each
+            let
+                IncidentToMatch = if [ALL_INCIDENTS] <> null and [ALL_INCIDENTS] <> "" then [ALL_INCIDENTS] else [Incident Type_1],
+                MatchingResponse = 
+                    if IncidentToMatch = null or IncidentToMatch = "" then "Unknown"
+                    else
+                        let
+                            ExactMatch = Table.SelectRows(
+                                CallTypeCategoriesTable,
+                                each [Incident] = IncidentToMatch or [Incident_Norm] = IncidentToMatch
+                            ),
+                            PartialMatch = if Table.IsEmpty(ExactMatch) then
+                                Table.SelectRows(
+                                    CallTypeCategoriesTable,
+                                    each Text.Contains(IncidentToMatch, [Incident]) or Text.Contains([Incident], IncidentToMatch)
+                                )
+                            else ExactMatch,
+                            ResponseResult = 
+                                if Table.IsEmpty(ExactMatch) and Table.IsEmpty(PartialMatch) then "Unknown"
+                                else if not Table.IsEmpty(ExactMatch) then ExactMatch{0}[Response_Type]
+                                else PartialMatch{0}[Response_Type]
+                        in ResponseResult
+            in MatchingResponse,
+        type text
+    ),
+
+    TimeValidation_Added = Table.AddColumn(
+        ResponseType_Added,
+        "Time_Validation",
+        each 
+            let
+                OriginalIncidentTime = [Incident Time],
+                OriginalIncidentTimeBetween = [Incident Time_Between], 
+                OriginalReportTime = [Report Time],
+                CascadedTime = [BestTimeValue],
+                TimeSource = [TimeSource],
+                
+                ValidationText = 
+                    "Source: " & TimeSource & 
+                    " | Original IT: " & (if OriginalIncidentTime <> null then Text.From(OriginalIncidentTime) else "null") &
+                    " | Original ITB: " & (if OriginalIncidentTimeBetween <> null then Text.From(OriginalIncidentTimeBetween) else "null") &
+                    " | Original RT: " & (if OriginalReportTime <> null then Text.From(OriginalReportTime) else "null") &
+                    " | Cascaded: " & (if CascadedTime <> null then Time.ToText(CascadedTime) else "null")
+            in ValidationText,
+        type text
+    ),
+
+    FinalResult = TimeValidation_Added,
+
+#"Sorted Rows" = Table.Sort(FinalResult, {{"Incident Date", Order.Ascending }, 
+                                           {"Period", Order.Descending}, 
+                                           {"Report Date", Order.Ascending}, 
+                                           {
+  "Report_Date", Order.Ascending
+}
+}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Sorted Rows",{{"Report Time", type time}, {"Incident Time_Between", type time}, {"Incident Time", type time}}),
+    #"Sorted Rows1" = Table.Sort(#"Changed Type",{{"Report Date", Order.Ascending}})
+in
+    #"Sorted Rows1"
+
+---
+
+**Cursor**
+
+In the old code, `Backfill_7Day` flagged incidents that occurred before the cycle but were reported during it. For the map to match the chart/table, use one of these filters:
+
+## Recommended filter (matches chart/table)
+
+Filter by `Report_Date` to match the 7-Day cycle definition:
+```
+Report_Date >= 12/23/2025 AND Report_Date <= 12/29/2025
+```
+
+This shows:
+- Incidents that occurred during 12/23–12/29 and were reported during that period
+- Backfill incidents (occurred before 12/23 but reported during 12/23–12/29)
+
+## Alternative: exclude backfill if you only want incidents that occurred during the cycle
+
+If you want only incidents that occurred during 12/23–12/29 (excluding backfill):
+```
+Incident_Date_Date >= 12/23/2025 AND Incident_Date_Date <= 12/29/2025
+```
+
+## Using Backfill_7Day (old approach)
+
+If you want to replicate the old behavior:
+```
+Backfill_7Day = false AND Report_Date >= 12/23/2025 AND Report_Date <= 12/29/2025
+```
+
+This excludes backfill incidents and shows only incidents that occurred and were reported during the cycle. ## Recommendation
+
+Since the chart and table are correct, they’re likely using `Report_Date`. Use the same filter on the map:
+```
+Report_Date >= 12/23/2025 AND Report_Date <= 12/29/2025
+```
+
+This keeps the map aligned with the chart/table. If you want to exclude backfill incidents, add:
+```
+AND Backfill_7Day = false
+```
+
+Which approach do you want: include backfill incidents (use `Report_Date` only) or exclude them (add `Backfill_7Day = false`)? ```plaintext
+Report_Date >= 12/23/2025 AND Report_Date <= 12/29/2025
+```
+
+```plaintext
+Incident_Date_Date >= 12/23/2025 AND Incident_Date_Date <= 12/29/2025
+```
+
+```plaintext
+Backfill_7Day = false AND Report_Date >= 12/23/2025 AND Report_Date <= 12/29/2025
+```
+
+```plaintext
+Report_Date >= 12/23/2025 AND Report_Date <= 12/29/2025
+```
+
+```plaintext
+AND Backfill_7Day = false
+```
+
+---
+
+**User**
+
+I would rather not have to change the filters everyweek
+
+---
+
+**Cursor**
+
+Adding a calculated column to the query that automatically identifies rows in the current 7-day cycle, so you don't need to update filters each week.

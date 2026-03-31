@@ -1,0 +1,195 @@
+{
+  "source_file": "refactor_bi_weekly_report_claude_code.md",
+  "source_path": "C:\\_chunker\\02_data\\refactor_bi_weekly_report_claude_code.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\refactor_bi_weekly_report_claude_code\\2026_01_27_18_29_25_refactor_bi_weekly_report_claude_code.origin.json",
+  "created_at": "2026_01_27_18_29_25",
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "multi",
+    "department": "admin",
+    "key_terms": [
+      "scrpa",
+      "read",
+      "onedrive",
+      "city",
+      "hackensack",
+      "log"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "Microsoft Windows [Version 10.0.26200.7628]\n(c) Microsoft Corporation. All rights reserved.",
+    "first_line": "Microsoft Windows [Version 10.0.26200.7628]"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-27T18:29:25+00:00_refactor_bi_weekly_report_claude_code_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "city",
+        "code",
+        "data",
+        "docs",
+        "hackensack",
+        "json",
+        "markdown",
+        "onedrive",
+        "python",
+        "read",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scrpa",
+        "read",
+        "onedrive",
+        "city",
+        "hackensack",
+        "2026"
+      ],
+      "summary": "Microsoft Windows [Version 10.0.26200.7628]\n(c) Microsoft Corporation.",
+      "char_length": 30074,
+      "byte_length": 35420
+    },
+    {
+      "chunk_id": "2026-01-27T18:29:25+00:00_refactor_bi_weekly_report_claude_code_chunk2",
+      "chunk_index": 2,
+      "file": "chunk_00001.txt",
+      "tags": [
+        "ai",
+        "city",
+        "code",
+        "data",
+        "docs",
+        "hackensack",
+        "json",
+        "markdown",
+        "onedrive",
+        "python",
+        "read",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scrpa",
+        "read",
+        "onedrive",
+        "city",
+        "hackensack",
+        "log"
+      ],
+      "summary": "The \"REPORT_DATE format check\" log line is confusing\n  4.",
+      "char_length": 29992,
+      "byte_length": 36843
+    },
+    {
+      "chunk_id": "2026-01-27T18:29:25+00:00_refactor_bi_weekly_report_claude_code_chunk3",
+      "chunk_index": 3,
+      "file": "chunk_00002.txt",
+      "tags": [
+        "2026",
+        "ai",
+        "city",
+        "code",
+        "data",
+        "docs",
+        "hackensack",
+        "json",
+        "markdown",
+        "onedrive",
+        "python",
+        "read",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scrpa",
+        "read",
+        "2026",
+        "onedrive",
+        "city",
+        "hackensack"
+      ],
+      "summary": "The log shows Step 2 completed successfully but then ends with \"Press Enter to exit...\" - the briefing script has a pause that's hanging the workflow.",
+      "char_length": 29588,
+      "byte_length": 35558
+    },
+    {
+      "chunk_id": "2026-01-27T18:29:25+00:00_refactor_bi_weekly_report_claude_code_chunk4",
+      "chunk_index": 4,
+      "file": "chunk_00003.txt",
+      "tags": [
+        "ai",
+        "city",
+        "code",
+        "data",
+        "docs",
+        "hackensack",
+        "json",
+        "markdown",
+        "onedrive",
+        "python",
+        "read",
+        "scrpa",
+        "sql"
+      ],
+      "key_terms": [
+        "scrpa",
+        "log",
+        "read",
+        "onedrive",
+        "city",
+        "hackensack"
+      ],
+      "summary": "\"%BRIEFING_SCRIPT%\" <nul\n      263  if errorlevel 1 (\n      264    echo [WARNING] Briefing CSV had issues\n      265    set \"OVERALL_ERR=1\"\n\n* Fixing root causes in scripts… (esc to interrupt · ctrl+t to show todos · 3m 55s · ↓ 1.1k token...",
+      "char_length": 29588,
+      "byte_length": 36005
+    },
+    {
+      "chunk_id": "2026-01-27T18:29:25+00:00_refactor_bi_weekly_report_claude_code_chunk5",
+      "chunk_index": 5,
+      "file": "chunk_00004.txt",
+      "tags": [
+        "ai",
+        "call",
+        "code",
+        "data",
+        "docs",
+        "folder",
+        "json",
+        "markdown",
+        "onedrive",
+        "print",
+        "python",
+        "sql",
+        "step"
+      ],
+      "key_terms": [
+        "folder",
+        "log",
+        "call",
+        "print",
+        "step",
+        "onedrive"
+      ],
+      "summary": "● Update(~\\OneDrive - City of Hackensack\\02_ETL_Scripts\\Run_SCRPA_Report_Folder.bat)\n  ⎿  Added 5 lines, removed 1 line\n      197  call :log \"STEP 2: RUN FULL REPORT GENERATION\"\n      198  call :cwd \"%OUTPUT_DIR%\"\n      199\n      200 +ca...",
+      "char_length": 14551,
+      "byte_length": 15768
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

@@ -21,8 +21,22 @@ The SCRPA Reporting System automates the generation of bi-weekly crime analysis 
 - **`preview_tables/`** - CSV preview exports from Power BI queries for validation
 - **`time_based/`** - Organized report folders by cycle (YYYY/CCWWW_YY_MM_DD/)
 - **`doc/`** - Documentation and analysis files
+- **`Documentation/`** - **Canonical** project docs (data_dictionary, PROJECT_SUMMARY, claude.md). Not copied to each cycle; update with `python scripts/generate_documentation.py -o path/to/SCRPA/Documentation`.
+- **`scripts/run_scrpa_pipeline.py`** - Python-first pipeline (transforms RMS, writes Data + cycle Documentation + copies Reports).
 
 ## Quick Start
+
+### Python pipeline (16_Reports/SCRPA)
+
+1. Place the latest RMS export in `05_EXPORTS\_RMS\scrpa\`.
+2. Run `Run_SCRPA_Pipeline.bat` (in this repo) or `python scripts/run_scrpa_pipeline.py` with the CSV and report date.
+3. Outputs go to `Time_Based/YYYY/<cycle>_<date>/` with Data/, Documentation/ (cycle-only: `SCRPA_Report_Summary.md`, `CHATGPT_BRIEFING_PROMPT.md`, `CHATGPT_SESSION_PROMPT.md`, `HPD_REPORT_STYLE_BLOCK.md`, `EMAIL_TEMPLATE.txt`, plus copied `PROJECT_SUMMARY.*`), and Reports/ (HTML from SCRPA_ArcPy, patched as configured). Power BI template is copied from `08_Templates\Base_Report.pbix`.
+
+**ChatGPT tactical HTML → PDF:** Follow `CHATGPT_SESSION_PROMPT.md`: close **`.content`** after Lag Day, wrap **7-Day Incident Highlights** + **`.footer`** in **`.report-tail`**, use **`table.incident-highlights`**, and keep the footer inside any landscape wrapper (see `HPD_Report_Style_Prompt.md` / per-cycle style block).
+
+Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports/SCRPA/Documentation`; they are not written into each cycle folder.
+
+## Quick Start (legacy 02_ETL_Scripts)
 
 ### Running a Complete Report
 
@@ -152,10 +166,9 @@ Reports follow this naming pattern:
 - **`SCRPA_Combined_Executive_Summary_*.html/pdf`** - Strategic executive summaries
 
 ### Documentation
-- **`CHATGPT_BRIEFING_PROMPT.md`** - Complete prompt for ChatGPT (includes embedded CSV data)
-- **`CHATGPT_USAGE_INSTRUCTIONS.md`** - Quick reference guide for using ChatGPT prompt
-- **`SCRPA_Report_Summary.md`** - Consolidated report summary
-- **`CHATGPT_PROMPT_GUIDE.md`** - Detailed usage guide
+- **Canonical** (in `16_Reports/SCRPA/Documentation/` only): `data_dictionary.yaml/json`, `PROJECT_SUMMARY.yaml/json`, `claude.md`. Not copied to each cycle; regenerate with `python scripts/generate_documentation.py -o path/to/SCRPA/Documentation`.
+- **Per-cycle** (in each report folder `Documentation/`): `SCRPA_Report_Summary.md` (populated from pipeline data), `CHATGPT_BRIEFING_PROMPT.md` (cycle placeholders filled), `EMAIL_TEMPLATE.txt`.
+- **Legacy**: `CHATGPT_USAGE_INSTRUCTIONS.md`, `CHATGPT_PROMPT_GUIDE.md` where present.
 
 ---
 
@@ -163,7 +176,7 @@ Reports follow this naming pattern:
 
 ### Paths
 - **Reports Base**: `16_Reports\SCRPA\Time_Based\`
-- **Template Source**: `15_Templates\Base_Report.pbix`
+- **Template Source**: `08_Templates\Base_Report.pbix`
 - **Exports**: `05_EXPORTS\_RMS\scrpa\`
 - **Output**: `SCRPA_ArcPy\06_Output\`
 
@@ -234,6 +247,12 @@ For issues or questions:
 ---
 
 ## Recent Updates
+
+### v2.0.0 (Latest - 2026-02-10)
+- ✅ **HTML Auto-Generation**: Pipeline now automatically calls SCRPA_ArcPy to generate fresh HTML reports
+- ✅ **Dynamic M Code**: Power BI template automatically finds latest cycle data (no manual editing)
+- ✅ **YAML → JSON**: Replaced YAML with JSON for better compatibility and performance
+- ✅ **7-Day Counting Fix**: Fixed bug where backfill incidents were counted in 7-Day totals
 
 ### v1.9.3 (Latest)
 - ✅ **LagDays fix**: `Report_Date_ForLagday` used for LagDays/IsLagDay; lagday tables filter on `Backfill_7Day = TRUE`.
@@ -369,11 +388,11 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 1.9.3  
-**Last Updated**: 2026-01-27  
+**Current Version**: 2.0.0  
+**Last Updated**: 2026-02-10  
 **Maintained By**: R. A. Carucci
 
-**What changed in v1.9.3**: LagDays fix (`Report_Date_ForLagday`), bi-weekly email and briefing period, crime breakdown script, `SCRPA_All_Crimes_Full` export. See [CHANGELOG.md](CHANGELOG.md#193---2026-01-27).
+**What changed in v2.0.0**: HTML auto-generation integration, dynamic M code (no manual path editing), YAML→JSON migration, 7-day counting bug fixed. See [CHANGELOG.md](CHANGELOG.md#200---2026-02-10).
 
 ---
 

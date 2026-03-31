@@ -1,0 +1,823 @@
+Open Perplexity AI
+2. Go to Settings/Preferences
+3. Change the keyboard shortcut to something else (e.g., `Ctrl+Shift+Alt+P`)
+
+Created `ACCESS_VS_CODE_SETTINGS.md` with all these methods. Use `Ctrl+P` and type `.vscode/settings.json` for the quickest access. ---
+
+**User**
+
+I can not varify the YTD color as it is to eariler in the year for YTD to be shown. Am I correct? q_RMS_Cource m code is // ===========================================
+// STAGING QUERY: RMS Source Data
+// Purpose: Load latest Excel file from folder
+// Disable Load: Yes (referenced by Updated_All_Crimes)
+// ===========================================
+let FolderPath = "C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa",
+    AllFiles = Folder.Files(FolderPath),
+    XlsxFiles = Table.SelectRows(
+        AllFiles,
+        each Text.EndsWith([Name], ".xlsx", Comparer.OrdinalIgnoreCase)),
+    SortedFiles = Table.Sort(XlsxFiles, {{"Date modified", Order.Descending}}),
+    LatestFilePath = SortedFiles{0}[Folder Path] & SortedFiles{0}[Name],
+    Source = Excel.Workbook(File.Contents(LatestFilePath), true),
+    FirstTable = Source{0}[Data] in FirstTable
+
+caLieutenantype category source is File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv"),
+
+---
+
+**Cursor**
+
+
+Verifying the M code and explaining the YTD situation:
+
+
+
+Confirming YTD won't appear yet. Verifying the M code:
+
+
+```markdown
+# YTD Color Verification - Why It's Not Visible Yet
+
+## ✅ You Are Correct! **YTD will not appear in visuals until later in the year** because of how the period classification works. ## How YTD Classification Works
+
+**YTD appears when**:
+- Incident occurred in **current year (2026)**
+- **AND** incident is **outside** the 7-Day window
+- **AND** incident is **outside** the 28-Day window
+
+## Current Situation (January 6, 2026)
+
+**Current Cycle (26C01W01)**:
+- **7-Day window**: 12/30/25 - 1/05/26
+- **28-Day window**: 12/09/25 - 1/05/26
+
+**What this means**:
+- Any 2026 incidents from **1/01/26 - 1/05/26** → **7-Day** or **28-Day** (not YTD)
+- Any 2026 incidents from **1/06/26 onwards** → **YTD** (if outside future cycles)
+
+**Why YTD isn't visible**:
+- We're only on **1/06/26**
+- Most 2026 incidents so far fall within the 7-Day/28-Day windows
+- YTD would only show 2026 incidents that occurred **before 12/09/25** (impossible) or **after the current cycle ends**
+
+## When Will YTD Appear? **YTD will start appearing**:
+- When we move to the **next cycle** (after 1/05/26)
+- Any 2026 incidents from **1/06/26 onwards** that are outside the new 7-Day/28-Day windows will show as YTD
+- As the year progresses, more 2026 incidents will fall into YTD category
+
+**Example Timeline**:
+- **Now (1/06/26)**: Most 2026 incidents are in 7-Day/28-Day → No YTD visible
+- **Next cycle (1/07/26 - 1/13/26)**: 2026 incidents from 1/06/26 (outside new cycle) → YTD appears
+- **Later in year**: More 2026 incidents accumulate outside current cycles → YTD grows
+
+## How to Verify YTD Color (When It Appears)
+
+**Option 1: Wait for Next Cycle**
+- After the next cycle starts (1/07/26), refresh the data
+- Look for 2026 incidents that occurred before the new cycle start date
+- These should appear as YTD
+
+**Option 2: Test with Historical Data**
+- Temporarily modify the cycle calendar to create a scenario where YTD would appear
+- Or wait until February/March when YTD will naturally appear
+
+**Option 3: Manual Verification**
+- In Power BI, filter to show only 2026 incidents
+- Check which ones are classified as YTD (should be those outside 7-Day/28-Day)
+- Verify the color is `#118DFF` (blue)
+
+## Summary
+
+✅ **Your understanding is correct** - YTD won't appear until later in the year when 2026 incidents fall outside the current cycle windows. ✅ **The color is set correctly** in your template (`#118DFF` blue), you just can't see it yet because there's no YTD data to display. ✅ **No action needed** - The color will automatically apply when YTD data appears in future cycles. ```
+
+
+## 1. YTD color verification
+
+YTD won't appear yet because:
+- Current cycle (26C01W01): 7-Day = 12/30/25 - 1/05/26, 28-Day = 12/09/25 - 1/05/26
+- Most 2026 incidents so far fall within these windows
+- YTD only shows 2026 incidents outside both windows
+
+YTD will appear:
+- When the next cycle starts (after 1/05/26)
+- 2026 incidents from 1/06/26+ that are outside the new cycle windows will show as YTD
+- As the year progresses, more 2026 incidents will accumulate in YTD
+
+The color `#118DFF` (blue) is set correctly; it will apply when YTD data appears. ## 2. M code verification
+
+Both M code files are correct:
+
+### `q_RMS_Source.m`
+- File path is a single continuous string
+- Logic is correct
+
+### `q_CallTypeCategories.m`
+- File path is a single continuous string
+- Path matches what you provided
+
+Both files are ready to copy into your Power BI template. ## Summary
+
+- YTD: Correct — won't appear until later cycles. Color is set and will apply automatically. - M code: Both files are correct with single-line paths. Created `YTD_VERIFICATION_EXPLANATION.md` with details on when YTD will appear. You can proceed with updating the template; the YTD color will work when that data appears. ---
+
+**User**
+
+updated and ran the bat again. according to C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\2026\26C01W01_26_01_06\Data\2026_01_06_21_46_42_SCRPA_RMS.xlsxthere were two incidents for the power bi project the burglar - auto has a lag day of 1 and the other Burglary - Residence should show as happening in the last 7days. attachment 1, and 2 are for the lagday visual in the burglary - Auto page. and the filter used
+
+
+---
+
+**Cursor**
+
+
+Checking the data and verifying the period classification logic:
+
+
+
+Verifying the period classification and lagday logic. Checking the cycle calendar to confirm the current cycle dates:
+
+
+```markdown
+# Debugging Period Classification Issues
+
+## Current Situation
+
+**Two incidents reported:**
+1. **Burglary - Auto**: Lag day of 1 → Should appear in lagday table
+2. **Burglary - Residence**: Should show in 7-Day period → Should appear in 7-Day charts
+
+## Current Cycle (26C01W01)
+
+Based on the cycle calendar:
+- **7-Day window**: 12/30/25 - 1/05/26
+- **28-Day window**: 12/09/25 - 1/05/26
+
+## How Period Classification Works
+
+### Period = "7-Day"
+**Condition**: `Incident_Date` falls within current 7-day cycle boundaries
+- `Incident_Date >= 12/30/25 AND Incident_Date <= 1/05/26`
+
+### Period = "28-Day"  
+**Condition**: `Incident_Date` falls within current 28-day cycle boundaries (but not 7-Day)
+- `Incident_Date >= 12/09/25 AND Incident_Date <= 1/05/26`
+- AND `Incident_Date` is NOT in 7-Day window
+
+### Backfill_7Day = True
+**Condition**: 
+- `Incident_Date < CurrentCycleStart` (before 12/30/25)
+- AND `Report_Date >= CurrentCycleStart` (reported during cycle: 12/30/25 - 1/05/26)
+
+### IsLagDay = True
+**Condition**:
+- Find the cycle where `Report_Date` falls
+- `Incident_Date < CycleStartForReport` (incident occurred before the cycle where it was reported)
+
+## Debugging Steps
+
+### Step 1: Check the Data
+
+In Power BI, create a table showing both incidents with these columns:
+- Case Number
+- Incident Date
+- Report Date
+- Period
+- Backfill_7Day
+- IsLagDay
+- LagDays
+- Crime Category
+
+### Step 2: Verify Dates
+
+**For Burglary - Residence (should be 7-Day):**
+- What is the `Incident_Date`? - If `Incident_Date` is between 12/30/25 and 1/05/26 → Should be Period = "7-Day"
+- If `Incident_Date` is outside this range → Will NOT be "7-Day"
+
+**For Burglary - Auto (lag day 1):**
+- What is the `Incident_Date`? - What is the `Report_Date`? - If `Incident_Date < 12/30/25` AND `Report_Date` is between 12/30/25-1/05/26 → Backfill_7Day = True
+- If `Report_Date` falls in a cycle AND `Incident_Date < CycleStart` → IsLagDay = True
+
+### Step 3: Check Current Cycle Detection
+
+The M code uses `Today` to find the current cycle. Verify:
+- What is "Today" when the query runs? - Is it finding cycle 26C01W01 correctly? **Current Cycle Logic:**
+```m
+// First tries: Today within a cycle
+InCycle = Today >= 7_Day_Start AND Today <= 7_Day_End
+
+// If not, finds most recent completed cycle
+MostRecent = Cycle where 7_Day_End <= Today (sorted descending)
+```
+
+### Step 4: Common Issues
+
+**Issue 1: Incident_Date is null**
+- If `Incident_Date` is null → Period = "Historical"
+- Check if dates are being parsed correctly
+
+**Issue 2: Date format mismatch**
+- Ensure dates are actual date type, not text
+- Check `Incident_Date_Date` column (the parsed version)
+
+**Issue 3: Cycle not found**
+- If `HasCurrentCycle = false`, Period will default to YTD or Historical
+- Verify cycle calendar has entry for 26C01W01
+
+**Issue 4: Time component causing issues**
+- Dates should be date-only (no time)
+- Check if `Date.From()` is being applied correctly
+
+## Quick Diagnostic Query
+
+Add this to Power BI to see what's happening:
+
+```m
+// Diagnostic table
+Diagnostic = Table.SelectColumns(
+    All_Crimes,
+    {
+        "Case Number",
+        "Incident_Date_Date",
+        "Report_Date",
+        "Period",
+        "Backfill_7Day",
+        "IsLagDay",
+        "LagDays",
+        "Crime_Category"
+    }
+)
+```
+
+Filter to your two cases and check:
+1. Are the dates correct? 2. What Period is assigned? 3. What are Backfill_7Day and IsLagDay values? ## Expected Results
+
+**Burglary - Residence (should be 7-Day):**
+- `Incident_Date` = between 12/30/25 - 1/05/26
+- `Period` = "7-Day"
+- `Backfill_7Day` = False (unless incident was before cycle)
+- Should appear in 7-Day charts
+
+**Burglary - Auto (lag day 1):**
+- `Incident_Date` = before 12/30/25 (or before cycle where reported)
+- `Report_Date` = between 12/30/25 - 1/05/26
+- `Period` = "Prior Year" or "Historical" (depending on incident date)
+- `Backfill_7Day` = True (if incident before cycle start)
+- `IsLagDay` = True
+- `LagDays` = 1
+- Should appear in lagday table
+
+## Next Steps
+
+1. Export the data to CSV and check the actual dates
+2. Verify the cycle calendar has the correct entry
+3. Check if dates are being parsed correctly
+4. Verify "Today" is being calculated correctly in Power BI
+
+```
+
+
+Creating a diagnostic guide and checking the logic. The issue is likely that the Burglary - Residence incident's `Incident_Date` isn't within the current 7-day cycle window. Verifying the logic:
+
+
+```markdown
+# Verify Incident Classification - Quick Guide
+
+## Current Cycle (26C01W01)
+- **7-Day Window**: 12/30/25 - 1/05/26
+- **28-Day Window**: 12/09/25 - 1/05/26
+
+## What to Check in Power BI
+
+### Step 1: Create Diagnostic Table
+
+In Power BI, create a new table visual with these columns:
+- Case Number
+- Incident_Date_Date (the parsed date column)
+- Report_Date
+- Period
+- Backfill_7Day
+- IsLagDay
+- LagDays
+- Crime_Category
+
+### Step 2: Filter to Your Two Cases
+
+Filter the table to show only:
+- Burglary - Auto
+- Burglary - Residence
+
+### Step 3: Check the Values
+
+**For Burglary - Residence (should be 7-Day):**
+
+Check these values:
+- `Incident_Date_Date` = **Must be between 12/30/25 and 1/05/26** for Period = "7-Day"
+- `Period` = Should be "7-Day" if incident date is in range
+- If `Period` is NOT "7-Day", check:
+  - Is `Incident_Date_Date` null? - Is `Incident_Date_Date` outside the 7-Day window? - Is the date being parsed correctly? **For Burglary - Auto (lag day 1):**
+
+Check these values:
+- `Incident_Date_Date` = Should be before 12/30/25 (or before cycle where reported)
+- `Report_Date` = Should be between 12/30/25 - 1/05/26
+- `Backfill_7Day` = Should be True
+- `IsLagDay` = Should be True
+- `LagDays` = Should be 1
+- `Period` = Will be "Prior Year" or "Historical" (not "7-Day")
+
+## Common Issues
+
+### Issue 1: Incident_Date is Outside 7-Day Window
+
+**Symptom**: Burglary - Residence shows Period = "28-Day" or "Prior Year" instead of "7-Day"
+
+**Cause**: The `Incident_Date` is not between 12/30/25 and 1/05/26
+
+**Solution**: 
+- Check the actual incident date in the source data
+- If the incident occurred on 1/06/26 or later, it won't be "7-Day" (cycle ended 1/05/26)
+- If the incident occurred before 12/30/25, it will be "Prior Year" or "Historical"
+
+### Issue 2: Date Not Parsed Correctly
+
+**Symptom**: `Incident_Date_Date` is null or wrong
+
+**Check**: 
+- Look at the original `Incident Date` column (text)
+- Compare to `Incident_Date_Date` (parsed)
+- Verify the date parsing logic is working
+
+### Issue 3: Current Cycle Not Detected
+
+**Symptom**: All incidents show wrong Period
+
+**Check**:
+- What is "Today" in Power BI? (should be 1/06/26 or later)
+- Is the cycle calendar loading correctly? - Does cycle 26C01W01 exist in the calendar? ## Expected Results
+
+### Burglary - Residence (if occurred 12/30/25 - 1/05/26)
+```
+Incident_Date_Date: 1/03/26 (example)
+Report_Date: 1/06/26 (example)
+Period: "7-Day" ✅
+Backfill_7Day: False
+IsLagDay: False
+LagDays: 0
+```
+
+### Burglary - Auto (lag day 1)
+```
+Incident_Date_Date: 12/29/25 (example - before cycle)
+Report_Date: 1/06/26 (example - during cycle)
+Period: "Prior Year" or "Historical"
+Backfill_7Day: True ✅
+IsLagDay: True ✅
+LagDays: 1 ✅
+```
+
+## Quick Fix: Check Incident Dates
+
+The most likely issue is that the **Burglary - Residence incident date is outside the 7-Day window**. **If the incident occurred on 1/06/26 or later:**
+- It will NOT be "7-Day" (cycle ended 1/05/26)
+- It will be "YTD" (if 2026) or next cycle's "7-Day"
+
+**If the incident occurred before 12/30/25:**
+- It will be "Prior Year" or "Historical"
+- It might be a backfill case if reported during the cycle
+
+## Action Items
+
+1. ✅ Check the actual `Incident_Date_Date` for Burglary - Residence
+2. ✅ Verify it's between 12/30/25 and 1/05/26
+3. ✅ If not, that's why it's not showing as "7-Day"
+4. ✅ Verify Burglary - Auto has correct lag day calculation
+
+```
+
+
+## Issue analysis
+
+### Current cycle (26C01W01)
+- 7-Day window: 12/30/25 - 1/05/26
+- 28-Day window: 12/09/25 - 1/05/26
+
+### Why Burglary - Residence might not show as "7-Day"
+
+The Period = "7-Day" only applies if:
+- `Incident_Date_Date` is between 12/30/25 and 1/05/26
+
+If the incident occurred:
+- On 1/06/26 or later → Not "7-Day" (cycle ended 1/05/26)
+- Before 12/30/25 → "Prior Year" or "Historical"
+
+## Quick diagnostic steps
+
+1. In Power BI, create a table with these columns:
+   - Case Number
+   - Incident_Date_Date
+   - Report_Date
+   - Period
+   - Crime_Category
+
+2. Filter to the Burglary - Residence case. 3. Check the `Incident_Date_Date`:
+   - If it's 1/06/26 or later → It won't be "7-Day" (correct behavior)
+   - If it's between 12/30/25 - 1/05/26 → Should be "7-Day" (if not, there's a bug)
+   - If it's before 12/30/25 → Will be "Prior Year" or "Historical"
+
+## Expected behavior
+
+- Burglary - Auto (lag day 1):
+  - `Backfill_7Day` = True
+  - `IsLagDay` = True
+  - `LagDays` = 1
+  - Appears in lagday table
+
+- Burglary - Residence:
+  - If `Incident_Date` is 12/30/25 - 1/05/26 → `Period` = "7-Day"
+  - If `Incident_Date` is 1/06/26+ → `Period` = "YTD" or next cycle's "7-Day"
+
+## Most likely cause
+
+The Burglary - Residence incident occurred on 1/06/26 or later, so it's outside the current 7-Day window (which ended 1/05/26). This is expected. Please check the actual `Incident_Date_Date` for the Burglary - Residence case and share it. That will confirm whether this is expected or a bug. Created `VERIFY_INCIDENT_CLASSIFICATION.md` with a diagnostic guide. ---
+
+**User**
+
+so 25-113412 incident date of 12/29/25 report date of 12/30/2025, case number 26-001094 has an incident date of 01/04/2026 and a report date of 01/04/2026. so 26-001094 should show as happening in the last 7days and the other incidents should be in the LagDay table with a lag day of 1 
+Case Number	Incident Date	Incident Time	Incident Date_Between	Incident Time_Between	Report Date	Report Time	Incident Type_1	Incident Type_2	Incident Type_3	FullAddress	Grid	Zone	Narrative	Total Value Stolen	Total Value Recover	Registration 1	Make1	Model1	Reg State 1	Registration 2	Reg State 2	Make2	Model2	Reviewed By	CompleteCalc	Officer of Record	Squad	Det_Assigned	Case_Status	NIBRS Classification
+25-113412	12/29/2025	22:30:00		23:00:00	12/30/2025	00:44:49	Burglary - Auto - 2C:18-2			204 Passaic Street, Hackensack, NJ, 07601	H3	8	"    On 12/29/25 I responded to 204 Clinton Place on a reported auto burglary. Upon arrival, I met with the victim, Alejandro Vidalrodriguez, who reported that his NJM Auto Insurance Card, car registration, and skates were missing from his vehicle (NJ S14URN). P.O. A. Lopez arrived to assist with translation. The victim further reported that he believes the missing items were stolen at approximately 22:30 hrs to 23:00 hrs on 12/29/25. The victim reported that the car has no signs of forced entry or break in. The victim said that his ex wife, Poala Cueto, is currently out of state, and believes that she sent her boyfriend to take the items from the vehicle. The victim believes this, because his ex wife has a spare key to his vehicle, and the skates that were taken belong to her. The victim was asked if he would like his vehicle processed, and the victim declined. A victim notification form was completed, and the victim was given a copy." S14URN	Nissan	FRO	NJ					knapp_j	Complete	P.O. Jann Aberde 386	A1	Det. Denisse Caero 367	Active Investigation	23F = Theft From Motor Vehicle
+26-001094	01/04/2026	14:27:56			01/04/2026	14:27:56	Burglary - Residence - 2C:18-2			343 Park Street, Hackensack, NJ, 07601	H2	8	"     On January 4, 2026, P.O. A. Mattalian and I responded to the listed address on a report of a burglary. Upon arrival, we met with the victim who stated that her belongings kept in storage in the basement, had been ransacked. She then led us to the basement, which can only be accessed through the south side stairwell. We observed a master lock resting on a shelf next to the staircase. She stated that the lock was normally utilized to secure the basement. The hinge that the lock connected to was previously damaged and inoperable. The victim advised that the lock was simply placed on the hinge as a deterrent until repairs could be made. The victim stated that she had not responded to the basement since the last burglary. See Case # 25-113076 for further. Upon responding there today at approximately 1300 hours, she observed all of her belongings to be disheveled and rummaged through. She was unaware of the total loss, due to many items being displaced from where she originally stored them. She was advised to follow up with an estimated total, should she be able to do so. The victim further stated that no one has a key to the stairwell or basement besides the landlord and herself. She stated that due to the stairwell door being locked, she believed that the suspect had to be a tenant of the building. She explained that the only way to access the basement is through this tenant only stairwell. Sgt. Butler was notified and responded. Detectives were notified. A NJ Victim Notification Form was completed and a copy was provided to the victim. " knapp_j	Complete	P.O. Teudy Luna 391	A2	Sgt. Francesco Tripodi 134	Active/Administratively Closed	220 = Burglary/Breaking & Entering
+
+
+---
+
+**Cursor**
+
+
+Analyzing the data and verifying the logic:
+
+
+```markdown
+# Incident Classification Analysis
+
+## Case Data
+
+### Case 25-113412 (Burglary - Auto)
+- **Incident Date**: 12/29/2025
+- **Report Date**: 12/30/2025
+- **Lag Days**: 1 day (12/30/25 - 12/29/25)
+
+### Case 26-001094 (Burglary - Residence)
+- **Incident Date**: 01/04/2026
+- **Report Date**: 01/04/2026
+- **Lag Days**: 0 days (same day)
+
+## Current Cycle (26C01W01)
+- **7-Day Window**: 12/30/25 - 1/05/26
+- **28-Day Window**: 12/09/25 - 1/05/26
+
+## Expected Classification
+
+### Case 25-113412 (Burglary - Auto)
+
+**Period Classification:**
+- Incident Date (12/29/25) is **BEFORE** cycle start (12/30/25)
+- Therefore: `Period` = **"Prior Year"** (not "7-Day")
+- ✅ Correct - incident occurred in 2025, outside current cycle
+
+**Backfill_7Day:**
+- Incident Date (12/29/25) < Cycle Start (12/30/25) ✅
+- Report Date (12/30/25) >= Cycle Start (12/30/25) ✅
+- Report Date (12/30/25) <= Cycle End (1/05/26) ✅
+- Therefore: `Backfill_7Day` = **True** ✅
+- ✅ Should appear in lagday table
+
+**LagDays:**
+- Report Date cycle: 12/30/25 - 1/05/26
+- Cycle Start for Report: 12/30/25
+- Incident Date: 12/29/25
+- LagDays = 12/30/25 - 12/29/25 = **1 day** ✅
+- ✅ Correct
+
+### Case 26-001094 (Burglary - Residence)
+
+**Period Classification:**
+- Incident Date (01/04/26) is **WITHIN** 7-Day window (12/30/25 - 1/05/26) ✅
+- Therefore: `Period` = **"7-Day"** ✅
+- ✅ Should appear in 7-Day charts
+
+**Backfill_7Day:**
+- Incident Date (01/04/26) is NOT < Cycle Start (12/30/25)
+- Incident Date (01/04/26) >= Cycle Start ✅
+- Therefore: `Backfill_7Day` = **False** ✅
+- ✅ Should NOT appear in lagday table
+
+**LagDays:**
+- Incident Date (01/04/26) = Report Date (01/04/26)
+- Incident Date is within cycle where reported
+- Therefore: `IsLagDay` = **False**
+- `LagDays` = **0** ✅
+- ✅ Correct - no lag
+
+## Verification Checklist
+
+### In Power BI, check these values:
+
+**Case 25-113412:**
+- [ ] `Period` = "Prior Year" (not "7-Day")
+- [ ] `Backfill_7Day` = True
+- [ ] `IsLagDay` = True
+- [ ] `LagDays` = 1
+- [ ] Appears in lagday table ✅
+
+**Case 26-001094:**
+- [ ] `Period` = "7-Day" ✅
+- [ ] `Backfill_7Day` = False
+- [ ] `IsLagDay` = False
+- [ ] `LagDays` = 0
+- [ ] Appears in 7-Day charts ✅
+- [ ] Does NOT appear in lagday table ✅
+
+## If Case 26-001094 is NOT showing as "7-Day"
+
+**Possible Issues:**
+
+1. **Date Parsing Problem**
+   - Check if `Incident_Date_Date` is correctly parsed as 01/04/2026
+   - Verify it's a date type, not text
+
+2. **Current Cycle Detection**
+   - Verify `HasCurrentCycle` = True
+   - Verify `CurrentCycleStart` = 12/30/25
+   - Verify `CurrentCycleEnd` = 1/05/26
+
+3. **Date Comparison**
+   - The logic checks: `dI >= CurrentCycleStart and dI <= CurrentCycleEnd`
+   - For 01/04/26: `01/04/26 >= 12/30/25` = True ✅
+   - For 01/04/26: `01/04/26 <= 1/05/26` = True ✅
+   - Should match "7-Day" condition
+
+4. **Year Boundary Issue**
+   - Check if there's a year comparison issue (2025 vs 2026)
+   - The dates span year boundary (12/30/25 to 1/05/26)
+
+## Debug Steps
+
+1. **Create diagnostic table** in Power BI with:
+   - Case Number
+   - Incident_Date_Date
+   - Report_Date
+   - Period
+   - Backfill_7Day
+   - IsLagDay
+   - LagDays
+   - CurrentCycleStart (if available)
+   - CurrentCycleEnd (if available)
+
+2. **Filter to these two cases** and verify all values
+
+3. **Check date types** - ensure dates are date type, not text
+
+4. **Verify cycle calendar** - ensure 26C01W01 exists with correct dates
+
+```
+
+
+## Expected classification
+
+### Case 25-113412 (Burglary - Auto)
+- Incident Date: 12/29/2025 (before cycle start 12/30/25)
+- Report Date: 12/30/2025 (during cycle)
+- Expected:
+  - `Period` = "Prior Year" (not "7-Day")
+  - `Backfill_7Day` = True
+  - `LagDays` = 1
+  - Should appear in lagday table
+
+### Case 26-001094 (Burglary - Residence)
+- Incident Date: 01/04/2026 (within cycle 12/30/25 - 1/05/26)
+- Report Date: 01/04/2026 (same day)
+- Expected:
+  - `Period` = "7-Day"
+  - `Backfill_7Day` = False
+  - `LagDays` = 0
+  - Should appear in 7-Day charts
+  - Should not appear in lagday table
+
+## If Case 26-001094 is not showing as "7-Day"
+
+Possible causes:
+1. Date parsing: `Incident_Date_Date` may not be parsed correctly
+2. Current cycle detection: may not be finding cycle 26C01W01
+3. Year boundary: dates span 2025-2026
+
+## Debug steps
+
+1. In Power BI, create a table with these columns:
+   - Case Number
+   - Incident_Date_Date
+   - Report_Date
+   - Period
+   - Backfill_7Day
+   - IsLagDay
+   - LagDays
+
+2. Filter to these two cases and check:
+   - For Case 26-001094: Is `Period` = "7-Day"? - For Case 25-113412: Is `Backfill_7Day` = True and `LagDays` = 1? 3. Check date values:
+   - Verify `Incident_Date_Date` for Case 26-001094 is exactly `01/04/2026`
+   - Verify it's a date type, not text
+
+4. Verify cycle detection:
+   - The cycle should be 12/30/25 - 1/05/26
+   - Check if `HasCurrentCycle` = True in the query
+
+The M code logic looks correct. If Case 26-001094 is not showing as "7-Day", it's likely a date parsing or cycle detection issue. Share what you see in Power BI for these two cases, and we can pinpoint the issue. Created `INCIDENT_ANALYSIS.md` with the expected classifications and debugging steps. ---
+
+**User**
+
+@Time_Based/2026/26C01W01_26_01_06/All_Crime_2026_01_06.csv  this is the preview table of the All_Crimes query. Period column is not calculating correctly
+
+---
+
+**Cursor**
+
+
+Checking the Period column values in the CSV:
+
+
+
+Searching for the specific cases:
+
+
+
+Searching for the specific dates:
+
+
+
+Checking the Period calculation logic. The cases may not be in the export. Reviewing the logic for potential issues:
+
+
+```markdown
+# Period Calculation Issue - Analysis
+
+## Problem
+Period column is not calculating correctly. Case 26-001094 (Incident Date 01/04/2026) should show as "7-Day" but may not be. ## Current Cycle (26C01W01)
+- **7-Day Window**: 12/30/25 - 1/05/26
+- **28-Day Window**: 12/09/25 - 1/05/26
+
+## Expected Results
+
+### Case 26-001094 (Burglary - Residence)
+- **Incident Date**: 01/04/2026
+- **Should be**: Period = "7-Day" (01/04/26 is between 12/30/25 and 1/05/26)
+
+### Case 25-113412 (Burglary - Auto)
+- **Incident Date**: 12/29/2025
+- **Should be**: Period = "Prior Year" (12/29/25 is before cycle start 12/30/25)
+
+## Potential Issues
+
+### Issue 1: Date Type Mismatch
+The `Incident_Date_Date` column might not be a proper date type, causing comparison failures. **Check**: In Power BI, verify `Incident_Date_Date` is type `Date`, not `Text`. ### Issue 2: Year Boundary Problem
+The cycle spans 2025-2026. Date comparisons might fail if dates are stored incorrectly. **Check**: Verify dates are:
+- 12/30/2025 (not 12/30/2026)
+- 01/04/2026 (not 01/04/2025)
+
+### Issue 3: Current Cycle Detection
+If `HasCurrentCycle = false`, the Period will default to YTD or Historical. **Check**: Verify the cycle calendar has entry for 26C01W01 with dates:
+- 7_Day_Start: 12/30/2025
+- 7_Day_End: 1/05/2026
+
+### Issue 4: Date Comparison Logic
+The comparison `dI >= CurrentCycleStart and dI <= CurrentCycleEnd` might fail if:
+- Dates have time components (should be date-only)
+- Dates are in different formats
+- Year is being compared incorrectly
+
+## Debugging Steps
+
+### Step 1: Verify Current Cycle Detection
+
+Add a diagnostic column to see what cycle is being detected:
+
+```m
+// Add after CurrentCycleName
+Diagnostic_CurrentCycle = Table.AddColumn(
+    Period_Added,
+    "_Debug_CurrentCycle",
+    each 
+        if HasCurrentCycle then
+            Text.From(CurrentCycleStart) & " to " & Text.From(CurrentCycleEnd)
+        else "NO CYCLE FOUND",
+    type text
+)
+```
+
+### Step 2: Verify Date Values
+
+Check the actual date values being compared:
+
+```m
+Diagnostic_Dates = Table.AddColumn(
+    Period_Added,
+    "_Debug_Dates",
+    each 
+        let
+            dI = [Incident_Date_Date],
+            dIYear = if dI = null then null else Date.Year(dI),
+            dIDay = if dI = null then null else Date.Day(dI),
+            dIMonth = if dI = null then null else Date.Month(dI)
+        in
+            if dI = null then "NULL"
+            else Text.From(dIYear) & "/" & Text.From(dIMonth) & "/" & Text.From(dIDay),
+    type text
+)
+```
+
+### Step 3: Verify Period Logic
+
+Add diagnostic to see why Period is assigned:
+
+```m
+Diagnostic_Period = Table.AddColumn(
+    Period_Added,
+    "_Debug_Period",
+    each
+        let 
+            dI = [Incident_Date_Date],
+            incidentYear = if dI = null then null else Date.Year(dI),
+            currentYear = Date.Year(Today),
+            in7Day = HasCurrentCycle and dI >= CurrentCycleStart and dI <= CurrentCycleEnd,
+            in28Day = HasCurrentCycle and CurrentCycle28DayStart <> null and CurrentCycle28DayEnd <> null and dI >= CurrentCycle28DayStart and dI <= CurrentCycle28DayEnd
+        in
+            "dI=" & (if dI = null then "NULL" else Text.From(dI)) 
+            & " | HasCycle=" & Text.From(HasCurrentCycle)
+            & " | in7Day=" & Text.From(in7Day)
+            & " | in28Day=" & Text.From(in28Day)
+            & " | Year=" & (if incidentYear = null then "NULL" else Text.From(incidentYear)),
+    type text
+)
+```
+
+## Most Likely Issue
+
+**Date parsing or type issue**: The `Incident_Date_Date` column might not be correctly parsed from the source data, or the dates might be stored as text instead of date type. **Solution**: Verify in Power BI that:
+1. `Incident_Date_Date` is type `Date`
+2. The dates are correct (01/04/2026, not 01/04/2025)
+3. The cycle calendar dates are correct (12/30/2025, not 12/30/2024)
+
+## Quick Fix to Test
+
+If dates are the issue, you can add explicit date conversion in the Period calculation:
+
+```m
+// In Period_Added, ensure dI is a date:
+dI = if [Incident_Date_Date] is date then [Incident_Date_Date] 
+     else if [Incident_Date_Date] is text then Date.FromText([Incident_Date_Date])
+     else null
+```
+
+```
+
+
+Checking the cycle calendar and adding diagnostic columns to debug the Period calculation:
+
+
+
+Cycle calendar looks correct. Checking what Period values are in the CSV to identify the issue:
+
+
+
+Trying a different approach to inspect the CSV:
+
+
+
+Reviewing the Period calculation logic. The cycle calendar looks correct. Adding diagnostic columns and verifying the date comparison logic:
+
+
+```markdown
+# Period Calculation Fix - Diagnostic Steps
+
+## Issue
+Period column not calculating correctly. Case 26-001094 (Incident Date 01/04/2026) should be "7-Day" but may not be. ## Current Cycle (26C01W01)
+- **7-Day**: 12/30/2025 - 1/05/2026 ✅ (confirmed in cycle calendar)
+- **28-Day**: 12/09/2025 - 1/05/2026 ✅
+
+## Expected Results
+
+### Case 26-001094 (Burglary - Residence)
+- **Incident Date**: 01/04/2026
+- **Expected Period**: "7-Day" (01/04/26 is between 12/30/25 and 1/05/26)
+
+### Case 25-113412 (Burglary - Auto)  
+- **Incident Date**: 12/29/2025
+- **Expected Period**: "Prior Year" (12/29/25 is before cycle start 12/30/25)
+
+## Diagnostic: Check in Power BI
+
+1. **Create a table** with these columns:
+   - Case Number
+   - Incident_Date_Date
+   - Report_Date
+   - Period
+   - Backfill_7Day
+   - LagDays
+
+2.

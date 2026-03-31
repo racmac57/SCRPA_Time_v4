@@ -1,0 +1,994 @@
+### Root Cause
+
+The Period classification logic was checking 28-Day BEFORE checking Prior Year:
+1. 7-Day (highest priority)
+2. 28-Day ← This was catching 2025 incidents
+3. YTD
+4. Prior Year ← Never reached for 2025 incidents in 28-Day window
+
+Since the 28-Day window (12/09/2025 to 1/5/2026) includes dates from 2025, a 2025 incident (12/29/2025) was being classified as "28-Day" before the Prior Year check could run. ## Solution Applied
+
+Reordered the Period classification logic to check **Prior Year BEFORE 28-Day**:
+
+1. **7-Day** (highest priority - current cycle incidents)
+2. **Prior Year** (check before 28-Day to prevent prior year incidents from being misclassified)
+3. **28-Day** (only applies to current year incidents now)
+4. **YTD** (current year incidents outside 7-Day/28-Day windows)
+5. **Historical** (older years)
+
+### Updated Logic
+
+```m
+if dI = null then "Historical"
+// 7-Day period: Check first (highest priority)
+else if in7Day then "7-Day"
+// Prior year (2025): Check before 28-Day to prevent prior year incidents from being classified as 28-Day
+// Prior year incidents should be "Prior Year" even if they fall within 28-Day window
+else if incidentYear = currentYear - 1 then "Prior Year"
+// 28-Day period: Check third (only for current year incidents, not prior year)
+else if in28Day then "28-Day"
+// YTD: incident occurred in current year (2026) but outside 7-Day/28-Day windows
+else if incidentYear = currentYear then "YTD"
+// Older years (2024 and earlier): Generic "Historical"
+else "Historical"
+```
+
+## Expected Results After Fix
+
+### Case 25-113412 (12/29/2025):
+- **Period**: "Prior Year" ✅
+- **Reason**: Incident year is 2025 (prior year), so it's classified as "Prior Year" regardless of 28-Day window
+
+### Case 26-001094 (01/04/2026):
+- **Period**: "7-Day" ✅ (already working correctly)
+- **Reason**: Incident date is within 7-Day cycle range (12/30/2025 - 1/5/2026)
+
+## Verification Steps
+
+1. **Update Power BI template** with fixed M code
+2. **Refresh query** in Power BI
+3. **Verify Period values**:
+   - Case 25-113412: Period = "Prior Year" ✅
+   - Case 26-001094: Period = "7-Day" ✅
+
+## Technical Details
+
+The 28-Day window spans across year boundaries:
+- **28-Day Range**: 12/09/2025 to 1/5/2026
+- This includes both 2025 and 2026 dates
+
+**Rule**: Prior year incidents should always be classified as "Prior Year", even if they fall within the 28-Day window. The 28-Day classification should only apply to current year incidents. ---
+
+**Date**: 2026-01-06  
+**Status**: ✅ Fixed  
+**File Modified**: `m_code/all_crimes.m`
+
+```
+
+
+Fixed the Period classification logic. The issue was that **28-Day was being checked before Prior Year**, so 2025 incidents within the 28-Day window were classified as "28-Day" instead of "Prior Year". ## Fix Applied
+
+Reordered the Period classification to check **Prior Year BEFORE 28-Day**:
+
+1. **7-Day** (highest priority)
+2. **Prior Year** (check before 28-Day)
+3. **28-Day** (only for current year incidents)
+4. **YTD**
+5. **Historical**
+
+## Expected Results
+
+### Case 25-113412 (12/29/2025):
+- **Period**: "Prior Year" (was "28-Day")
+- **Reason**: Incident year is 2025, so it's classified as "Prior Year" even if it falls within the 28-Day window
+
+### Case 26-001094 (01/04/2026):
+- **Period**: "7-Day" (already correct)
+
+## Next Steps
+
+1. Update the Power BI template with the fixed M code
+2. Refresh the query in Power BI
+3. Verify both cases:
+   - Case 25-113412: Period = "Prior Year"
+   - Case 26-001094: Period = "7-Day"
+
+The logic now ensures that prior year incidents are always labeled "Prior Year", regardless of whether they fall within the 28-Day window. The 28-Day classification only applies to current year incidents. ---
+
+**User**
+
+it worked amazing work. the end of the workflow is emailing the attached report to the Patrol Captain . This done every week, can you provide a email subject and a short body that I can save as a textexpander snippet for reuseSCRPA - Combined Executive Summary (Print-safe).pdf
+
+---
+
+**Cursor**
+
+
+Creating a reusable email template for the weekly SCRPA report:
+
+
+```markdown
+# Email Template for SCRPA Weekly Report
+
+## TextExpander Snippet Setup
+
+**Snippet Name**: `scrpa-report-email`  
+**Abbreviation**: `scrpaemail` (or your preferred shortcut)
+
+---
+
+## Email Subject Line
+
+```
+SCRPA Weekly Report - Cycle [CYCLE] | [DATE_RANGE]
+```
+
+**Example**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+**Alternative (shorter)**: `SCRPA Report - [CYCLE] | [DATE_RANGE]`
+
+---
+
+## Email Body
+
+```
+Captain [LAST_NAME],
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary (tactical overview)
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## TextExpander Variables
+
+For dynamic content, use TextExpander's built-in date variables or create custom fields:
+
+### Option 1: Manual Placeholders (Replace each week)
+- `[CYCLE]` → e.g., `26C01W01`
+- `[DATE_RANGE]` → e.g., `12/30/2025 - 01/05/2026`
+- `[GENERATION_DATE]` → e.g., `January 6, 2026`
+- `[LAST_NAME]` → e.g., `Smith`
+
+### Option 2: TextExpander Date Variables
+- `%date%` - Current date
+- `%date+1w%` - Date one week from now
+- `%time%` - Current time
+
+### Option 3: Custom Fields (Recommended)
+Create TextExpander fields that prompt for:
+- Cycle (e.g., `26C01W01`)
+- Date Range (e.g., `12/30/2025 - 01/05/2026`)
+- Generation Date (e.g., `January 6, 2026`)
+
+---
+
+## Shorter Version (Alternative)
+
+If you prefer a more concise email:
+
+```
+Captain [LAST_NAME],
+
+Attached is the SCRPA Combined Executive Summary for Cycle [CYCLE] (Report Period: [DATE_RANGE]). Generated: [GENERATION_DATE]
+
+Please let me know if you have any questions. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## Usage Instructions
+
+1. **Create the snippet in TextExpander**:
+   - Name: `scrpa-report-email`
+   - Abbreviation: `scrpaemail` (or your preference)
+   - Content: Copy the email body above
+
+2. **Each week when sending**:
+   - Type your abbreviation (e.g., `scrpaemail`)
+   - TextExpander will expand the template
+   - Replace the placeholders `[CYCLE]`, `[DATE_RANGE]`, `[GENERATION_DATE]`, `[LAST_NAME]` with current values
+   - Attach the PDF file
+   - Send
+
+3. **Optional**: Set up TextExpander fields to prompt for these values automatically
+
+---
+
+## Example (Filled In)
+
+**Subject**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+**Body**:
+```
+Captain Smith,
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle 26C01W01. Report Period: 12/30/2025 - 01/05/2026
+Date Generated: January 6, 2026
+
+The report includes:
+• 7-Day Executive Summary (tactical overview)
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+**Last Updated**: 2026-01-06  
+**Created For**: Weekly SCRPA Report Distribution
+
+```
+
+
+Email template for your TextExpander snippet:
+
+## Email Subject Line
+
+```
+SCRPA Weekly Report - Cycle [CYCLE] | [DATE_RANGE]
+```
+
+**Example**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+---
+
+## Email Body (TextExpander Snippet)
+
+```
+Captain [LAST_NAME],
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary (tactical overview)
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## Shorter Alternative (if you prefer concise)
+
+```
+Captain [LAST_NAME],
+
+Attached is the SCRPA Combined Executive Summary for Cycle [CYCLE] (Report Period: [DATE_RANGE]). Generated: [GENERATION_DATE]
+
+Please let me know if you have any questions. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## TextExpander Setup Tips
+
+1. Create a snippet with abbreviation like `scrpaemail`
+2. Use placeholders `[CYCLE]`, `[DATE_RANGE]`, `[GENERATION_DATE]`, `[LAST_NAME]` that you replace each week
+3. Or set up TextExpander fields to prompt for these values automatically
+
+Each week, type your abbreviation, replace the placeholders with the current cycle/date info, attach the PDF, and send. I've also saved this to `EMAIL_TEMPLATE_SCRPA_REPORT.md` for future reference. ```plaintext
+SCRPA Weekly Report - Cycle [CYCLE] | [DATE_RANGE]
+```
+
+```plaintext
+Captain [LAST_NAME],
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary (tactical overview)
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+```plaintext
+Captain [LAST_NAME],
+
+Attached is the SCRPA Combined Executive Summary for Cycle [CYCLE] (Report Period: [DATE_RANGE]). Generated: [GENERATION_DATE]
+
+Please let me know if you have any questions. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+**User**
+
+the attached report also has the charts of the incidents and ArcGIS Map visuals when a incident happened in the last 7 days and a detailed summary of the incidents that happened in the last 7Day
+
+---
+
+**Cursor**
+
+
+Updating the email template to include the charts, ArcGIS maps, and detailed summaries:
+
+
+```markdown
+# Email Template for SCRPA Weekly Report
+
+## TextExpander Snippet Setup
+
+**Snippet Name**: `scrpa-report-email`  
+**Abbreviation**: `scrpaemail` (or your preferred shortcut)
+
+---
+
+## Email Subject Line
+
+```
+SCRPA Weekly Report - Cycle [CYCLE] | [DATE_RANGE]
+```
+
+**Example**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+**Alternative (shorter)**: `SCRPA Report - [CYCLE] | [DATE_RANGE]`
+
+---
+
+## Email Body
+
+```
+Captain [LAST_NAME],
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## TextExpander Variables
+
+For dynamic content, use TextExpander's built-in date variables or create custom fields:
+
+### Option 1: Manual Placeholders (Replace each week)
+- `[CYCLE]` → e.g., `26C01W01`
+- `[DATE_RANGE]` → e.g., `12/30/2025 - 01/05/2026`
+- `[GENERATION_DATE]` → e.g., `January 6, 2026`
+- `[LAST_NAME]` → e.g., `Smith`
+
+### Option 2: TextExpander Date Variables
+- `%date%` - Current date
+- `%date+1w%` - Date one week from now
+- `%time%` - Current time
+
+### Option 3: Custom Fields (Recommended)
+Create TextExpander fields that prompt for:
+- Cycle (e.g., `26C01W01`)
+- Date Range (e.g., `12/30/2025 - 01/05/2026`)
+- Generation Date (e.g., `January 6, 2026`)
+
+---
+
+## Shorter Version (Alternative)
+
+If you prefer a more concise email:
+
+```
+Captain [LAST_NAME],
+
+Attached is the SCRPA Combined Executive Summary for Cycle [CYCLE] (Report Period: [DATE_RANGE]). Generated: [GENERATION_DATE]
+
+Please let me know if you have any questions. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## Usage Instructions
+
+1. **Create the snippet in TextExpander**:
+   - Name: `scrpa-report-email`
+   - Abbreviation: `scrpaemail` (or your preference)
+   - Content: Copy the email body above
+
+2. **Each week when sending**:
+   - Type your abbreviation (e.g., `scrpaemail`)
+   - TextExpander will expand the template
+   - Replace the placeholders `[CYCLE]`, `[DATE_RANGE]`, `[GENERATION_DATE]`, `[LAST_NAME]` with current values
+   - Attach the PDF file
+   - Send
+
+3. **Optional**: Set up TextExpander fields to prompt for these values automatically
+
+---
+
+## Example (Filled In)
+
+**Subject**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+**Body**:
+```
+Captain Smith,
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle 26C01W01. Report Period: 12/30/2025 - 01/05/2026
+Date Generated: January 6, 2026
+
+The report includes:
+• 7-Day Executive Summary (tactical overview)
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+**Last Updated**: 2026-01-06  
+**Created For**: Weekly SCRPA Report Distribution
+
+```
+
+```markdown
+# Email Template for SCRPA Weekly Report
+
+## TextExpander Snippet Setup
+
+**Snippet Name**: `scrpa-report-email`  
+**Abbreviation**: `scrpaemail` (or your preferred shortcut)
+
+---
+
+## Email Subject Line
+
+```
+SCRPA Weekly Report - Cycle [CYCLE] | [DATE_RANGE]
+```
+
+**Example**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+**Alternative (shorter)**: `SCRPA Report - [CYCLE] | [DATE_RANGE]`
+
+---
+
+## Email Body
+
+```
+Captain [LAST_NAME],
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## TextExpander Variables
+
+For dynamic content, use TextExpander's built-in date variables or create custom fields:
+
+### Option 1: Manual Placeholders (Replace each week)
+- `[CYCLE]` → e.g., `26C01W01`
+- `[DATE_RANGE]` → e.g., `12/30/2025 - 01/05/2026`
+- `[GENERATION_DATE]` → e.g., `January 6, 2026`
+- `[LAST_NAME]` → e.g., `Smith`
+
+### Option 2: TextExpander Date Variables
+- `%date%` - Current date
+- `%date+1w%` - Date one week from now
+- `%time%` - Current time
+
+### Option 3: Custom Fields (Recommended)
+Create TextExpander fields that prompt for:
+- Cycle (e.g., `26C01W01`)
+- Date Range (e.g., `12/30/2025 - 01/05/2026`)
+- Generation Date (e.g., `January 6, 2026`)
+
+---
+
+## Shorter Version (Alternative)
+
+If you prefer a more concise email:
+
+```
+Captain [LAST_NAME],
+
+Attached is the SCRPA Combined Executive Summary for Cycle [CYCLE] (Report Period: [DATE_RANGE]). The report includes 7-Day detailed summaries, ArcGIS map visuals, statistical charts, and 28-Day/YTD analysis. Generated: [GENERATION_DATE]
+
+Please let me know if you have any questions. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## Usage Instructions
+
+1. **Create the snippet in TextExpander**:
+   - Name: `scrpa-report-email`
+   - Abbreviation: `scrpaemail` (or your preference)
+   - Content: Copy the email body above
+
+2. **Each week when sending**:
+   - Type your abbreviation (e.g., `scrpaemail`)
+   - TextExpander will expand the template
+   - Replace the placeholders `[CYCLE]`, `[DATE_RANGE]`, `[GENERATION_DATE]`, `[LAST_NAME]` with current values
+   - Attach the PDF file
+   - Send
+
+3. **Optional**: Set up TextExpander fields to prompt for these values automatically
+
+---
+
+## Example (Filled In)
+
+**Subject**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+**Body**:
+```
+Captain Smith,
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle 26C01W01. Report Period: 12/30/2025 - 01/05/2026
+Date Generated: January 6, 2026
+
+The report includes:
+• 7-Day Executive Summary (tactical overview)
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+**Last Updated**: 2026-01-06  
+**Created For**: Weekly SCRPA Report Distribution
+
+```
+
+```markdown
+# Email Template for SCRPA Weekly Report
+
+## TextExpander Snippet Setup
+
+**Snippet Name**: `scrpa-report-email`  
+**Abbreviation**: `scrpaemail` (or your preferred shortcut)
+
+---
+
+## Email Subject Line
+
+```
+SCRPA Weekly Report - Cycle [CYCLE] | [DATE_RANGE]
+```
+
+**Example**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+**Alternative (shorter)**: `SCRPA Report - [CYCLE] | [DATE_RANGE]`
+
+---
+
+## Email Body
+
+```
+Captain [LAST_NAME],
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## TextExpander Variables
+
+For dynamic content, use TextExpander's built-in date variables or create custom fields:
+
+### Option 1: Manual Placeholders (Replace each week)
+- `[CYCLE]` → e.g., `26C01W01`
+- `[DATE_RANGE]` → e.g., `12/30/2025 - 01/05/2026`
+- `[GENERATION_DATE]` → e.g., `January 6, 2026`
+- `[LAST_NAME]` → e.g., `Smith`
+
+### Option 2: TextExpander Date Variables
+- `%date%` - Current date
+- `%date+1w%` - Date one week from now
+- `%time%` - Current time
+
+### Option 3: Custom Fields (Recommended)
+Create TextExpander fields that prompt for:
+- Cycle (e.g., `26C01W01`)
+- Date Range (e.g., `12/30/2025 - 01/05/2026`)
+- Generation Date (e.g., `January 6, 2026`)
+
+---
+
+## Shorter Version (Alternative)
+
+If you prefer a more concise email:
+
+```
+Captain [LAST_NAME],
+
+Attached is the SCRPA Combined Executive Summary for Cycle [CYCLE] (Report Period: [DATE_RANGE]). The report includes 7-Day detailed summaries, ArcGIS map visuals, statistical charts, and 28-Day/YTD analysis. Generated: [GENERATION_DATE]
+
+Please let me know if you have any questions. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+## Usage Instructions
+
+1. **Create the snippet in TextExpander**:
+   - Name: `scrpa-report-email`
+   - Abbreviation: `scrpaemail` (or your preference)
+   - Content: Copy the email body above
+
+2. **Each week when sending**:
+   - Type your abbreviation (e.g., `scrpaemail`)
+   - TextExpander will expand the template
+   - Replace the placeholders `[CYCLE]`, `[DATE_RANGE]`, `[GENERATION_DATE]`, `[LAST_NAME]` with current values
+   - Attach the PDF file
+   - Send
+
+3. **Optional**: Set up TextExpander fields to prompt for these values automatically
+
+---
+
+## Example (Filled In)
+
+**Subject**: `SCRPA Weekly Report - Cycle 26C01W01 | 12/30/2025 - 01/05/2026`
+
+**Body**:
+```
+Captain Smith,
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle 26C01W01. Report Period: 12/30/2025 - 01/05/2026
+Date Generated: January 6, 2026
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+**Last Updated**: 2026-01-06  
+**Created For**: Weekly SCRPA Report Distribution
+
+```
+
+
+Updated the email template to include the charts, ArcGIS maps, and detailed summaries. Here's the updated version:
+
+## Updated Email Body (TextExpander Snippet)
+
+```
+Captain [LAST_NAME],
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+## Shorter Alternative (Updated)
+
+```
+Captain [LAST_NAME],
+
+Attached is the SCRPA Combined Executive Summary for Cycle [CYCLE] (Report Period: [DATE_RANGE]). The report includes 7-Day detailed summaries, ArcGIS map visuals, statistical charts, and 28-Day/YTD analysis. Generated: [GENERATION_DATE]
+
+Please let me know if you have any questions. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+The template now mentions:
+- Detailed 7-Day incident summaries
+- ArcGIS map visuals (for incidents in the last 7 days)
+- Statistical charts and visualizations
+
+This gives the recipient a clear overview of what's included in the report. The file has been updated with these changes. ```plaintext
+Captain [LAST_NAME],
+
+Please find attached the Strategic Crime Reduction Plan Analysis (SCRPA) Combined Executive Summary for Cycle [CYCLE]. Report Period: [DATE_RANGE]
+Date Generated: [GENERATION_DATE]
+
+The report includes:
+• 7-Day Executive Summary with detailed incident summaries
+• ArcGIS Map visuals showing incidents occurring in the last 7 days
+• Statistical charts and visualizations by crime type
+• 28-Day Executive Summary (operational planning)
+• YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+```plaintext
+Captain [LAST_NAME],
+
+Attached is the SCRPA Combined Executive Summary for Cycle [CYCLE] (Report Period: [DATE_RANGE]). The report includes 7-Day detailed summaries, ArcGIS map visuals, statistical charts, and 28-Day/YTD analysis. Generated: [GENERATION_DATE]
+
+Please let me know if you have any questions. Respectfully,
+
+P.O. R. A. Carucci
+Hackensack Police Department
+```
+
+---
+
+**User**
+
+in stead of updating the templet again can I save the .pbix as the new templete as it has all the updated m code? ---
+
+**Cursor**
+
+
+Yes. Saving the current `.pbix` as the new template is the right approach since it already has the updated M code. Steps:
+
+
+```markdown
+# Save Current .pbix as New Template - Instructions
+
+## Overview
+
+Since your current report `.pbix` file already contains all the updated M code fixes, you can save it directly as the new template instead of manually updating the template file. ---
+
+## Steps to Save Current .pbix as New Template
+
+### 1. Open Current Report in Power BI
+- Navigate to: `Time_Based\2026\26C01W01_26_01_06\26C01W01_26_01_06.pbix`
+- Open in Power BI Desktop
+
+### 2. Verify M Code is Updated
+- Go to **Transform Data** (Power Query Editor)
+- Check that queries have the latest fixes:
+  - `q_CycleCalendar` - Should load `Report_Due_Date` column
+  - `all_crimes` - Should have updated Period calculation logic
+  - All file paths should be single continuous strings
+
+### 3. Remove Report-Specific Data (Optional but Recommended)
+- **Option A**: Keep data (template will have sample data)
+  - Pro: Can preview visuals immediately
+  - Con: Template file will be larger
+  
+- **Option B**: Clear data (template will be empty)
+  - In Power Query Editor, for each query that loads data:
+    - Right-click query → **Delete**
+    - Or: Keep queries but remove data source connections
+  - Pro: Cleaner template, smaller file size
+  - Con: Need to reconnect data sources when using template
+
+**Recommendation**: Keep the queries but they'll reconnect to latest data when used, so keeping sample data is fine. ### 4. Save As New Template
+- **File** → **Save As**
+- Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\`
+- **File name**: `Base_Report.pbix`
+- Click **Save**
+- **Confirm overwrite** if prompted (backup old template first if needed)
+
+### 5. Backup Old Template (Recommended)
+Before overwriting, backup the old template:
+- Rename: `Base_Report.pbix` → `Base_Report_backup_20260106.pbix`
+- Or move to archive folder
+
+---
+
+## What Gets Saved in the Template
+
+✅ **All M Code Queries** - Including all fixes:
+- Updated `q_CycleCalendar.m` with `Report_Due_Date`
+- Updated `all_crimes.m` with fixed Period calculation
+- Updated `q_RMS_Source.m` with correct file paths
+- Updated `q_CallTypeCategories.m` with correct file paths
+
+✅ **All Visuals and Pages** - All Power BI visuals and layouts
+
+✅ **All Measures and Calculated Columns** - Any DAX measures you've created
+
+✅ **Data Model Relationships** - Table relationships
+
+✅ **Theme and Formatting** - Colors, fonts, visual styles
+
+✅ **Filters and Slicers** - Filter configurations
+
+---
+
+## After Saving Template
+
+### Next Report Generation
+When you run `Run_SCRPA_Report_Folder.bat`:
+1. Script will copy `Base_Report.pbix` to new report folder
+2. Power BI will automatically refresh queries
+3. Queries will load latest data from:
+   - `05_EXPORTS\_RMS\scrpa\` (latest Excel file)
+   - `09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv`
+   - `09_Reference\Classifications\CallTypes\CallType_Categories.csv`
+
+### Verify Template Works
+1. Create a test report folder
+2. Copy the new `Base_Report.pbix` to it
+3. Open in Power BI
+4. Click **Refresh** on all queries
+5. Verify:
+   - Period values are correct
+   - Cycle detection works
+   - All visuals display correctly
+
+---
+
+## Quick Checklist
+
+- [ ] Current `.pbix` has all updated M code
+- [ ] All queries refresh successfully
+- [ ] Period values are calculating correctly
+- [ ] Visuals display correctly
+- [ ] Old template backed up (if desired)
+- [ ] Save As to `15_Templates\Base_Report.pbix`
+- [ ] Test template with next report generation
+
+---
+
+## Alternative: Update Template Manually
+
+If you prefer to update the existing template manually:
+1. Open `15_Templates\Base_Report.pbix`
+2. Copy M code from current report to template
+3. Update each query one by one
+4. Save template
+
+**Note**: Saving current `.pbix` as template is faster and less error-prone. ---
+
+**Date**: 2026-01-06  
+**Status**: ✅ Recommended Approach  
+**Template Location**: `15_Templates\Base_Report.pbix`
+
+```
+
+
+Yes. Saving the current `.pbix` as the new template is the simplest approach since it already has the updated M code. ## Quick Steps
+
+1. Open your current report in Power BI:
+   - `Time_Based\2026\26C01W01_26_01_06\26C01W01_26_01_06.pbix`
+
+2. Save As new template:
+   - File → Save As
+   - Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\`
+   - File name: `Base_Report.pbix`
+   - Click Save
+   - Confirm overwrite if prompted
+
+3. Optional: Backup old template first:
+   - Rename existing `Base_Report.pbix` to `Base_Report_backup_20260106.pbix`
+
+## What Gets Saved
+
+- All updated M code queries (with fixes)
+- All visuals and layouts
+- Color scheme updates
+- Data model and relationships
+
+## Next Report Generation
+
+When you run `Run_SCRPA_Report_Folder.bat`:
+- It will copy the new `Base_Report.pbix` template
+- Power BI will refresh queries automatically
+- All queries will load the latest data from their source locations
+
+This is faster and less error-prone than manually copying M code. I've created `SAVE_AS_TEMPLATE_INSTRUCTIONS.md` with detailed steps if you need them. ---
+
+**User**
+
+I have some time before I leave for the lets button up the excel files that are genered when Run_SCRPA_Report_Folder.bat is run. I want the following:
+a csv that all the incidents but I want the enriched version like what the preview table has@Time_Based/2026/26C01W01_26_01_06/All_Crime_2026_01_06.csv
+I wantthe same enriched data but filtered down to show the incidents that happened in the last 7Day or that will be added due to LagDay logic 
+
+is there anything I am missing? In the report folder I do not need the rms summary as it will not be a good as what I get from chatgpt@Time_Based/2026/26C01W01_26_01_06/Reports/2026_01_06_21_47_04_rms_summary.html
+I would want a .txt file (as outlook does not handle markdown well) the following:
+Subject: SCRPA Weekly Report - Cycle [current cycle] | [current date range]
+
+Sir,
+
+Please find attached the Strategic Crime Reduction Plan Analysis Combined Executive Summary for Cycle [current cycle]. Report Period: [current date range]
+Date Generated: [Date the folder was created by the Run_SCRPA_Report_Folder.bat]
+
+The report includes:
+7-Day Executive Summary with detailed incident summaries
+ArcGIS Map visuals showing incidents occurring in the last 7 days
+Statistical charts and visualizations by crime type
+28-Day Executive Summary (operational planning)
+YTD Executive Summary (strategic analysis)
+
+Please let me know if you have any questions or require additional information.

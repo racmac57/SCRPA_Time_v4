@@ -1,0 +1,36 @@
+{
+  "tags": [
+    "code",
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "cycle",
+        "currentcycletbl",
+        "today",
+        "hascurrentcycle",
+        "fix",
+        "7_day_end"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "// 2025-12-30-15-05-00\n# SCRPA_Time_v3/current_cycle_fix_instructions.md\n# Author: R. A.",
+      "first_line": "// 2025-12-30-15-05-00"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-13T12:14:35.759771",
+  "department": "admin"
+}

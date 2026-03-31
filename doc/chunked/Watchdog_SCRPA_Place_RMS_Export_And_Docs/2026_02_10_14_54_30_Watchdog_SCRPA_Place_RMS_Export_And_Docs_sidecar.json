@@ -1,0 +1,70 @@
+{
+  "source_file": "Watchdog_SCRPA_Place_RMS_Export_And_Docs.md",
+  "source_path": "C:\\_chunker\\02_data\\Watchdog_SCRPA_Place_RMS_Export_And_Docs.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\Watchdog_SCRPA_Place_RMS_Export_And_Docs\\2026_02_10_14_54_30_Watchdog_SCRPA_Place_RMS_Export_And_Docs.origin.json",
+  "created_at": "2026_02_10_14_54_30",
+  "tags": [
+    "ai",
+    "docs",
+    "excel",
+    "json",
+    "markdown",
+    "powershell",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "place",
+      "watchdog",
+      "scrpa",
+      "cursor",
+      "xlsx",
+      "rule"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "# Watchdog script for SCRPA Place RMS Export\n_Exported on 2/10/2026 at 14:49:48 EST from Cursor (2.4.31)_\n\n---\n\n**User**\n\nplease update the watchdog script to also monitor for files on C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\Des...",
+    "first_line": "# Watchdog script for SCRPA Place RMS Export"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-02-10T14:54:30+00:00_Watchdog_SCRPA_Place_RMS_Export_And_Docs_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "ai",
+        "cursor",
+        "docs",
+        "excel",
+        "json",
+        "markdown",
+        "place",
+        "powershell",
+        "python",
+        "rule",
+        "scrpa",
+        "sql",
+        "watchdog",
+        "xlsx"
+      ],
+      "key_terms": [
+        "place",
+        "watchdog",
+        "scrpa",
+        "cursor",
+        "xlsx",
+        "rule"
+      ],
+      "summary": "# Watchdog script for SCRPA Place RMS Export\n_Exported on 2/10/2026 at 14:49:48 EST from Cursor (2.4.31)_\n\n---\n\n**User**\n\nplease update the watchdog script to also monitor for files on C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\Des...",
+      "char_length": 11815,
+      "byte_length": 12180
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

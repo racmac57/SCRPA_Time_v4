@@ -1,0 +1,63 @@
+{
+  "source_file": "DISABLE_M_CODE_FORMATTING.md",
+  "source_path": "C:\\_chunker\\02_data\\DISABLE_M_CODE_FORMATTING.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\DISABLE_M_CODE_FORMATTING\\2026_01_27_18_32_26_DISABLE_M_CODE_FORMATTING.origin.json",
+  "created_at": "2026_01_27_18_32_26",
+  "tags": [
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "editor",
+      "settings",
+      "false",
+      "json",
+      "prettier",
+      "files"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "# How to Disable Auto-Formatting for M Code Files\n\n## Current Settings\n\nYour workspace already has `.vscode/settings.json` configured, but here's how to verify and strengthen the settings:\n\n## Method 1: Workspace Settings (Already Config...",
+    "first_line": "# How to Disable Auto-Formatting for M Code Files"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-27T18:32:26+00:00_DISABLE_M_CODE_FORMATTING_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "data",
+        "docs",
+        "editor",
+        "false",
+        "files",
+        "json",
+        "markdown",
+        "prettier",
+        "settings",
+        "sql"
+      ],
+      "key_terms": [
+        "editor",
+        "settings",
+        "false",
+        "json",
+        "prettier",
+        "files"
+      ],
+      "summary": "# How to Disable Auto-Formatting for M Code Files\n\n## Current Settings\n\nYour workspace already has `.vscode/settings.json` configured, but here's how to verify and strengthen the settings:\n\n## Method 1: Workspace Settings (Already Config...",
+      "char_length": 4043,
+      "byte_length": 4223
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

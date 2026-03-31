@@ -1,0 +1,53 @@
+{
+  "original_full_path": "C:\\Users\\carucci_r\\Downloads\\ChatGPT-Reconnect ArcGIS Pro Project_part2.json",
+  "modified_time": "2026-01-17T04:43:08.5145524Z",
+  "operation": "MOVE",
+  "created_time": "2026-01-17T04:43:07.2915836Z",
+  "original_filename": "ChatGPT-Reconnect ArcGIS Pro Project_part2.json",
+  "destination_status": "present",
+  "original_directory": "C:\\Users\\carucci_r\\Downloads",
+  "sent_at": "2026-01-17T04:44:08.0329348Z",
+  "integrity_sha256": "1df0c0a23c6b61b92f0860d9e804037e1fca692ff4e7f5429482376741e35c08",
+  "size_bytes": 186211,
+  "source_cleanup": "not_required",
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "dataset",
+    "docs",
+    "excel",
+    "it-ops",
+    "json",
+    "markdown",
+    "police",
+    "powershell",
+    "python",
+    "sql",
+    "training"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "data",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "esriexport",
+        "filemaker",
+        "lawenforcementdatamanagement_new",
+        "server",
+        "hpd2022lawsoft",
+        "files"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "{\n  \"metadata\": {\n    \"title\": \"Reconnect ArcGIS Pro Project\",\n    \"user\": {\n      \"name\": \"Anonymous\",\n      \"email\": \"gmfzqprc7z@privaterelay.appleid.com\"\n    },\n    \"dates\": {\n      \"created\": \"1/15/2026 22:48:51\",\n      \"updated\": \"1...",
+      "first_line": "{"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-16T23:46:10.235487",
+  "department": "admin"
+}

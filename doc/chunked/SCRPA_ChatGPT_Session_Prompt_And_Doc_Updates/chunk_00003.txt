@@ -1,0 +1,190 @@
+Do not end your response with three backticks. Your first characters must be: <!DOCTYPE
+  Your last characters must be: </html>
+```
+
+**2. Missing: redaction explicitly covers the attached `.md` files. **
+The CHATGPT_BRIEFING_PROMPT.md already contains sensitive data (license plate, insurance policy number). The current rule says "apply to all content" but ChatGPT may interpret that as only applying to CSV data. Add this line under REDACTION RULES:
+
+```
+  → This applies to content already present in the attached .md files,
+    not just external data. ```
+
+**3. Missing: version increment rule. **
+"Version: 1.0" is hardcoded — add guidance on when to change it so the captain can track revisions:
+
+```
+  → Version: 1.0 for initial generation each cycle. If you regenerate
+    within the same cycle after corrections, increment to 1.1, 1.2, etc. ```
+
+---
+
+## Corrected Project Instructions (full, ready to paste)
+
+```
+ROLE
+You are a crime analyst assistant for the Hackensack Police Department (HPD),
+Office of the Safe Streets Operations Control Center (SSOCC). You generate
+official SCRPA Tactical Briefing reports submitted to a police captain. Keep all output concise, professional, and operationally focused. SYSTEM OVERVIEW
+Each bi-weekly reporting cycle I will paste a session prompt and attach two files:
+  1. CHATGPT_BRIEFING_PROMPT.md — Cycle parameters (name, dates, 7-day window,
+     bi-weekly period) and 7-day incident narratives. 2. SCRPA_Report_Summary.md — Authoritative counts: total incidents, period
+     breakdown, category breakdown table (7-Day / 28-Day / YTD), lag analysis. TERMINOLOGY
+  7-Day Period   — Incidents whose incident date falls within this cycle's window. 28-Day Period  — Current-year incidents within the last 28-day window. YTD            — Current-year incidents outside the 7-day and 28-day windows. Prior Year     — Incidents from the previous calendar year in the dataset. Lag Incident   — Incident where the report date is later than incident date. Backfill 7-Day — Lag incident reported during this window; incident occurred
+                   before the window opened. LagDays        — Days between incident date and the cycle's 7-day start date. AUTHORITY RULE
+SCRPA_Report_Summary.md is the authoritative source for all counts. Do not
+second-guess or cross-check its numbers. CRIME CATEGORIES — EXACTLY THESE FIVE, NO OTHERS
+  Motor Vehicle Theft | Burglary Auto | Burglary - Comm & Res |
+  Robbery | Sexual Offenses
+  Never display "Other" as a category in any output, ever. REDACTION RULES
+  Apply to ALL content in attached files AND any text you output. Remove: license plates, VINs, insurance policy numbers, NIC/NCIC identifiers,
+          victim names, officer names, phone numbers, account numbers. Keep:   street name and block-level location, crime category, offense type,
+          incident date/time, dollar value of property, case status. Important: redaction applies to content already present in the attached
+  .md files, not just externally sourced data. EXECUTIVE SUMMARY RULES
+  Write only about what DID occur. Do NOT mention categories with zero incidents. Note backfill activity only when Backfill 7-Day count is greater than zero. OUTPUT FORMAT — ABSOLUTE RULES
+  Your entire response must be raw HTML and nothing else. Your first characters must be: <!DOCTYPE
+  Your last characters must be: </html>
+  Do NOT start your response with three backticks. Do NOT end your response with three backticks. Do NOT add any commentary, explanation, or text outside the HTML tags. Use a style block with inline CSS: navy/white color scheme, clean tables,
+  readable typography, print-friendly layout (max-width 960px). Never invent data. If a value is absent, show a dash. FOOTER FORMAT (use on every report)
+  Hackensack Police Department - Safe Streets Operations Control Center |
+  Cycle: [Bi-Weekly cycle] | Range: [Bi-Weekly period] | Version: 1.0
+  Use Version: 1.0 for initial generation each cycle. If you regenerate within the same cycle after corrections, increment to 1.1, 1.2, etc. ```
+
+---
+
+## Getting This Week's Corrected Report
+
+1. Open a **new chat** inside your SCRPA ChatGPT project (so the updated project instructions apply)
+2. Open `Time_Based\2026\26C02W08_26_02_24\Documentation\CHATGPT_SESSION_PROMPT.md` — copy all text — paste into the chat
+3. Attach these two files from the same `Documentation\` folder:
+   - `CHATGPT_BRIEFING_PROMPT.md`
+   - `SCRPA_Report_Summary.md`
+4. Send — the output should start with `<!DOCTYPE html>` with no backticks, no appendix, no data notes, no "Other" category, and the correct footer
+5. Save the raw HTML as `7Day_summary.html` in the `Reports\` folder, replacing the old one
+
+---
+
+**User**
+
+were all updates made so there will be no issues next time I run the script? ---
+
+**Cursor**
+
+Let me do a full verification across both scripts before confirming. One failure — the test itself had a bad escape sequence for backticks (a test-writing bug, not a template bug). Let me verify the actual template content directly:
+
+The codefence rule IS correct in the template — my test forgot the space before the backticks. Let me fix the check and re-run the full verification:
+
+Check 18 was a bad test (I over-complicated the string). Let me verify that specific line directly:
+
+Both lines are there and linters are clean. Check 18 was a test-writing error — the `chr()` encoding I used to dodge the quote characters didn't match the literal string in the file. Everything in the actual code is correct. Here's the definitive status:
+
+| Area | Status |
+|---|---|
+| All 3 imports resolve in pipeline | ✅ |
+| Template: 2 attached files (no CSV) | ✅ |
+| Template: No appendix, no data notes | ✅ |
+| Template: Codefence rule spelled out | ✅ |
+| Template: `<!DOCTYPE html>` / `</html>` start/end rules | ✅ |
+| Template: Hackensack PD footer format with placeholders | ✅ |
+| Template: "Other" category banned | ✅ |
+| Template: Zero-incident bullets banned | ✅ |
+| Template: Exactly 7 sections | ✅ |
+| Pipeline: `write_chatgpt_session_prompt` imported | ✅ |
+| Pipeline: Called in step 5 | ✅ |
+| Pipeline: Result recorded in `files_created` | ✅ |
+| Generated file: All placeholders filled, no leftovers | ✅ |
+| Linter errors | ✅ None |
+
+**You are clear to run the next cycle. ** The next time you run `Run_SCRPA_Pipeline.bat`, `CHATGPT_SESSION_PROMPT.md` will be generated automatically with all of the updated logic applied. ---
+
+**User**
+
+how do we remove the ``` from the bottom and top of the output@Time_Based/2026/26C02W08_26_02_24/Reports/SCRPA Tactical Briefing _ 26C02W08.pdf @Time_Based/2026/26C02W08_26_02_24/Reports/2026_02_24_scrpa_tac.html 
+
+---
+
+**Cursor**
+
+Let me read the HTML file to see exactly where the backticks are sitting:
+
+The backtick is at line 384, sitting inside the body after the footer div — ChatGPT is closing its code fence inside the HTML. The top is fine (starts with `<!DOCTYPE html>`). Also note the ChatGPT citation comment on line 3. The most reliable fix is a small cleaning script + batch file you can run on any HTML file from ChatGPT. Let me fix the current file and build that utility:
+
+Now build the reusable cleaning utility:
+
+Now the batch file so you can run it with a double-click or drag-and-drop:
+
+Now test the cleaner against the file we just fixed to confirm it reports "no changes" (proving it was correctly cleaned), then test it on the old `7Day_summary.html` which still has the backtick:
+
+Windows console can't display the `→` arrow. Fix that and rerun:
+
+`7Day_summary.html` is gone — you must have renamed it to `2026_02_24_scrpa_tac.html`. That file is already fully clean (the cleaner confirms `[no changes]`). Let me verify the end of it is correct:
+
+Clean — ends properly with `</html>`, no backticks anywhere. Here's the complete picture:
+
+---
+
+**Current file status:**
+- `2026_02_24_scrpa_tac.html` — ✅ cleaned (backtick on line 384 removed, ChatGPT citation comment removed)
+
+**Why it keeps happening:**
+ChatGPT treats the entire HTML as a code block internally. Even with the `<!DOCTYPE html>` start instruction, it sometimes closes its internal code fence with ` ``` ` before `</html>`, placing it inside your HTML body where browsers render it as visible text. **Going forward — two options:**
+
+| Option | How |
+|---|---|
+| **Drag & drop** | Drag any `.html` file from ChatGPT onto `Clean_ChatGPT_HTML.bat` — it cleans in-place instantly |
+| **Clean whole folder** | Double-click `Clean_ChatGPT_HTML.bat`, press Enter at the prompt — scans all `.html` files in `Time_Based\` |
+
+The cleaner handles all four artifact types:
+1. Leading ` ```html ` or ` ``` ` fence
+2. Trailing ` ``` ` fence (wherever it lands in the HTML)
+3. Any stray inline ` ``` ` inside the body
+4. ChatGPT `<!-- :contentReference[...] -->` citation comments
+
+---
+
+**User**
+
+please update all docs to reflect the recient changes. also update local git
+
+---
+
+**Cursor**
+
+Good — I can see all the changed and new files. Let me first update `generate_documentation.py` (the source of truth) to document the new scripts and workflow, then regenerate canonical docs, then commit everything. Now I'll make all the doc source updates in `generate_documentation.py`, then regenerate, then commit:
+
+Now update `CLAUDE_MD_CONTENT` to add `CHATGPT_SESSION_PROMPT.md` and `clean_chatgpt_html.py`:
+
+Now regenerate all canonical docs, copy root `claude.md`, and commit:
+
+Now stage and commit everything:
+
+`prepare_7day_outputs.py` is modified but not staged — add it too since we updated it this session:
+
+Done. Here's what was done:
+
+**Documentation updates (in `generate_documentation.py` source, then regenerated):**
+- `data_flow` — added steps 7 (ChatGPT 7-day briefing) and 8 (clean_chatgpt_html.py)
+- `diagram` — shows `CHATGPT_SESSION_PROMPT.md` in the flow and the full ChatGPT manual workflow block
+- `scripts` section — replaced stale `export_enriched_data_and_email.py` entry with corrected `generate_documentation.py` outputs (now lists all 7 per-cycle files), updated `run_scrpa_pipeline.py` step 5, and added a new `clean_chatgpt_html.py` entry
+- `output_structure/template` — `CHATGPT_SESSION_PROMPT.md` added to Documentation folder, `[CYCLE]_scrpa_tac.html` added to Reports folder
+- `claude.md` (via `CLAUDE_MD_CONTENT`) — added **ChatGPT 7-Day Tactical Briefing Workflow** section (6-step instructions) and `clean_chatgpt_html.py / Clean_ChatGPT_HTML.bat` reference section; `CHATGPT_SESSION_PROMPT.md` and `SCRPA_Report_Summary.md` now tagged as **Attach** vs **Paste**
+
+**Canonical files regenerated:** `Documentation/claude.md`, `PROJECT_SUMMARY.json/yaml`, `data_dictionary.json/yaml`, `SCRPA_Report_Summary.md`, and `claude.md` (root)
+
+**Git commit:** `970cf83` — 12 files changed, 3 new files (`claude.md`, `scripts/clean_chatgpt_html.py`, `scripts/Clean_ChatGPT_HTML.bat`)
+
+---
+
+**User**
+
+I'm preparing to export this chat. Please generate a descriptive filename that summarizes the main topic or task of this conversation. Requirements:
+• 4-8 words
+• Title Case (capitalize major words)
+• Replace spaces with underscores
+• Include .md extension
+• No dates or special characters
+
+Output only the filename, with the suffix .md and nothing else. ---
+
+**Cursor**
+
+SCRPA_ChatGPT_Session_Prompt_And_Doc_Updates.md

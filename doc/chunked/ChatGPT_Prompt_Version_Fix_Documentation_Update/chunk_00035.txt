@@ -1,0 +1,659 @@
+*\n\n")
+            
+            f.write("---\n\n")
+            
+            # ChatGPT Prompt Section
+            if prompt_file_to_use and os.path.exists(prompt_file_to_use):
+                f.write("## ChatGPT Briefing Prompt\n\n")
+                f.write("The complete prompt used for ChatGPT briefing generation:\n\n")
+                f.write("---\n\n")
+                
+                # Read and include prompt content
+                try:
+                    with open(prompt_file_to_use, 'r', encoding='utf-8') as pf:
+                        prompt_content = pf.read()
+                        f.write(prompt_content)
+                except Exception as e:
+                    f.write(f"*Could not read prompt file: {e}*\n\n")
+            else:
+                f.write("## ChatGPT Briefing Prompt\n\n")
+                f.write("*Prompt file not found. *\n\n")
+                f.write("This may indicate that:\n")
+                f.write("- Briefing CSV preparation step failed\n")
+                f.write("- No 7-day CSV file was available for briefing preparation\n")
+                f.write("- The prompt file was not successfully copied to the Documentation/ folder\n\n")
+                f.write("**Expected location**: `Documentation/CHATGPT_BRIEFING_PROMPT.md`\n\n")
+            
+            f.write("---\n\n")
+            f.write(f"*Report summary generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}*\n")
+        
+        print(f"✅ Created consolidated MD file: {os.path.basename(md_path)}")
+        return md_path
+        
+    except Exception as e:
+        print(f"❌ Error creating MD file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def cleanup_old_reports(reports_folder):
+    """
+    Remove old report files from the Reports folder, keeping only the latest
+    version of each report type. Report types:
+    - *_rms_summary.html/pdf (Tactical)
+    - SCRPA_Combined_Executive_Summary_*.html/pdf (Strategic)
+    
+    Args:
+        reports_folder: Path to the Reports subfolder
+        
+    Returns:
+        Tuple of (deleted_count, kept_count)
+    """
+    if not os.path.exists(reports_folder):
+        return (0, 0)
+    
+    deleted_count = 0
+    kept_files = []
+    
+    # Define report type patterns
+    report_patterns = {
+        'tactical_html': '*_rms_summary.html',
+        'tactical_pdf': '*_rms_summary.pdf',
+        'strategic_html': 'SCRPA_Combined_Executive_Summary_*.html',
+        'strategic_pdf': 'SCRPA_Combined_Executive_Summary_*.pdf',
+    }
+    
+    for report_type, pattern in report_patterns.items():
+        full_pattern = os.path.join(reports_folder, pattern)
+        matching_files = glob.glob(full_pattern)
+        
+        if not matching_files:
+            continue
+        
+        # Sort by modification time (newest first)
+        matching_files.sort(key=os.path.getmtime, reverse=True)
+        
+        # Keep the newest file
+        latest_file = matching_files[0]
+        kept_files.append(os.path.basename(latest_file))
+        
+        # Delete older files
+        for old_file in matching_files[1:]:
+            try:
+                os.remove(old_file)
+                deleted_count += 1
+                print(f"  🗑️  Deleted old: {os.path.basename(old_file)}")
+            except Exception as e:
+                print(f"  ⚠️  Could not delete {os.path.basename(old_file)}: {e}")
+    
+    if deleted_count > 0:
+        print(f"🧹 Cleaned up {deleted_count} old report file(s)")
+    
+    if kept_files:
+        print(f"📄 Keeping {len(kept_files)} latest report file(s):")
+        for f in kept_files:
+            print(f"    ✓ {f}")
+    
+    return (deleted_count, len(kept_files))
+
+def organize_files(report_folder):
+    """Main function to organize all files into report folder"""
+    print(f"\n📁 Organizing files into: {os.path.basename(report_folder)}\n")
+    
+    # Extract report date from folder name
+    folder_name = os.path.basename(report_folder)
+    report_date_tuple = extract_date_from_folder_name(folder_name)
+    
+    if report_date_tuple:
+        year, month, day = report_date_tuple
+        print(f"📅 Report date detected: {year}-{month:02d}-{day:02d} (from folder name)")
+    else:
+        print(f"⚠️  Could not extract date from folder name: {folder_name}")
+        print(f"   Will copy all available files (no date filtering)")
+    
+    # Ensure subfolders exist
+    data_folder = os.path.join(report_folder, "Data")
+    reports_folder = os.path.join(report_folder, "Reports")
+    docs_folder = os.path.join(report_folder, "Documentation")
+    
+    os.makedirs(data_folder, exist_ok=True)
+    os.makedirs(reports_folder, exist_ok=True)
+    os.makedirs(docs_folder, exist_ok=True)
+    
+    copied_count = 0
+    
+    # 1. Copy CSV files to Data folder (filtered by date if available)
+    print("📊 Copying CSV files to Data/ folder...")
+    csv_files = collect_csv_files(report_date_tuple)
+    for csv_file in csv_files:
+        if copy_file_safe(csv_file, data_folder):
+            copied_count += 1
+    
+    # 1b. Copy Excel files to Data folder (filtered by date if available)
+    print("\n📊 Copying Excel files to Data/ folder...")
+    excel_files = collect_excel_files(report_date_tuple)
+    for excel_file in excel_files:
+        if copy_file_safe(excel_file, data_folder):
+            copied_count += 1
+    
+    # 2. Process 7-day CSV: restructure into Detailed/Summary outputs
+    last7_csv = find_7day_csv(report_date_tuple)
+    if last7_csv:
+        print("\n📅 Processing 7-day filtered CSV (restructuring)...")
+        # Copy original to data folder for backward compatibility (deprecated)
+        if copy_file_safe(last7_csv, data_folder, "SCRPA_7Day_Filtered.csv"):
+            copied_count += 1
+            print("   ⚠️  Note: SCRPA_7Day_Filtered.csv is deprecated. Use Detailed/Summary outputs instead.") # Run restructure script to generate Detailed and Summary CSVs
+        restructure_script = os.path.join(os.path.dirname(__file__), "tools", "scrpa_7day_restructure.py")
+        if os.path.exists(restructure_script):
+            print("   🔄 Running 7-day restructure script...")
+            try:
+                # Run the restructure script in the data folder so outputs are created there
+                result = subprocess.run(
+                    [sys.executable, restructure_script],
+                    cwd=data_folder,
+                    capture_output=True,
+                    text=True,
+                    encoding="utf-8",
+                    errors="replace"
+                )
+                
+                # Print output for debugging
+                if result.stdout:
+                    print(result.stdout)
+                
+                if result.returncode == 0:
+                    print("   ✅ Restructure completed successfully")
+                    # Copy the generated files
+                    detailed_csv = os.path.join(data_folder, "SCRPA_7Day_Detailed.csv")
+                    summary_csv = os.path.join(data_folder, "SCRPA_7Day_Summary.csv")
+                    dict_md = os.path.join(data_folder, "SCRPA_7Day_Data_Dictionary.md")
+                    readme_md = os.path.join(data_folder, "README_7day_outputs.md")
+                    
+                    if os.path.exists(detailed_csv):
+                        print(f"   ✓ Generated: SCRPA_7Day_Detailed.csv")
+                        copied_count += 1
+                    if os.path.exists(summary_csv):
+                        print(f"   ✓ Generated: SCRPA_7Day_Summary.csv")
+                        copied_count += 1
+                    if os.path.exists(dict_md):
+                        # Copy to Documentation folder (but note it's also in reference location)
+                        docs_folder = os.path.join(report_folder, "Documentation")
+                        if os.path.exists(docs_folder):
+                            shutil.copy2(dict_md, os.path.join(docs_folder, "SCRPA_7Day_Data_Dictionary.md"))
+                            print(f"   ✓ Copied: SCRPA_7Day_Data_Dictionary.md (in Documentation/)")
+                            print(f"     Note: Reference copy is in 09_Reference/Standards/RMS/SCRPA/")
+                            copied_count += 1
+                    if os.path.exists(readme_md):
+                        # Move to Documentation folder
+                        docs_folder = os.path.join(report_folder, "Documentation")
+                        if os.path.exists(docs_folder):
+                            shutil.copy2(readme_md, os.path.join(docs_folder, "README_7day_outputs.md"))
+                            print(f"   ✓ Generated: README_7day_outputs.md (in Documentation/)")
+                            copied_count += 1
+                else:
+                    print(f"   ⚠️  Restructure script returned error code {result.returncode}")
+                    if result.stderr:
+                        print(f"   Error output: {result.stderr[:500]}")
+            except Exception as e:
+                print(f"   ⚠️  Error running restructure script: {e}")
+                import traceback
+                traceback.print_exc()
+        else:
+            print(f"   ⚠️  Restructure script not found: {restructure_script}")
+    
+    # 3. Copy briefing CSV (if exists, filtered by date)
+    briefing_csv = find_briefing_csv(report_date_tuple)
+    if briefing_csv:
+        print("\n📋 Copying briefing CSV...")
+        if copy_file_safe(briefing_csv, data_folder):
+            copied_count += 1
+    else:
+        if report_date_tuple:
+            year, month, day = report_date_tuple
+            print(f"\n⚠️  No briefing CSV found for date {year}-{month:02d}-{day:02d}")
+            print(f"   Briefing CSV may need to be generated for this report date")
+    
+    # 3b. Remove old briefing CSV files that don't match the report date
+    if report_date_tuple and os.path.exists(data_folder):
+        year, month, day = report_date_tuple
+        date_pattern_4digit = f"{year:04d}_{month:02d}_{day:02d}"
+        date_pattern_2digit = f"{year % 100:02d}_{month:02d}_{day:02d}"
+        
+        old_briefing_files = []
+        for item in os.listdir(data_folder):
+            if item.startswith("SCRPA_Briefing_Ready_") and item.endswith(".csv"):
+                if date_pattern_4digit not in item and date_pattern_2digit not in item:
+                    old_briefing_files.append(item)
+        
+        if old_briefing_files:
+            print(f"\n🧹 Removing {len(old_briefing_files)} old briefing CSV file(s) that don't match report date...")
+            for old_file in old_briefing_files:
+                try:
+                    os.remove(os.path.join(data_folder, old_file))
+                    print(f"  ✓ Removed: {old_file}")
+                except Exception as e:
+                    print(f"  ⚠️  Could not remove {old_file}: {e}")
+    
+    # 4. Clean up old report files before copying new ones
+    print("\n🧹 Cleaning up old report files...")
+    cleanup_old_reports(reports_folder)
+    
+    # 5. Copy HTML and PDF files to Reports folder
+    print("\n📄 Copying HTML and PDF reports...")
+    report_files = collect_report_files()
+    for report_file in report_files:
+        if copy_file_safe(report_file, reports_folder):
+            copied_count += 1
+    
+    # 5. Copy ChatGPT prompt to Documentation folder (verify date match)
+    prompt_file = find_chatgpt_prompt(report_date_tuple)
+    if prompt_file:
+        print("\n📝 Copying ChatGPT prompt...")
+        # Check if existing prompt file in docs folder is from different date
+        existing_prompt = os.path.join(docs_folder, "CHATGPT_BRIEFING_PROMPT.md")
+        if os.path.exists(existing_prompt) and report_date_tuple:
+            try:
+                with open(existing_prompt, 'r', encoding='utf-8') as f:
+                    first_lines = f.read(500)
+                    year, month, day = report_date_tuple
+                    date_str_4digit = f"{year:04d}-{month:02d}-{day:02d}"
+                    date_str_2digit = f"{year % 100:02d}-{month:02d}-{day:02d}"
+                    
+                    # If existing prompt doesn't match report date, remove it
+                    if date_str_4digit not in first_lines and date_str_2digit not in first_lines:
+                        print(f"  🗑️  Removing old prompt file from different date...")
+                        os.remove(existing_prompt)
+            except:
+                pass  # If we can't read it, just overwrite it
+        
+        if copy_file_safe(prompt_file, docs_folder):
+            copied_count += 1
+    else:
+        if report_date_tuple:
+            year, month, day = report_date_tuple
+            print(f"\n⚠️  No ChatGPT prompt file found")
+            print(f"   Prompt file may need to be generated for report date {year}-{month:02d}-{day:02d}")
+            print(f"   Run prepare_briefing_csv.py to generate prompt file")
+    
+    # 5b. Copy only essential documentation files (exclude historical notes)
+    print("\n📚 Copying essential documentation files...")
+    # Only copy essential files - exclude historical development notes
+    essential_files = []
+    
+    # Check for essential guide files in docs folder (if exists)
+    docs_source_dir = os.path.join(os.path.dirname(__file__), "docs")
+    if not os.path.exists(docs_source_dir):
+        docs_source_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "SCRPA", "docs")
+    
+    # Only copy specific essential files (exclude historical notes)
+    essential_patterns = [
+        "CHATGPT_PROMPT_GUIDE.md",  # Only if it's a user guide, not historical notes
+        "SCRPA_WORKFLOW_USER_GUIDE.md"  # Only if it's a user guide
+    ]
+    
+    # Check docs folder for essential files
+    if os.path.exists(docs_source_dir):
+        for pattern in essential_patterns:
+            file_path = os.path.join(docs_source_dir, pattern)
+            if os.path.exists(file_path):
+                essential_files.append(file_path)
+    
+    # Exclude historical development notes (these should not be copied)
+    excluded_patterns = [
+        "CHATGPT_PROMPT_UPDATE_REVIEW",
+        "CYCLE_FIX_PROMPT",
+        "FIX_PROMPT_AND_REPORTS_FOLDER",
+        "CSV_RETENTION_AND_PROMPT_FIX",
+        "UPDATE_REVIEW",
+        "FIX_PROMPT"
+    ]
+    
+    # Filter out excluded files
+    filtered_files = []
+    for f in essential_files:
+        filename = os.path.basename(f)
+        should_exclude = any(excluded in filename for excluded in excluded_patterns)
+        if not should_exclude:
+            filtered_files.append(f)
+    
+    if filtered_files:
+        for guide_file in filtered_files:
+            if copy_file_safe(guide_file, docs_folder):
+                copied_count += 1
+    else:
+        print("   ℹ️  No additional essential documentation files to copy")
+        print("   (Historical development notes are excluded)")
+    
+    # 6. Create consolidated MD file
+    print("\n📝 Creating consolidated markdown file...")
+    md_file = create_consolidated_md(report_folder, csv_files, prompt_file)
+    if md_file:
+        copied_count += 1
+    
+    print(f"\n✅ File organization complete! {copied_count} file(s) copied/organized.") return copied_count
+
+def safe_input(prompt=""):
+    """Handle input() calls in non-interactive mode (when called from batch)"""
+    try:
+        # Check if stdin is available and not redirected
+        if sys.stdin.isatty():
+            return input(prompt)
+        else:
+            # Non-interactive mode - just return empty string
+            return ""
+    except (EOFError, OSError):
+        # Handle EOFError when stdin is closed
+        return ""
+
+def main():
+    """Main execution"""
+    # Find latest report folder
+    report_folder = find_latest_report_folder()
+    
+    if not report_folder:
+        print("\n❌ Cannot proceed without report folder")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Organize files
+    organize_files(report_folder)
+    
+    print("\n" + "=" * 60)
+    print("✅ FILE ORGANIZATION COMPLETE")
+    print("=" * 60)
+    print(f"\n📂 Report Folder: {report_folder}")
+    print("\n📁 Folder Structure:")
+    print("   ├── Data/          (CSV files)")
+    print("   ├── Reports/      (HTML and PDF files)")
+    print("   └── Documentation/ (MD files and prompts)")
+    print("\n" + "=" * 60)
+    
+    safe_input("\nPress Enter to exit...")
+    return True
+
+if __name__ == "__main__":
+    import sys
+    try:
+        success = main()
+        exit(0 if success else 1)
+    except KeyboardInterrupt:
+        print("\n\n❌ Interrupted by user")
+        exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        safe_input("\nPress Enter to exit...")
+        exit(1)
+
+
+
+
+```
+
+Marking todo 3 as completed and summarizing the fixes:
+
+
+## Issues fixed
+
+### 1. Date filtering — fixed
+Problem: Incidents with Report Date 12/22/2025 were included when the cycle should be 12/23/2025 to 12/29/2025. Solution: Updated `scrpa_7day_restructure.py` to:
+- Look up the cycle from the cycle calendar CSV using the `REPORT_DATE` environment variable
+- Filter incidents to only include those with Report Date within the cycle range (12/23 to 12/29)
+- Exclude incidents outside the cycle and log how many were excluded
+
+Changes:
+- Added `get_cycle_info_from_calendar()` function to read the cycle calendar
+- Modified `build_detailed()` to accept `cycle_info` and filter by cycle dates
+- Falls back to min/max if the calendar is unavailable
+
+### 2. Data Dictionary generation — fixed
+Problem: Data Dictionary was being regenerated each time instead of copying from the reference location. Solution: The script already checks for the reference file first. Verified the reference location exists and the copy logic works. The script will:
+- Check if `09_Reference/Standards/RMS/SCRPA/SCRPA_7Day_Data_Dictionary.md` exists
+- Copy from reference if it exists
+- Only generate if the reference doesn't exist
+
+### 3. Too many documentation files — fixed
+Problem: Many historical development notes were being copied to the Documentation folder. Solution: Updated `organize_report_files.py` to:
+- Only copy essential documentation files
+- Exclude historical development notes (e.g., `CHATGPT_PROMPT_UPDATE_REVIEW.md`, `CYCLE_FIX_PROMPT.md`, `FIX_PROMPT_AND_REPORTS_FOLDER.md`, `CSV_RETENTION_AND_PROMPT_FIX.md`)
+- Copy only essential guides like `CHATGPT_PROMPT_GUIDE.md` and `SCRPA_WORKFLOW_USER_GUIDE.md` (if they exist)
+
+## Files modified
+
+1. `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\tools\scrpa_7day_restructure.py`
+   - Added cycle calendar lookup
+   - Added date filtering by cycle range
+   - Improved cycle date handling
+
+2. `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\organize_report_files.py`
+   - Limited documentation files copied
+   - Excluded historical development notes
+
+## Next steps
+
+When you run the report again:
+1. The 4 incidents from 12/22/2025 will be excluded (they belong to the previous cycle)
+2. The Data Dictionary will be copied from the reference location (not regenerated)
+3. Only essential documentation files will be copied (historical notes excluded)
+
+The script uses the `REPORT_DATE` environment variable (set by the batch file) to determine the correct cycle. For report date 12/30/2025, it will use cycle 25C13W52 with range 12/23/2025 to 12/29/2025. ---
+
+**User**
+
+update the changelog, summary, readme and local git
+
+---
+
+**Cursor**
+
+Updating CHANGELOG.md, SUMMARY.md, and README.md, then committing to git. Reviewing the current files:
+
+
+Checking the recent updates sections:
+
+
+Reading the Recent Updates sections:
+
+
+Updating all three files with the new fixes:
+
+
+```markdown
+# SCRPA Reporting System - Changelog
+
+All notable changes to the SCRPA Reporting System will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). ---
+
+## [1.5.0] - 2025-12-29
+
+### Fixed
+- **Zone Formatting Issue**
+  - Fixed Zone values displaying as decimals (5.0, 8.0) instead of whole numbers (5, 8)
+  - Updated `generate_briefing_html.py` to convert Zone values to integers before display
+  - Updated `prepare_briefing_csv.py` to format Zone as whole number during CSV transformation
+  - Added instructions to ChatGPT prompt to format Zone as whole number
+
+- **Date Filtering Issue (Multiple Scripts)**
+  - Fixed incidents with Report Date outside cycle range being included in reports
+  - Added filtering logic in `prepare_briefing_csv.py` to exclude incidents with Report Date before cycle start or after cycle end
+  - **Fixed `scrpa_7day_restructure.py` date filtering**: Script now uses cycle calendar CSV to determine correct cycle dates instead of min/max Report Date from data
+  - Script looks up cycle from calendar using `REPORT_DATE` environment variable
+  - Filters incidents to only include those with Report Date within the cycle range (e.g., 12/23 to 12/29 for report date 12/30)
+  - Excludes incidents from previous cycles (e.g., 12/22 incidents excluded when cycle is 12/23-12/29)
+  - Reports how many records were excluded if any fall outside the cycle range
+
+### Changed
+- **Version Standardization**
+  - Updated version format from `1.5` to `1.5.0` (standardized to semantic versioning)
+  - All output files (HTML reports, ChatGPT prompts) now display version 1.5.0
+
+- **Data Dictionary Storage**
+  - Data Dictionary now stored once in reference location: `09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md`
+  - Script checks for existing reference dictionary and copies from there instead of regenerating
+  - Ensures consistency across all reports and eliminates redundant generation
+  - First run creates the dictionary in reference location, all future runs copy from there
+
+- **ChatGPT Prompt Enhancement**
+  - Enhanced narrative extraction instructions with explicit "CRITICAL - NARRATIVE EXTRACTION" section
+  - Added detailed list of what to extract from Narrative column (suspect descriptions, vehicles, loss items, methods, etc.) - Emphasized that Narrative column contains more complete information than structured fields
+  - Added note: "DO NOT rely solely on pre-processed columns"
+
+### Added
+- **Documentation Guide**
+  - Created `DOCUMENTATION_FILES_EXPLAINED.md` explaining which files are needed vs historical notes
+  - Clarified that only `CHATGPT_BRIEFING_PROMPT.md` is needed for ChatGPT usage
+  - Documented which historical development files can be removed from Documentation/ folder
+
+---
+
+## [1.3.0] - 2025-12-09
+
+### Added
+- **ChatGPT Prompt Enhancements (Based on ChatGPT Recommendations)**
+  - Added "Reporting Parameters For This Run" section with Cycle ID, Date Range (ISO format), Version, Prepared By, Submitted To
+  - Added "Loss And Monetary Rules" section with 5-step process for calculating Loss Total
+  - Added "Cycle And Date Rules" section ensuring consistency across HTML output
+  - Added "Summary Table Rules" section ensuring Loss Total matches between bullets and table
+  - Created `CHATGPT_USAGE_INSTRUCTIONS.md` quick reference guide
+  - Clarified that CSV data is embedded in prompt file (no separate upload required)
+
+### Changed
+- **CHATGPT_BRIEFING_PROMPT Instructions**
+  - Updated instructions to clarify CSV data is already embedded
+  - Added Option 1 (recommended): Copy entire prompt file
+  - Added Option 2 (alternative): Upload CSV separately
+  - Improved clarity on what to provide to ChatGPT
+
+### Fixed
+- **Date Format Handling**
+  - Reporting Parameters section uses ISO format (YYYY-MM-DD) as recommended by ChatGPT
+  - HTML template continues to use MM/DD/YYYY format for display
+  - Date conversion function handles edge cases gracefully
+
+---
+
+## [1.2.0] - 2025-12-09
+
+### Fixed
+- **Path Case Sensitivity**
+  - Fixed case mismatch in config paths (`SCRPA` vs `scrpa`)
+  - Updated `config.py` to use lowercase `scrpa` folder name
+  - Updated fallback paths in `RMS_Statistical_Export_FINAL_COMPLETE.py`
+  - Scripts now correctly find Excel/CSV files in exports folder
+
+- **CSV File Support**
+  - Added CSV file fallback when Excel files not found
+  - Updated `get_latest_rms_file()` to search for CSV files if Excel unavailable
+  - Updated `load_and_analyze_rms_data()` to handle both Excel and CSV formats
+  - Added case-insensitive file search for better compatibility
+
+- **Archive Timing**
+  - Moved archive function to run AFTER HTML generation (was running before)
+  - Prevents archiving newly generated HTML files
+  - Archive now runs after all reports are generated
+
+- **Batch File Syntax Error**
+  - Fixed "may was unexpected at this time" error in `generate_all_reports.bat`
+  - Escaped parentheses in echo statements for proper batch parsing
+  - Improved error message formatting
+
+- **Enhanced Debugging**
+  - Added extensive DEBUG logging throughout HTML generation process
+  - Added file path verification and existence checks
+  - Added file size verification after write operations
+  - Improved error messages with full tracebacks
+
+### Changed
+- **CHATGPT_BRIEFING_PROMPT Generation**
+  - Removed em dashes (—) and replaced with regular hyphens (-)
+  - Updated HTML template to use standard ASCII characters
+  - Added explicit Loss Total calculation instructions
+  - Loss Total now clearly documented as sum of individual loss items
+  - Updated all HTML template sections with Loss Total calculation guidance
+
+### Added
+- **Loss Total Calculation Logic**
+  - Added instructions that Loss Total = sum of all individual loss items
+  - Updated all HTML template sections with calculation guidance
+  - Added verification instructions in data processing section
+
+---
+
+## [1.1.0] - 2025-12-09
+
+### Changed
+- **Project Reorganization**
+  - Moved scripts to `SCRPA\scripts\` folder
+  - Moved logs to `SCRPA\logs\` folder
+  - Moved documentation to `SCRPA\docs\` folder
+  - Created archive folder for old/broken scripts
+
+- **Cycle Lookup System**
+  - Updated scripts to use cycle calendar CSV (`7Day_28Day_Cycle_20250414.csv`)
+  - Replaced calculated cycle names with calendar-based lookup
+  - Added REPORT_DATE environment variable support
+
+- **Version Numbering**
+  - Updated Combined Executive Summary HTML version from v1.0 to v1.1
+
+### Fixed
+- **Folder Overwrite Prompt**
+  - Fixed prompt to always appear when folder exists
+  - Improved handling of non-interactive mode
+
+- **Path References**
+  - Updated batch file paths after script reorganization
+  - Fixed PowerShell script path references
+  - Updated log file location to `SCRPA\logs\`
+
+### Fixed (by Claude AI)
+- **✅ Cycle/Range Data Issue - Root Cause Fixed**
+  - **Root Cause**: Output suppression (`>nul 2>&1`) hid all errors - script reported success even when HTML wasn't created
+  - **Fix Applied**: Added output capture to temporary log file with error display
+  - **Fix Applied**: Added extensive DEBUG logging throughout HTML generation
+  - **Fix Applied**: Added file creation verification with size check
+  - **Status**: Fixes applied - Testing required to verify HTML generation works correctly
+  - **See**: `docs/CYCLE_FIX_SOLUTION.md` and `docs/CLAUDE_FIX_SUMMARY.md` for details
+
+---
+
+## [1.0.0] - 2025-12-09
+
+### Added
+- **Complete Automation Workflow**
+  - `Run_SCRPA_Report_Folder.bat` - Comprehensive automation script
+  - Handles all 4 steps: folder creation, report generation, file organization
+  - Date-aware workflow with user prompts
+
+- **Folder Structure Generation**
+  - `generate_weekly_report.py` - Creates report folders with naming convention
+  - Automatic Power BI template copying
+  - Subfolder creation (Data/, Reports/, Documentation/)
+
+- **File Organization System**
+  - `organize_report_files.py` - Automatically organizes all report files
+  - Copies CSV files, reports, and documentation to appropriate folders
+  - Creates consolidated markdown summaries
+
+- **Excel to CSV Conversion**
+  - `convert_all_xlsx.bat` - Batch conversion script
+  - `export_excel_sheets_to_csv.py` - Excel processing engine
+  - Support for 7-day filtered exports (`--report-last7`)
+
+- **Briefing Preparation**
+  - `prepare_briefing_csv.py` - Transforms CSV for ChatGPT processing
+  - Automatic prompt generation (`CHATGPT_BRIEFING_PROMPT.md`)
+  - Cycle-aware data processing
+
+- **Report Generation**
+  - HTML and PDF report generation
+  - Tactical summaries (`*_rms_summary.html/pdf`)
+  - Strategic executive summaries (`SCRPA_Combined_Executive_Summary_*.html/pdf`)
+
+- **Documentation**
+  - README.md - System overview and quick start guide
+  - CHANGELOG.md - Version history
+  - SUMMARY.md - System summary
+  - In-folder documentation (CHATGPT_PROMPT_GUIDE.md, etc.)

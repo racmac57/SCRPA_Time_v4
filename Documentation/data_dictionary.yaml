@@ -1,0 +1,305 @@
+metadata:
+  title: SCRPA All_Crimes Data Dictionary
+  version: 1.0.0
+  last_updated: '2026-03-24T12:18:04.802273'
+  description: Field definitions for the SCRPA enriched crime data output
+source_fields:
+  Case Number:
+    type: string
+    description: Unique case identifier from RMS
+    example: 25-009438
+    source: RMS Export
+  Incident Date:
+    type: date
+    description: Date the incident occurred (raw from RMS)
+    format: MM/DD/YYYY or null
+    source: RMS Export
+  Incident Time:
+    type: time
+    description: Time the incident occurred
+    format: HH:MM:SS or HH:MM AM/PM
+    source: RMS Export
+  Incident Date_Between:
+    type: date
+    description: Alternative incident date (for range incidents)
+    source: RMS Export
+  Incident Time_Between:
+    type: time
+    description: Alternative incident time (for range incidents)
+    source: RMS Export
+  Report Date:
+    type: date
+    description: Date the incident was reported/entered in RMS
+    source: RMS Export
+  Report Time:
+    type: time
+    description: Time the incident was reported
+    source: RMS Export
+  Incident Type_1:
+    type: string
+    description: Primary incident/offense type
+    example: Robbery
+    source: RMS Export
+  Incident Type_2:
+    type: string
+    description: Secondary incident/offense type
+    nullable: true
+    source: RMS Export
+  Incident Type_3:
+    type: string
+    description: Tertiary incident/offense type
+    nullable: true
+    source: RMS Export
+  FullAddress:
+    type: string
+    description: Full address of incident location
+    example: 400 Hackensack Avenue, Hackensack, NJ, 07601
+    source: RMS Export
+  Grid:
+    type: string
+    description: Grid reference for location
+    example: I6
+    source: RMS Export
+  Zone:
+    type: integer
+    description: Police zone number (whole number, observed range 5-9)
+    example: '9'
+    format: Integer (no decimals)
+    source: RMS Export
+  Narrative:
+    type: text
+    description: Detailed incident narrative (cleaned of special characters)
+    source: RMS Export
+  NIBRS Classification:
+    type: string
+    description: NIBRS offense code and description
+    example: 120 = Robbery
+    source: RMS Export
+computed_fields:
+  BestTimeValue:
+    type: time
+    description: Best available time of incident. Used for time-of-day analysis.
+    format: HH:mm:ss
+    calculation: 'Cascade: Incident Time → if null, Incident Time_Between → if null,
+      Report Time'
+    usage: Derives Incident_Time (HH:MM:SS), StartOfHour, TimeOfDay, and TimeOfDay_SortKey
+    source: Computed
+  TimeSource:
+    type: string
+    description: Source of BestTimeValue
+    values:
+    - Incident Time
+    - Incident Time_Between
+    - Report Time
+    - None
+    source: Computed
+  Incident_Time:
+    type: string
+    description: Formatted incident time (HH:MM:SS)
+    format: HH:MM:SS
+    default: 00:00:00
+    source: Computed
+  Incident_Date:
+    type: string
+    description: Formatted incident date text
+    format: MM/DD/YY
+    calculation: Coalesce(Incident Date, Incident Date_Between, Report Date)
+    source: Computed
+  Incident_Date_Date:
+    type: date
+    description: Best incident date as date type (for calculations)
+    calculation: Coalesce(Incident Date, Incident Date_Between, Report Date)
+    source: Computed
+  Report_Date:
+    type: date
+    description: Resolved report date
+    calculation: Coalesce(Report Date, EntryDate, Incident_Date_Date)
+    source: Computed
+  Report_Date_ForLagday:
+    type: date
+    description: 'Report date for lag day calculation - CRITICAL: NO Incident_Date
+      fallback'
+    calculation: Coalesce(Report Date, EntryDate)
+    note: Used for IsLagDay and LagDays. When null, lag logic yields false/0.
+    source: Computed
+  Report_Date_Text:
+    type: string
+    description: Formatted report date text
+    format: MM/DD/YY
+    source: Computed
+  IncidentToReportDays:
+    type: integer
+    description: Days between incident and report
+    calculation: Report_Date - Incident_Date_Date
+    source: Computed
+  Period:
+    type: string
+    description: Reporting period classification based on Incident_Date
+    values:
+    - 7-Day
+    - 28-Day
+    - YTD
+    - Prior Year
+    - Historical
+    priority_order: 7-Day > Prior Year > 28-Day > YTD > Historical
+    note: Based on Incident_Date, NOT Report_Date. 7-Day uses calendar 7_Day_Start/7_Day_End
+      for the resolved cycle (fixed window), not "today minus 7 days".
+    source: Computed
+  _Period_Debug:
+    type: string
+    description: Debug info for period calculation (for validation)
+    source: Computed
+  Period_SortKey:
+    type: integer
+    description: Sort key for Period field
+    mapping:
+      7-Day: 1
+      28-Day: 2
+      YTD: 3
+      Prior Year: 4
+      Historical: 5
+    source: Computed
+  cycle_name:
+    type: string
+    description: Weekly cycle name (Report_Name) that contains Incident_Date
+    example: 26C01W04
+    note: Set to "Historical" if Incident_Date falls outside all calendar 7-day windows
+      (e.g., day after cycle end)
+    source: Computed
+  Backfill_7Day:
+    type: boolean
+    description: True if incident occurred before cycle but reported during current
+      7-day window
+    calculation: Incident_Date < CycleStart AND Report_Date_ForLagday IN [CycleStart,
+      CycleEnd]
+    source: Computed
+  cycle_name_adjusted:
+    type: string
+    description: Cycle name adjusted for backfill cases. For backfill lag incidents,
+      attributes them to current report cycle.
+    calculation: If Backfill_7Day=True then CurrentCycleName (current report cycle)
+      else cycle_name
+    note: Allows lag incidents reported during current 7-day window to be attributed
+      to the current cycle for reporting
+    source: Computed
+  BiWeekly_Report_Name:
+    type: string
+    description: Bi-weekly report name from cycle calendar (e.g., 26BW02)
+    example: 26BW02
+    note: 'Populated from cycle calendar BiWeekly_Report_Name column when present.
+      Format: YYBW## (YY=year, BW=bi-weekly, ##=period number)'
+    source: Computed from cycle calendar
+  IsCurrent7DayCycle:
+    type: boolean
+    description: True if Report_Date_ForLagday falls within current 7-day cycle window
+    calculation: Report_Date_ForLagday >= CycleStart AND Report_Date_ForLagday <=
+      CycleEnd
+    source: Computed
+  IsLagDay:
+    type: boolean
+    description: True if incident occurred before the cycle that contains Report_Date_ForLagday
+    calculation: Incident_Date < CycleStartForReport (using 3-tier cycle resolution)
+    source: Computed
+  LagDays:
+    type: integer
+    description: Days between incident and cycle start (NOT Report_Date)
+    calculation: CycleStartForReport - Incident_Date (in days)
+    note: 'CRITICAL: This is cycle-relative, not report-date-relative'
+    source: Computed
+  StartOfHour:
+    type: string
+    description: Start of hour for time grouping
+    format: HH:00:00
+    source: Computed
+  TimeOfDay:
+    type: string
+    description: Time of day classification
+    values:
+    - Late Night (00:00-03:59)
+    - Early Morning (04:00-07:59)
+    - Morning (08:00-11:59)
+    - Afternoon (12:00-15:59)
+    - Evening Peak (16:00-19:59)
+    - Night (20:00-23:59)
+    - Unknown Time
+    source: Computed
+  TimeOfDay_SortKey:
+    type: integer
+    description: Sort key for TimeOfDay field
+    mapping:
+      Late Night (00:00-03:59): 1
+      Early Morning (04:00-07:59): 2
+      Morning (08:00-11:59): 3
+      Afternoon (12:00-15:59): 4
+      Evening Peak (16:00-19:59): 5
+      Night (20:00-23:59): 6
+      Unknown Time: 99
+    source: Computed
+  ALL_INCIDENTS:
+    type: string
+    description: Concatenation of all incident types
+    calculation: Incident Type_1 + ", " + Incident Type_2 + ", " + Incident Type_3
+    source: Computed
+  Crime_Category:
+    type: string
+    description: High-level crime category for reporting
+    values:
+    - Motor Vehicle Theft
+    - Burglary Auto
+    - Burglary - Comm & Res
+    - Robbery
+    - Sexual Offenses
+    - Other
+    source: Computed
+  Incident_Type_1_Norm:
+    type: string
+    description: Normalized incident type (Attempted Burglary -> Burglary)
+    source: Computed
+  Vehicle_1:
+    type: string
+    description: Formatted vehicle 1 info (STATE - REG, MAKE/MODEL)
+    nullable: true
+    source: Computed
+  Vehicle_2:
+    type: string
+    description: Formatted vehicle 2 info
+    nullable: true
+    source: Computed
+  Vehicle_1_and_Vehicle_2:
+    type: string
+    description: Combined vehicle info with pipe separator
+    nullable: true
+    source: Computed
+  Clean_Address:
+    type: string
+    description: Address with city/state suffix removed
+    example: 400 Hackensack Avenue
+    source: Computed
+  IncidentKey:
+    type: string
+    description: Key for category lookup (ALL_INCIDENTS or Incident Type_1)
+    source: Computed
+  Category_Type:
+    type: string
+    description: Incident category classification (e.g., Criminal Incidents, Public
+      Safety and Welfare)
+    lookup: 09_Reference/Classifications/CallTypes/CallType_Categories.csv
+    lookup_method: Exact match on Incident column, then Incident_Norm column
+    default: Unknown (when no match found)
+    source: Computed via CallType lookup
+  Response_Type:
+    type: string
+    description: Response priority classification
+    values:
+    - Emergency
+    - Urgent
+    - Routine
+    - Unknown
+    lookup: 09_Reference/Classifications/CallTypes/CallType_Categories.csv
+    lookup_method: Exact match on Incident column, then Incident_Norm column
+    default: Unknown (when no match found)
+    source: Computed via CallType lookup
+  Time_Validation:
+    type: string
+    description: Debug string showing time cascade resolution
+    source: Computed

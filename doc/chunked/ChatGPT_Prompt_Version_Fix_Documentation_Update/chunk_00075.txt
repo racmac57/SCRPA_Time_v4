@@ -1,0 +1,99 @@
+**Split Arrow Operators (`=>`)**
+   - **Location**: Helper functions (lines 12-13), AsTime (line 44), AsTimeQuick (line 68), AsDate functions (lines 105, 127, 151)
+   - **Issue**: Arrow operator `=>` was split across lines causing "Token ',' expected" errors
+   - **Fix**: Combined into single line: `(params) as type => expression`
+
+### 2. **Split File Paths with Quotes**
+   - **Location**: 
+     - Line 19-20: FolderPath for Excel imports
+     - Line 205-207: Cycle calendar CSV path
+     - Line 496-498: CallType categories CSV path
+   - **Issue**: Paths split across lines with quotes in the middle causing parsing errors
+   - **Fix**: Combined into single string paths
+
+### 3. **Spaces in Comparison Operators (`< >` vs `<>`)**
+   - **Location**: Vehicle_1_Added and Vehicle_2_Added functions (lines 427, 429, 432, 436, 439, 454, 456, 459, 463, 465, 487)
+   - **Issue**: Using `< >` (with spaces) instead of `<>` (not equal operator)
+   - **Fix**: Changed all instances to `<>`
+
+### 4. **Text.From(null) Patterns**
+   - **Location**: 
+     - AsTime function: `Text.Trim(Text.From(v))` when v might be null
+     - AsDate functions: `Date.FromText(Text.From(v))` when v might be null
+     - Vehicle fields: `try Text.From([Field]) otherwise null` patterns
+     - Clean_Address: `try Text.From([FullAddress]) otherwise null`
+   - **Issue**: `Text.From(null)` throws errors; should check for null first
+   - **Fix**: Changed to `if [Field] = null then null else Text.From([Field])` or removed Text.From when not needed
+
+### 5. **Type Misuse (Already Fixed)**
+   - **Location**: NeedFuzzyFlag (line 523)
+   - **Issue**: ChatGPT already fixed this - using `Table.IsEmpty` instead of `List.IsEmpty` for nested join results
+   - **Status**: ✅ Already correct
+
+### 6. **Syntax Formatting**
+   - **Location**: AllIncidents_Added (line 330)
+   - **Issue**: Missing space before `in` keyword
+   - **Fix**: Added proper spacing: `in` on new line
+
+## Files Modified
+
+- `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Updated_All_Crimes.m`
+
+## Testing Recommendations
+
+1. **Load in Power BI Desktop** - Should load without syntax errors
+2. **Test with case 25-113076** - Verify:
+   - `IsLagDay` = `true`
+   - `LagDays` = `3` (not 8)
+   - `IncidentToReportDays` = `8` (reporting delay)
+3. **Check all columns** - Ensure all output columns are present and correct
+
+## Remaining Considerations
+
+### Option A: Refactor Helpers
+The `AsTime`, `AsTimeQuick`, and `AsDate` functions are repeated multiple times. Consider:
+- Moving them to the top-level helpers section
+- Reusing the same function instead of duplicating code
+- This would reduce code size and make debugging easier
+
+### Option B: If Errors Persist
+If you still get errors, please provide:
+- The exact error message from Power BI's error details panel
+- The exact line number Power BI reports
+- This will help pinpoint any remaining edge cases
+
+## Summary
+
+✅ All syntax errors fixed
+✅ All paths consolidated
+✅ All operators corrected
+✅ Text.From patterns fixed
+✅ Type misuse already handled by ChatGPT
+
+The query should now load successfully in Power BI Desktop. ```
+
+Fixed the syntax errors in `Updated_All_Crimes.m`. Summary:
+
+## Issues fixed
+
+1. Split arrow operators (`=>`) — Fixed in helper functions and all `AsTime`/`AsDate` functions
+2. Split file paths — Combined all split paths into single strings
+3. Operator spacing — Changed all `< >` to `<>` (not equal operator)
+4. Text.From patterns — Fixed `Text.From(null)` patterns to check for null first
+5. Syntax formatting — Fixed spacing in `AllIncidents_Added`
+
+## Summary of fixes
+
+- Lines 12-13: Helper functions — arrow operators fixed
+- Line 19-20: FolderPath — path consolidated
+- Line 44-58: AsTime function — arrow operator and Text.From fixed
+- Line 68-80: AsTimeQuick function — arrow operator and Text.From fixed
+- Lines 105, 127, 151: AsDate functions — arrow operators fixed (3 instances)
+- Line 205-207: Cycle calendar path — consolidated
+- Lines 418-425, 445-452: Vehicle fields — Text.From patterns fixed
+- Line 482: Clean_Address — Text.From pattern fixed
+- Line 496-498: CallType categories path — consolidated
+- Multiple locations: `< >` changed to `<>` throughout
+
+The query should now load in Power BI Desktop without syntax errors. Created `POWER_BI_QUERY_FIXES_APPLIED.md` documenting all fixes. Regarding ChatGPT's questions:
+- Option A (refactor helpers): The `AsTime` and `AsDate` functions are repeated. We can move them to top-level helpers to reduce duplication. - Option B (error details): If errors persist, share the exact Power BI error message and line number for targeted fixes. Should I refactor the helpers to eliminate duplication?

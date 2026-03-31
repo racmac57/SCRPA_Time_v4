@@ -1,0 +1,717 @@
+# SCRPA Workflow Comprehensive Analysis & Implementation Plan
+
+**Generated**: 2026-01-06
+**Analyst**: Claude (Sonnet 4.5)
+**Purpose**: Complete workflow review, optimization recommendations, and implementation plan
+
+---
+
+## Executive Summary
+
+This document provides a comprehensive analysis of the SCRPA (Strategic Crime Reduction and Problem Analysis) report generation workflow, identifies optimization opportunities, addresses blind spots, and provides detailed implementation recommendations. ### Key Findings
+
+✅ **Current Strengths**:
+- Well-structured workflow with clear separation of concerns
+- Robust M code data transformation with comprehensive analytical columns
+- Automatic cycle detection and date-based filtering
+- Strong data validation and reconciliation checks
+- Clear file organization structure
+
+⚠️ **Areas for Improvement**:
+- Manual Power BI CSV export step (not automated)
+- Excel files unnecessarily copied to Data folder
+- ChatGPT prompt references outdated briefing CSV instead of Detailed CSV
+- Missing full export CSV (all incidents, no filter)
+- Single-orientation HTML output (needs landscape variant)
+- Hard-coded paths limit portability
+
+---
+
+## 1. Current Workflow Analysis
+
+### 1.1 Workflow Entry Point & Orchestration
+
+**Entry Script**: `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat`
+
+**Workflow Steps**:
+
+```
+STEP 0.5: Excel to CSV Conversion
+  ↓ convert_all_xlsx_auto.bat
+  ↓ Converts *.xlsx from 05_EXPORTS\_RMS\scrpa\ to *.csv
+  ↓
+STEP 1: Create Report Folder Structure
+  ↓ generate_weekly_report.py (REPORT_DATE as argument)
+  ↓ Creates Time_Based\YYYY\YYCMMWww_YY_MM_DD\ folder
+  ↓
+STEP 2: Generate HTML/PDF Reports
+  ↓ generate_all_reports.bat (environment: REPORT_DATE)
+  ↓ Runs report generation scripts in SCRPA_ArcPy\06_Output
+  ↓
+STEP 3: Organize Files into Report Folder
+  ↓ organize_report_files.py
+  ↓ • Finds latest report folder
+  ↓ • Collects CSV files (filtered by date)
+  ↓ • Collects Excel files (filtered by date) ← **SHOULD BE REMOVED**
+  ↓ • Runs scrpa_7day_restructure.py to generate:
+  ↓   - SCRPA_7Day_Detailed.csv
+  ↓   - SCRPA_7Day_Summary.csv
+  ↓   - README_7day_outputs.md
+  ↓ • Copies briefing CSV (SCRPA_Briefing_Ready_*.csv)
+  ↓ • Copies HTML/PDF reports (latest only)
+  ↓ • Copies ChatGPT prompt (CHATGPT_BRIEFING_PROMPT.md)
+  ↓ • Creates SCRPA_Report_Summary.md
+  ↓
+STEP 4: Open Year Folder
+  ↓ Explorer window opens to report folder
+```
+
+### 1.2 Data Flow & Transformation Pipeline
+
+**Source Data**:
+- **Location**: `C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\`
+- **Format**: Excel files (`YYYY_MM_DD_HH_MM_SS_SCRPA_RMS.xlsx`) converted to CSV
+- **Filter**: Power Query in Power BI exports with `*_ReportDate_Last7.csv` suffix
+
+**Transformation Layers**:
+
+1. **Layer 1: Power BI M Code** (`m_code_all_queries.m`)
+   - **Input**: Latest Excel file from folder
+   - **Processing**:
+     - Time cascading logic (Incident Time → Incident Time_Between → Report Time)
+     - Date cascading logic (Incident Date → Incident Date_Between → Report Date)
+     - Cycle assignment from cycle calendar CSV
+     - Period calculation (7-Day, 28-Day, YTD, Historical)
+     - Lag day identification and calculation
+     - Time-of-day categorization (6 time bands)
+     - Crime category mapping (Burglary Auto, Motor Vehicle Theft, etc.) - Incident type normalization (statute suffix removal)
+     - Vehicle information consolidation
+     - Address cleaning
+     - Category/Response type mapping via fuzzy joins
+   - **Output**: Enriched dataset with 40+ analytical columns
+   - **Export**: **MANUAL** - User must export to CSV from Power BI Desktop
+
+2. **Layer 2: 7-Day Restructure** (`scrpa_7day_restructure.py`)
+   - **Input**: `*_ReportDate_Last7.csv` or `SCRPA_7Day_Detailed.csv`
+   - **Processing**:
+     - Filters to 7-day cycle based on cycle calendar (Report_Due_Date lookup)
+     - Adds cycle boundary columns (CycleStartDate, CycleEndDate)
+     - Calculates IsLagDay and LagDays fields
+     - Maps Crime_Category (matches M code logic exactly)
+     - Generates summary aggregations (by category, lag day count)
+   - **Output**:
+     - `SCRPA_7Day_Detailed.csv` - All filtered incidents + robust columns
+     - `SCRPA_7Day_Summary.csv` - Category aggregations + TOTAL row
+     - `README_7day_outputs.md` - Migration notes
+
+3. **Layer 3: Briefing Preparation** (`prepare_briefing_csv.py`)
+   - **Input**: `SCRPA_7Day_Detailed.csv` (preferred) or `*_ReportDate_Last7.csv`
+   - **Processing**:
+     - Transforms RMS schema to briefing schema
+     - Combines date/time fields
+     - Parses statute codes
+     - Formats monetary values
+     - Adds cycle information from calendar
+     - Creates placeholder fields for AI extraction
+   - **Output**:
+     - `SCRPA_Briefing_Ready_YYYY_MM_DD_HH_MM_SS.csv` - ChatGPT-ready format
+     - `CHATGPT_BRIEFING_PROMPT.md` - Complete prompt with embedded CSV data
+     - `BRIEFING_INSTRUCTIONS.txt` - User guide
+
+### 1.3 File Locations & Dependencies
+
+**Configuration Files**:
+- Cycle Calendar: `C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv`
+- Call Type Categories: `C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv`
+- Data Dictionary (Reference): `C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md`
+
+**Script Locations**:
+- Workflow Entry: `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\Run_SCRPA_Report_Folder.bat`
+- SCRPA Scripts: `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA\`
+  - `generate_weekly_report.py` - Creates folder structure
+  - `organize_report_files.py` - Organizes all files
+  - `tools\scrpa_7day_restructure.py` - Generates Detailed/Summary CSVs
+  - `scripts\prepare_briefing_csv.py` - Generates briefing CSV and prompt
+  - `scripts\convert_all_xlsx_auto.bat` - Excel to CSV conversion
+
+**Data Locations**:
+- RMS Exports: `C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\`
+- Report Output: `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\06_Output\`
+- Final Reports: `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Time_Based\YYYY\YYCMMWww_YY_MM_DD\`
+
+**Report Folder Structure**:
+```
+Time_Based/
+└── YYYY/
+    └── YYCMMWww_YY_MM_DD/
+        ├── Data/
+        │   ├── SCRPA_7Day_Detailed.csv ← All filtered incidents + robust columns
+        │   ├── SCRPA_7Day_Summary.csv ← Category aggregations
+        │   ├── SCRPA_Briefing_Ready_*.csv ← ChatGPT-ready format
+        │   ├── *.xlsx ← **SHOULD BE REMOVED**
+        │   ├── *.csv (raw exports) ← **SHOULD BE REVIEWED**
+        │   └── README_7day_outputs.md
+        ├── Reports/
+        │   ├── *_rms_summary.html (tactical)
+        │   ├── *_rms_summary.pdf (tactical)
+        │   ├── SCRPA_Combined_Executive_Summary_*.html (strategic)
+        │   └── SCRPA_Combined_Executive_Summary_*.pdf (strategic)
+        └── Documentation/
+            ├── CHATGPT_BRIEFING_PROMPT.md
+            └── SCRPA_Report_Summary.md
+```
+
+### 1.4 Current CSV Output Files
+
+**A. SCRPA_7Day_Detailed.csv** ✅ **MEETS REQUIREMENTS**
+- **Filter**: Report Date within 7-day cycle (from cycle calendar)
+- **Columns**: All original RMS columns + enhanced columns:
+  - `IsLagDay`, `LagDays` - Backfill incident identification
+  - `BestTimeValue`, `TimeSource`, `Incident_Time` - Time cascade results
+  - `Incident_Date`, `Incident_Date_Date`, `Report_Date`, `Report_Date_Text` - Date fields
+  - `IncidentToReportDays` - Days between incident and report (QA metric)
+  - `Period`, `Period_SortKey` - Period classification
+  - `cycle_name`, `Backfill_7Day`, `cycle_name_adjusted`, `IsCurrent7DayCycle` - Cycle tracking
+  - `StartOfHour`, `TimeOfDay`, `TimeOfDay_SortKey` - Time-of-day analysis
+  - `ALL_INCIDENTS` - Concatenated incident types
+  - `Crime_Category` - Mapped category (Burglary Auto, Motor Vehicle Theft, etc.) - `Incident_Type_1_Norm`, `Incident_Type_2_Norm`, `Incident_Type_3_Norm` - Normalized types
+  - `Vehicle_1`, `Vehicle_2`, `Vehicle_1_and_Vehicle_2` - Vehicle consolidation
+  - `Clean_Address` - Address without "Hackensack, NJ" suffix
+  - `IncidentKey`, `Category_Type`, `Response_Type` - Join keys and mappings
+  - `Time_Validation` - Time source validation details
+  - `CycleStartDate`, `CycleEndDate` - Cycle boundaries
+  - `IncidentType`, `Crime_Category` (from restructure script)
+- **Narrative**: ✅ Preserved in full
+
+**B. SCRPA_7Day_Summary.csv** ✅ **MEETS REQUIREMENTS**
+- **Filter**: Aggregates from Detailed CSV (excludes "Other" category)
+- **Columns**:
+  - `Crime_Category` - Crime category (excludes "Other")
+  - `LagDayCount` - Count of lag day incidents
+  - `TotalCount` - Total incidents in category
+  - `TOTAL` row - Aggregated totals
+- **Purpose**: High-level category counts
+
+**C. SCRPA_Full_Export_Enhanced.csv** ❌ **MISSING - NEEDS TO BE CREATED**
+- **Requirement**: ALL incidents (no date filter) with all M code enhancements
+- **Current State**: Does not exist
+- **Implementation**: See Section 2.1 below
+
+**D. SCRPA_Briefing_Ready_*.csv** ⚠️ **BEING REPLACED**
+- **Current State**: Generated by prepare_briefing_csv.py
+- **Purpose**: ChatGPT-ready format with simplified schema
+- **Recommendation**: Keep for now, but update ChatGPT prompt to use SCRPA_7Day_Detailed.csv instead
+
+---
+
+## 2. Required Changes & Implementation Plan
+
+### 2.1 Add SCRPA_Full_Export_Enhanced.CSV
+
+**Requirement**: Export ALL incidents (no date filter) with all M code enhancements. **Current Gap**: The M code only loads the latest Excel file from the folder. There's no "full export" that includes ALL historical incidents with M code enhancements. **Root Cause**: Power BI M code is designed to load a single Excel file at a time (`q_RMS_Source` query loads `LatestFilePath` only). **Implementation Options**:
+
+#### Option A: Manual Power BI Export (Recommended for Immediate Need)
+1. **Open Power BI Desktop** with the All_Crimes query
+2. **Modify** `q_RMS_Source` query to load ALL Excel files instead of just the latest:
+   ```m
+   // Replace LatestFilePath with:
+   CombinedData = Table.Combine(
+       List.Transform(
+           SortedFiles[Content],
+           each Excel.Workbook(_, true){0}[Data]
+       )
+   )
+   ```
+3. **Refresh** the query (this will take longer - loading all historical data)
+4. **Export** the All_Crimes table to CSV: "Table → Export Data"
+5. **Save** as `SCRPA_Full_Export_Enhanced.csv` in `05_EXPORTS\_RMS\scrpa\`
+6. **Revert** the `q_RMS_Source` query back to loading only latest file
+7. **Copy** the file to report Data folder in organize_report_files.py
+
+**Pros**: Uses existing M code logic, ensures all enhancements are applied
+**Cons**: Manual process, must be repeated for each report cycle, slow for large datasets
+
+#### Option B: Python Script to Apply M Code Logic (Recommended for Automation)
+1. **Create** a new Python script (`generate_full_export_enhanced.py`) that:
+   - Loads ALL CSV files from `05_EXPORTS\_RMS\scrpa\`
+   - Combines them into a single DataFrame
+   - Applies the same transformation logic as M code:
+     - Time cascading (reuse logic from scrpa_7day_restructure.py)
+     - Date cascading
+     - Cycle assignment
+     - Period calculation
+     - Lag day calculation (for each incident's report cycle)
+     - Crime category mapping (reuse get_crime_category() function)
+     - All other M code transformations
+   - Exports to `SCRPA_Full_Export_Enhanced.csv`
+2. **Add** this script to the workflow (after STEP 0.5, before STEP 1)
+3. **Update** organize_report_files.py to copy this file
+
+**Pros**: Fully automated, reproducible, can run as part of batch workflow
+**Cons**: Requires Python implementation of M code logic, potential for logic drift
+
+#### Option C: Hybrid Approach (Recommended for Long-Term)
+1. **Short-term**: Use Option A (manual export) to meet immediate requirements
+2. **Long-term**: Implement Option B for automation
+3. **Validation**: Compare Option A and Option B outputs to ensure logic parity
+
+**Recommendation**: Start with **Option A** for the next report cycle, then implement **Option B** for automation. **File Location**:
+- Source: `C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\SCRPA_Full_Export_Enhanced.csv`
+- Destination: `{ReportFolder}\Data\SCRPA_Full_Export_Enhanced.csv`
+
+**File Size Considerations**:
+- Current 7-day CSV: ~2-50 rows (depending on crime activity)
+- Full export: Could be 10,000+ rows (all historical data since system start)
+- **Mitigation**: Use gzip compression (.csv.gz), add file size warnings in organize script
+
+---
+
+### 2.2 Remove Excel Files from Data Folder
+
+**Current Behavior**: `organize_report_files.py` copies Excel files to Data folder (lines 590-595). **Code Location**: `organize_report_files.py:590-595`
+```python
+# 1b. Copy Excel files to Data folder (filtered by date if available)
+print("\n📊 Copying Excel files to Data/ folder...")
+excel_files = collect_excel_files(report_date_tuple)
+for excel_file in excel_files:
+    if copy_file_safe(excel_file, data_folder):
+        copied_count += 1
+```
+
+**Required Change**: Remove or comment out this block. **Implementation**:
+```python
+# REMOVED: Excel files no longer copied to Data folder (per requirements)
+# Original Excel exports remain in 05_EXPORTS\_RMS\scrpa\ (source location)
+# Only CSV files are copied to Data folder
+```
+
+**Rationale**:
+- Excel files are large and redundant (already converted to CSV)
+- Original files remain in source location for backup
+- Reduces Data folder size and clutter
+
+**Impact**: None - Excel files are already archived in source location
+
+---
+
+### 2.3 Update ChatGPT Prompt to Reference SCRPA_7Day_Detailed.csv
+
+**Current Behavior**: `prepare_briefing_csv.py` generates prompt that references `SCRPA_Briefing_Ready_*.csv`. **Required Change**: Update prompt to reference `SCRPA_7Day_Detailed.csv` instead. **Code Location**: `prepare_briefing_csv.py:498-1053` (create_chatgpt_prompt_file function)
+
+**Changes Needed**:
+
+1. **Update CSV File Reference** (lines 519, 558-567):
+   - Change: "CSV File: SCRPA_Briefing_Ready_*.csv"
+   - To: "CSV File: SCRPA_7Day_Detailed.csv"
+
+2. **Update Embedded CSV Data** (lines 558-567):
+   - Instead of embedding briefing_df (transformed data)
+   - Load and embed SCRPA_7Day_Detailed.csv from Data folder
+
+3. **Update Column Descriptions** (lines 66-96 in current prompt):
+   - Add descriptions for new columns:
+     - `IsLagDay`, `LagDays` - Backfill tracking
+     - `CycleStartDate`, `CycleEndDate` - Cycle boundaries
+     - `TimeOfDay`, `TimeOfDay_SortKey` - Time-of-day analysis
+     - `Crime_Category` - Category mapping
+     - etc. 4. **Remove Briefing CSV Section** (lines 404-496):
+   - No longer need the "transformed briefing CSV" section
+   - Detailed CSV has all the same data plus more
+
+**Implementation**:
+```python
+def create_chatgpt_prompt_file(output_folder, csv_filename, detailed_csv_path, cycle_info):
+    """Create comprehensive ChatGPT prompt file with CSV data and HTML template"""
+    try:
+        prompt_file = os.path.join(output_folder, "CHATGPT_BRIEFING_PROMPT.md")
+
+        # Load SCRPA_7Day_Detailed.csv for embedding
+        detailed_df = pd.read_csv(detailed_csv_path)
+
+        # Get CSV summary stats
+        total_cases = len(detailed_df)
+        crime_counts = detailed_df['Crime_Category'].value_counts().to_dict()
+
+        # ... rest of prompt generation using detailed_df instead of briefing_df
+```
+
+**Benefits**:
+- Single source of truth (SCRPA_7Day_Detailed.csv)
+- All enhanced columns available to ChatGPT
+- Narrative column preserved in full
+- Lag day information visible
+- No need for separate transformation step
+
+---
+
+### 2.4 Add Dual-Orientation HTML Templates (Portrait & Landscape)
+
+**Current Behavior**: Prompt generates only portrait (8.5" x 11") HTML. **Required Change**: Generate TWO HTML files from the same prompt:
+- **Portrait**: Standard 8.5" x 11" page (current format)
+- **Landscape**: 11" x 8.5" page (rotated layout)
+
+**Implementation Approach**: Update the HTML template section in the ChatGPT prompt. **Changes Needed**:
+
+1. **Update Global Instructions** (add to lines 609-620):
+   ```markdown
+   ### Global Instructions
+
+   * **Generate TWO HTML outputs**:
+     1. Portrait orientation (8.5" x 11") - File: SCRPA_Briefing_Portrait_YYYY_MM_DD.html
+     2. Landscape orientation (11" x 8.5") - File: SCRPA_Briefing_Landscape_YYYY_MM_DD.html
+
+   * Both files should contain the same data and content
+   * Both files should be print-ready with CSS @media print rules
+   * Landscape version should use appropriate page breaks and layout adjustments
+   ```
+
+2. **Add CSS for Landscape Orientation** (after line 753):
+   ```css
+   /* Landscape-specific styles */
+   @media print {
+     @page {
+       size: landscape;
+       margin: 10mm;
+     }
+     .page {
+       max-width: 1000px; /* Wider for landscape */
+     }
+     .meta {
+       grid-template-columns: repeat(4, minmax(0,1fr)); /* More columns */
+     }
+   }
+   ```
+
+3. **Add Second HTML Template** (after line 927):
+   ```markdown
+   ### Landscape HTML Template
+
+   Generate a second HTML file with the same structure as above, but with these modifications:
+
+   1. **CSS Changes**:
+      - Add `@page { size: landscape; }` in @media print
+      - Increase `.page { max-width: 1000px; }`
+      - Adjust `.meta` grid to 4 columns instead of 3
+
+   2. **Layout Adjustments**:
+      - Case cards may be wider to utilize horizontal space
+      - Summary table may have more columns visible
+
+   3. **File Naming**:
+      - Portrait: `SCRPA_Briefing_Portrait_YYYY_MM_DD.html`
+      - Landscape: `SCRPA_Briefing_Landscape_YYYY_MM_DD.html`
+   ```
+
+4. **Update Formatting Requirements** (lines 931-947):
+   ```markdown
+   ### Formatting Requirements
+
+   * **Orientations:** Generate BOTH portrait and landscape versions
+   * **Portrait Page Size:** 8.5" x 11" (standard)
+   * **Landscape Page Size:** 11" x 8.5" (rotated)
+   * **Font:** DIN
+   * **Color for Titles/Headers:** HEX `#0d233c`
+   * Both layouts should aim for **single page** output suitable for PDF inclusion. ```
+
+**Alternative Approach**: Single HTML with CSS Media Queries
+- Instead of two separate files, generate one HTML with CSS that automatically adjusts based on print orientation
+- User can select orientation in print dialog
+- **Pros**: Simpler, single file
+- **Cons**: Less control, relies on print dialog settings
+
+**Recommendation**: Two separate HTML files for explicit control and clarity. ---
+
+### 2.5 Remove Hard-Coded Paths (Path Standardization)
+
+**Current State**: Many scripts have hard-coded paths like:
+- `C:\Users\carucci_r\OneDrive - City of Hackensack\...`
+
+**Impact**:
+- Reduces portability
+- Difficult to run on different machines or user accounts
+- Hard to test
+
+**Recommendation**:
+1. **Short-term**: No change needed (works for current user)
+2. **Long-term**: Create a `config.py` with all paths as constants:
+   ```python
+   # config.py
+   import os
+
+   # Base paths
+   ONEDRIVE_ROOT = os.path.expanduser("~\OneDrive - City of Hackensack")
+   ETL_SCRIPTS = os.path.join(ONEDRIVE_ROOT, "02_ETL_Scripts")
+   RMS_EXPORTS = os.path.join(ONEDRIVE_ROOT, "05_EXPORTS\_RMS\scrpa")
+   REPORTS_BASE = os.path.join(ONEDRIVE_ROOT, "16_Reports\SCRPA\Time_Based")
+   REFERENCE_BASE = os.path.join(ONEDRIVE_ROOT, "09_Reference")
+
+   # Configuration files
+   CYCLE_CSV = os.path.join(REFERENCE_BASE, "Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv")
+   CALL_TYPE_CSV = os.path.join(REFERENCE_BASE, "Classifications\CallTypes\CallType_Categories.csv")
+   ```
+3. Import `config.py` in all scripts
+
+**Priority**: Low (works as-is, but good for future maintainability)
+
+---
+
+## 3. Blind Spot Analysis
+
+### 3.1 Data Completeness
+
+**Finding**: M code columns are comprehensively exported, but manual export step introduces risk. **Issues**:
+1. **Manual Power BI Export**: No automation for initial CSV export from Power BI
+   - **Risk**: User forgets to export, exports wrong query, exports partial data
+   - **Mitigation**:
+     - Add validation check in organize_report_files.py to verify CSV has expected columns
+     - Add timestamp check to ensure CSV is recent (within last 24 hours)
+     - Document export procedure clearly in README
+
+2. **Narrative Column Truncation**: Narrative field could be truncated in Power BI export
+   - **Risk**: Long narratives (>32K chars) may be cut off
+   - **Mitigation**: scrpa_7day_restructure.py already checks for narrative availability (lines 356-362)
+   - **Status**: ✅ Already mitigated
+
+3. **Date/Time Field Formatting**: Time fields are formatted as text in M code
+   - **Risk**: Loss of time data types, harder to filter/sort
+   - **Mitigation**: M code preserves both time values and text representations
+   - **Status**: ✅ Acceptable (text for display, time for calculations)
+
+**Recommendations**:
+- ✅ Add CSV validation function to organize_report_files.py
+- ✅ Check for required columns before processing
+- ✅ Warn if CSV is older than 24 hours
+
+---
+
+### 3.2 File Naming Consistency
+
+**Finding**: File naming is generally consistent, but timestamp formats vary. **Observations**:
+- RMS exports: `YYYY_MM_DD_HH_MM_SS_SCRPA_RMS.xlsx`
+- Briefing CSV: `SCRPA_Briefing_Ready_YYYY_MM_DD_HH_MM_SS.csv`
+- Report folders: `YYCMMWww_YY_MM_DD`
+
+**Issue**: Different date formats make sorting and filtering harder. **Recommendations**:
+- **Standardize** on ISO 8601 format: `YYYY-MM-DD` or `YYYY_MM_DD` (no mixing)
+- **Use cycle name** as primary identifier: `{CycleID}_{timestamp}_{descriptor}`
+- Example: `26C01W01_2026_01_06_SCRPA_Full_Export_Enhanced.csv`
+
+**Priority**: Low (current naming works, but standardization would improve clarity)
+
+---
+
+### 3.3 Data Filtering Logic
+
+**Finding**: Filtering logic is robust but complex. **Current Implementation**:
+1. **M Code Period Calculation** (m_code_all_queries.m:209-224):
+   - Uses **Incident_Date** (NOT Report_Date) to determine period
+   - **Rationale**: Charts show when crimes OCCURRED, not when reported
+   - **Edge Case**: Backfill cases (incident before cycle, reported during cycle) do NOT appear in 7-Day charts
+   - **Status**: ✅ Correct by design
+
+2. **7-Day Restructure Filter** (scrpa_7day_restructure.py:283-313):
+   - Uses **Report_Date** to filter to 7-day cycle
+   - Uses cycle calendar for date range (Report_Due_Date lookup)
+   - Falls back to min/max Report_Date if calendar lookup fails
+   - **Edge Case**: If cycle calendar is out of date, filter may be incorrect
+   - **Mitigation**: scrpa_7day_restructure.py warns when using fallback (line 313)
+
+**Potential Issues**:
+1. **Cycle Calendar Out of Date**: If cycle calendar doesn't have current cycle, filtering falls back to min/max
+   - **Risk**: Incorrect date range, missing or extra incidents
+   - **Mitigation**: Add expiry check (warn if cycle calendar is >6 months old)
+   - **Action**: Add to organize_report_files.py
+
+2. **Report_Date vs Incident_Date Confusion**: Different scripts use different dates for filtering
+   - **Risk**: User confusion about which date determines inclusion
+   - **Mitigation**: Clear documentation in README files
+   - **Status**: ✅ Already documented
+
+3. **Lag Day Incidents**: Incidents with Incident_Date before cycle start
+   - **Question**: Should these appear in 7-Day Detailed CSV? - **Current Behavior**: YES - included if Report_Date is in cycle
+   - **Status**: ✅ Correct (important for crime analysis)
+
+**Recommendations**:
+- ✅ Add cycle calendar expiry check
+- ✅ Document filtering logic clearly in Data Dictionary
+- ✅ Add reconciliation checks (already implemented in scrpa_7day_restructure.py:626-653)
+
+---
+
+### 3.4 Export Performance
+
+**Finding**: Full export could be very large and slow. **Observations**:
+- Current 7-day CSV: ~2-50 rows
+- Full export: Could be 10,000+ rows (years of historical data)
+- Power BI M code: Processes entire dataset in memory
+
+**Performance Risks**:
+1. **Power BI Memory Issues**: Loading all Excel files could exhaust memory
+   - **Risk**: Power BI crashes, export fails
+   - **Mitigation**: Use chunking in Python (Option B), or export in batches
+
+2. **CSV File Size**: Full export could be 50+ MB
+   - **Risk**: Slow to open in Excel, slow to upload to systems
+   - **Mitigation**: Use gzip compression (.csv.gz), add file size warnings
+
+3. **Processing Time**: M code transformations on 10K+ rows could take minutes
+   - **Risk**: User impatience, workflow delays
+   - **Mitigation**: Add progress indicators, run as background task
+
+**Recommendations**:
+- ✅ Implement Option B (Python script) with chunking for full export
+- ✅ Add file size check and warn if >25 MB
+- ✅ Use gzip compression for full export
+- ✅ Add estimated processing time to user prompts
+
+**Implementation Example**:
+```python
+import gzip
+
+# Compress full export
+with open('SCRPA_Full_Export_Enhanced.csv', 'rb') as f_in:
+    with gzip.open('SCRPA_Full_Export_Enhanced.csv.gz', 'wb') as f_out:
+        shutil.copyfileobj(f_in, f_out)
+
+# Check file size
+file_size_mb = os.path.getsize('SCRPA_Full_Export_Enhanced.csv.gz') / (1024 * 1024)
+if file_size_mb > 25:
+    print(f"⚠️  Warning: Full export is {file_size_mb:.1f} MB (large file)")
+```
+
+---
+
+### 3.5 Error Handling
+
+**Finding**: Error handling is generally good, but some edge cases could be improved. **Current State**:
+1. **CSV Not Found**: organize_report_files.py handles gracefully (lines 124-138)
+2. **Empty CSV**: scrpa_7day_restructure.py handles (lines 403-410)
+3. **Cycle Calendar Missing**: Both scripts handle (lines 114-126 in scrpa_7day_restructure.py)
+4. **Invalid Date Formats**: Batch script validates (lines 71-85)
+
+**Edge Cases to Improve**:
+
+1. **Partial M Code Export**: What if user exports only some columns? - **Current**: scrpa_7day_restructure.py will fail with KeyError
+   - **Mitigation**: Add column validation function
+   ```python
+   REQUIRED_COLUMNS = [
+       "Case Number", "Incident Date", "Report Date", "Incident Type_1",
+       "Narrative", "FullAddress", "Grid", "Zone"
+   ]
+
+   def validate_csv_columns(df):
+       missing = [col for col in REQUIRED_COLUMNS if col not in df.columns]
+       if missing:
+           raise ValueError(f"Missing required columns: {missing}")
+   ```
+
+2. **Corrupted CSV**: What if CSV has malformed data? - **Current**: pandas.read_csv will raise exception, crash script
+   - **Mitigation**: Add try/except with detailed error message
+   ```python
+   try:
+       df = pd.read_csv(csv_path)
+   except pd.errors.ParserError as e:
+       print(f"❌ CSV file appears to be corrupted or malformed: {e}")
+       print(f"   File: {csv_path}")
+       print(f"   Try re-exporting from Power BI")
+       sys.exit(1)
+   ```
+
+3. **Cycle Calendar Format Change**: What if cycle calendar CSV changes format? - **Current**: Will fail with KeyError or ValueError
+   - **Mitigation**: Add schema validation
+   ```python
+   CYCLE_CSV_REQUIRED_COLS = [
+       "7_Day_Start", "7_Day_End", "28_Day_Start", "28_Day_End",
+       "Report_Name", "Report_Due_Date"
+   ]
+
+   def validate_cycle_calendar(df):
+       missing = [col for col in CYCLE_CSV_REQUIRED_COLS if col not in df.columns]
+       if missing:
+           raise ValueError(f"Cycle calendar missing columns: {missing}")
+   ```
+
+**Recommendations**:
+- ✅ Add column validation to all scripts that read CSVs
+- ✅ Add try/except blocks with helpful error messages
+- ✅ Add schema validation for cycle calendar
+- ✅ Log errors to file for debugging
+
+---
+
+### 3.6 Dependencies
+
+**Finding**: Dependencies are well-managed but not explicitly documented. **Current Dependencies**:
+1. **Python Packages**:
+   - pandas
+   - numpy
+   - datetime (stdlib)
+   - pathlib (stdlib)
+   - os, sys, glob, shutil, subprocess, csv (stdlib)
+
+2. **External Tools**:
+   - Power BI Desktop (for M code execution and CSV export)
+   - Excel (for .xlsx file viewing, not required for automation)
+   - GitHub CLI (gh) for PR creation (optional)
+
+3. **Configuration Files**:
+   - Cycle calendar CSV (must be up-to-date)
+   - Call type categories CSV
+
+**Missing**:
+- **requirements.txt** for Python dependencies
+- **Version pinning** for pandas/numpy (could break with major updates)
+- **Power BI version documentation** (M code syntax may change between versions)
+
+**Recommendations**:
+- ✅ Create requirements.txt:
+  ```
+  pandas>=1.5.0,<3.0.0
+  numpy>=1.23.0,<2.0.0
+  ```
+- ✅ Add dependency check to batch script:
+  ```batch
+  python -c "import pandas; import numpy" 2>nul || (
+      echo ERROR: Missing required Python packages
+      echo Run: pip install pandas numpy
+      pause
+      exit /b 1
+  )
+  ```
+- ✅ Document Power BI version in README (current version used)
+
+---
+
+### 3.7 Version Control
+
+**Finding**: No versioning for M code or outputs. **Observations**:
+- M code changes are not tracked in git (Power BI .pbix files are binary)
+- CSV outputs have timestamps but no version numbers
+- Scripts have version numbers in prepare_briefing_csv.py (line 550: "Version: 1.5.0")
+
+**Risks**:
+1. **M Code Drift**: Changes to M code are not versioned
+   - **Risk**: Can't roll back if logic breaks, hard to track what changed
+   - **Mitigation**: Export M code to .m files in git (already done! ✅)
+
+2. **Output Versioning**: CSV files don't have version indicators
+   - **Risk**: Can't tell which version of M code produced a CSV
+   - **Mitigation**: Add version column to CSV exports
+   ```python
+   df['SCRPA_Version'] = '1.6.0'  # Matches script version
+   df['Export_Timestamp'] = datetime.now().isoformat()
+   ```
+
+3. **Rollback Procedures**: No documented rollback process
+   - **Risk**: If something breaks, unclear how to revert
+   - **Mitigation**: Document rollback in README
+
+**Recommendations**:
+- ✅ M code already exported to .m files ✅
+- ✅ Add version column to all CSV exports
+- ✅ Document rollback procedure in README
+- ✅ Use git tags for major version releases
+
+---
+
+## 4.

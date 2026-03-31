@@ -1,0 +1,504 @@
+If you’re happy with the default above, I’ll use that. If not, send the exact line and I’ll match it. ---
+
+## What I need from you
+
+1. **ArcPy patcher path**  
+   Is `patch_executive_summary_html.py` at  
+   `C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\05_orchestrator\patch_executive_summary_html.py`  
+   (or will it be after you unzip the reviewed docs)? If it’s somewhere else, give the path. 2. **Version**  
+   Should “v1.1” → “v1.2” be hardcoded for now, or read from a file (e.g. `16_Reports\SCRPA\VERSION`)? 3. **Footer**  
+   Either: “Use default: Cycle: {biweekly} | Range: {start} – {end}” or the exact footer line you want. Once you confirm those three, I’ll add: **(a)** patch call (and optional inline fallback) right after the copy in the pipeline, and **(b)** footer rewritten to your chosen wording. ---
+
+**User**
+
+C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\SCRPA_ArcPy_Rework
+TL;DR: your Cursor AI response is right **and** the “pipeline-only-copies-from-06_Output” reality means **(B) patch-after-copy** is the correct *operational* fix. I added a **portable, ArcPy-free patcher** + docs into your `SCRPA_ArcPy` repo so the pipeline can **import-and-call** it (no BAT/PS1), with an inline fallback if import fails. [Download updated SCRPA_ArcPy zip (patcher + docs + fixed README)](sandbox:/mnt/data/SCRPA_ArcPy_with_patcher_and_docs.zip)
+
+---
+
+## What you “need from me” (answered without blocking on confirmations)
+
+1. **Patcher path (don’t hardcode absolute paths):**
+   Use `SCRPA_ArcPy/05_orchestrator/patch_executive_summary_html.py` relative to a known `SCRPA_ArcPy` root (env var or discovered relative to the pipeline file). The code below supports both. 2. **Version:**
+   Read from `SCRPA_ArcPy/VERSION` (added; default `v1.1`) and let pipeline override if desired. To bump now, just edit that file to `v1.2`. 3. **Footer wording:**
+   Default footer becomes:
+   `Hackensack Police Department - Safe Streets Operations Control Center | Cycle: {cycle_id} | Range: {range_en}`
+   Optionally append version automatically (`include_version_in_footer=True`) or pass a custom `footer_template`. ---
+
+## Plan (pseudocode)
+
+1. In `run_scrpa_pipeline.py` inside `_copy_scrpa_reports_to_cycle()`:
+
+   * after copying `SCRPA_Combined_Executive_Summary.html` into `{cycle_dir}/Reports/`
+2. Build a normalized payload from your existing `cycle_info` dict:
+
+   * `cycle_id` ← `biweekly` (or your existing key)
+   * `range_start/range_end` ← `start_bw/end_bw` (fallback to `start_7/end_7`)
+   * `version` ← read `SCRPA_ArcPy/VERSION` (fallback keep existing)
+3. Patch in-process:
+
+   * prefer importing `patch_executive_summary_html.py` and calling `patch_combined_executive_summary_html()`
+   * fallback: small inline regex patch if import fails
+
+---
+
+## Code (paste into `run_scrpa_pipeline.py`)
+
+```python
+# --- run_scrpa_pipeline.py (add near top-level helpers) ---
+from __future__ import annotations
+
+import os
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Mapping, Optional
+
+
+@dataclass(frozen=True)
+class _ExecSummaryPatch:
+    cycle_id: str
+    range_start: str
+    range_end: str
+    version: str
+
+
+def _first_present(d: Mapping[str, Any], keys: list[str], default: str = "") -> str:
+    for k in keys:
+        v = d.get(k)
+        if v is None:
+            continue
+        s = str(v).strip()
+        if s:
+            return s
+    return default
+
+
+def _discover_scrpa_arcpy_root(start: Path) -> Optional[Path]:
+    """
+    Prefer env var SCRPA_ARCPY_ROOT. Otherwise, search upward for a folder named
+    'SCRPA_ArcPy' that contains '05_orchestrator/patch_executive_summary_html.py'.
+    """ env = os.getenv("SCRPA_ARCPY_ROOT")
+    if env:
+        p = Path(env)
+        if (p / "05_orchestrator" / "patch_executive_summary_html.py").exists():
+            return p
+
+    cur = start.resolve()
+    for _ in range(8):
+        candidate = cur / "SCRPA_ArcPy"
+        if (candidate / "05_orchestrator" / "patch_executive_summary_html.py").exists():
+            return candidate
+        cur = cur.parent
+    return None
+
+
+def _read_version_file(arcpy_root: Path, default: str = "") -> str:
+    p = arcpy_root / "VERSION"
+    if p.exists():
+        return p.read_text(encoding="utf-8", errors="ignore").strip()
+    return default
+
+
+def _normalize_cycle_info(cycle_info: Mapping[str, Any], arcpy_root: Path) -> _ExecSummaryPatch:
+    cycle_id = _first_present(
+        cycle_info,
+        ["cycle_id", "biweekly", "biweekly_name", "cycle", "cycle_name"],
+        "Auto-Detected",
+    )
+    range_start = _first_present(cycle_info, ["range_start", "start_bw", "start_7", "start_date"], "Auto-Detected")
+    range_end = _first_present(cycle_info, ["range_end", "end_bw", "end_7", "end_date"], "Current")
+
+    # Pipeline can override via cycle_info["version"]; otherwise use SCRPA_ArcPy/VERSION; otherwise leave blank. version = _first_present(cycle_info, ["version"], _read_version_file(arcpy_root, default=""))
+    return _ExecSummaryPatch(cycle_id=cycle_id, range_start=range_start, range_end=range_end, version=version)
+
+
+def _inline_patch_exec_summary_html(
+    html_path: Path,
+    patch: _ExecSummaryPatch,
+    *,
+    include_version_in_footer: bool = True,
+    remove_auto_detection_pill: bool = True,
+    footer_template: Optional[str] = None,
+) -> bool:
+    """
+    Inline fallback patcher (ArcPy-free). Returns True if changed.
+    """ text = html_path.read_text(encoding="utf-8", errors="ignore")
+    original = text
+
+    pill_cycle = re.compile(r'(<div\s+class="pill">\s*Cycle:\s*)(.*? )(\s*</div>)', re.IGNORECASE)
+    pill_range = re.compile(r'(<div\s+class="pill">\s*Range:\s*)(.*? )(\s*</div>)', re.IGNORECASE)
+    pill_version = re.compile(r'(<div\s+class="pill">\s*Version:\s*)(.*? )(\s*</div>)', re.IGNORECASE)
+    auto_pill = re.compile(r'\s*<div\s+class="pill">\s*Auto-Detection:. *?</div>\s*', re.IGNORECASE | re.DOTALL)
+    footer_first_div = re.compile(r'(<footer\b[^>]*>\s*<div>)(.*? )(</div>)', re.IGNORECASE | re.DOTALL)
+
+    text = pill_cycle.sub(r"\1" + patch.cycle_id + r"\3", text, count=1)
+    text = pill_range.sub(r"\1" + f"{patch.range_start} - {patch.range_end}" + r"\3", text, count=1)
+
+    if patch.version:
+        text = pill_version.sub(r"\1" + patch.version + r"\3", text, count=1)
+
+    if remove_auto_detection_pill:
+        text = auto_pill.sub("\n", text, count=1)
+
+    tpl = footer_template or (
+        "Hackensack Police Department - Safe Streets Operations Control Center | "
+        "Cycle: {cycle_id} | Range: {range_en}"
+        + (" | Version: {version}" if include_version_in_footer and patch.version else "")
+    )
+    footer_text = tpl.format(
+        cycle_id=patch.cycle_id,
+        range_start=patch.range_start,
+        range_end=patch.range_end,
+        range_hy=f"{patch.range_start} - {patch.range_end}",
+        range_en=f"{patch.range_start} – {patch.range_end}",
+        version=patch.version,
+    )
+    text = footer_first_div.sub(r"\1" + footer_text + r"\3", text, count=1)
+
+    if text == original:
+        return False
+
+    html_path.with_suffix(html_path.suffix + ".bak").write_text(original, encoding="utf-8")
+    html_path.write_text(text, encoding="utf-8")
+    return True
+
+
+def patch_scrpa_combined_exec_summary_after_copy(
+    copied_html_path: Path,
+    cycle_info: Mapping[str, Any],
+    *,
+    include_version_in_footer: bool = True,
+    remove_auto_detection_pill: bool = True,
+    footer_template: Optional[str] = None,
+) -> None:
+    """
+    Call this immediately after copying SCRPA_Combined_Executive_Summary.html into the cycle Reports folder. Prefers importing SCRPA_ArcPy patcher; falls back to inline patch if import fails.
+    """ copied_html_path = Path(copied_html_path)
+    if not copied_html_path.exists():
+        return
+
+    arcpy_root = _discover_scrpa_arcpy_root(Path(__file__).resolve().parent)
+    if not arcpy_root:
+        _inline_patch_exec_summary_html(
+            copied_html_path,
+            _ExecSummaryPatch(
+                cycle_id=_first_present(cycle_info, ["biweekly", "cycle_id", "cycle"], "Auto-Detected"),
+                range_start=_first_present(cycle_info, ["start_bw", "start_7", "range_start"], "Auto-Detected"),
+                range_end=_first_present(cycle_info, ["end_bw", "end_7", "range_end"], "Current"),
+                version=_first_present(cycle_info, ["version"], ""),
+            ),
+            include_version_in_footer=include_version_in_footer,
+            remove_auto_detection_pill=remove_auto_detection_pill,
+            footer_template=footer_template,
+        )
+        return
+
+    patch = _normalize_cycle_info(cycle_info, arcpy_root)
+
+    try:
+        sys.path.insert(0, str(arcpy_root / "05_orchestrator"))
+        from patch_executive_summary_html import (  # type: ignore
+            CycleInfo,
+            patch_combined_executive_summary_html,
+        )
+
+        changed = patch_combined_executive_summary_html(
+            copied_html_path,
+            CycleInfo(
+                cycle_id=patch.cycle_id,
+                range_start=patch.range_start,
+                range_end=patch.range_end,
+                version=patch.version,
+                footer_template=footer_template or "",
+            ),
+            include_version_in_footer=include_version_in_footer,
+            remove_auto_detection_pill=remove_auto_detection_pill,
+            footer_template=footer_template,
+            backup=True,
+        )
+        # optional: log changed
+        _ = changed
+        return
+
+    except Exception:
+        # Robust fallback if import fails for any reason
+        _inline_patch_exec_summary_html(
+            copied_html_path,
+            patch,
+            include_version_in_footer=include_version_in_footer,
+            remove_auto_detection_pill=remove_auto_detection_pill,
+            footer_template=footer_template,
+        )
+
+
+# --- run_scrpa_pipeline.py (inside _copy_scrpa_reports_to_cycle() after copying the HTML) ---
+# Example placement:
+# copied_html = reports_dir / "SCRPA_Combined_Executive_Summary.html"
+# patch_scrpa_combined_exec_summary_after_copy(copied_html, cycle_info)
+```
+
+---
+
+### Notes
+
+* This patches **both** the header pills and the **footer** (and removes the Auto-Detection pill by default). * It writes a `.bak` backup next to the HTML. * If you want an exact footer line, set `footer_template="..."` and use placeholders:
+
+  * `{cycle_id}`, `{range_en}`, `{range_hy}`, `{version}`, `{range_start}`, `{range_end}`
+
+---
+
+**a. ** Want me to also patch the **markdown** (`SCRPA_Combined_Executive_Summary_*.md`) the same way so the metadata stays consistent across formats? **b. ** Want the patch step to enforce a **canonical file name** (`SCRPA_Combined_Executive_Summary.html`) regardless of timestamp, while still archiving the timestamped original? ---
+
+**Cursor**
+
+
+Integrating the patcher into the pipeline: adding helper code and invoking it after the copy step. Adding patcher helpers and integrating them into the copy step: adding imports and the patcher module. Updating _copy_scrpa_reports_to_cycle: remove rms_summary copy and call the patcher after copying the combined HTML. Updating the pipeline call to pass cycle_info:
+
+
+
+Checking for linter errors and fixing the backup path: with_suffix(html_path.suffix + ".bak") can produce ".html.bak"; verifying Path behavior. Summary of what was implemented:
+
+---
+
+## Implemented
+
+1. **Patcher helpers**  
+   - `_ExecSummaryPatch`, `_first_present`, `_discover_scrpa_arcpy_root`, `_read_version_file`, `_normalize_cycle_info`, `_inline_patch_exec_summary_html`, `patch_scrpa_combined_exec_summary_after_copy` are in `run_scrpa_pipeline.py`. - No hardcoded ArcPy path: uses `SCRPA_ARCPY_ROOT` or search upward from the script for `SCRPA_ArcPy/05_orchestrator/patch_executive_summary_html.py`. 2. **Copy step**  
+   - `_copy_scrpa_reports_to_cycle(reports_dir, cycle_info=None)` now:
+     - Copies only **SCRPA_Combined_Executive_Summary.html** (no `rms_summary.html`). - After copy, if `cycle_info` is provided, calls **patch_scrpa_combined_exec_summary_after_copy(dest, cycle_info)** so the copied file gets cycle/range/version/footer and optional removal of the Auto-Detection pill. 3. **Pipeline**  
+   - Step 6 calls `_copy_scrpa_reports_to_cycle(paths['reports'], cycle_info)` so the copied HTML is patched with the current cycle’s bi-weekly id, date range, version, and footer. 4. **Fallback**  
+   - If the ArcPy patcher is not found or import fails, the inline regex patcher runs and updates header pills and footer; a `.bak` file is written next to the HTML. ---
+
+## Your (a) and (b)
+
+- **(a) Patch the markdown too? **  
+  Right now we only copy and patch the **HTML**. We don’t copy `SCRPA_Combined_Executive_Summary_*.md` from 06_Output. If you want the same metadata (cycle/range/version) in a markdown copy, we can add: copy the latest `SCRPA_Combined_Executive_Summary_*.md` into the cycle Reports folder and run the same substitution logic (or a small MD-specific patcher) on that file. Say if you want this and I’ll add it. - **(b) Canonical filename and archive timestamped original? **  
+  We already use a **canonical** name: the file is always copied as **SCRPA_Combined_Executive_Summary.html** (no timestamp in the cycle Reports folder). The timestamped file stays in 06_Output; we don’t copy the timestamped filename into the cycle folder or create an archive subfolder there. If you want to **also** copy the timestamped file into the cycle (e.g. `Reports/archive/SCRPA_Combined_Executive_Summary_20260127_140634.html`) while keeping the canonical name for the patched file, that can be added as an option. ---
+
+**Version:** If `SCRPA_ArcPy/VERSION` exists and the patcher runs (or we use the inline fallback with `cycle_info` that has no `version`), we don’t currently read that VERSION from 16_Reports\SCRPA. The inline fallback uses `cycle_info.get("version", "")`. To use ArcPy’s VERSION when the ArcPy patcher is found, we already have `_read_version_file(arcpy_root)` in `_normalize_cycle_info`. So when the ArcPy patcher is used, version comes from ArcPy’s VERSION; when only the inline fallback runs, version is whatever you put in `cycle_info["version"]` (or empty). If you want the pipeline to always read a version from a file (e.g. `16_Reports\SCRPA\VERSION` or ArcPy’s), we can add that. ---
+
+**User**
+
+a. Want me to generate a tiny pytest suite that patches your sample HTML and asserts Cycle/Range/Version/Footer changes (and checks .bak writing)? b. Want the patch to also normalize/patch the markdown executive summary (if you start copying it into the cycle folder)? Your integration approach is solid: **patch immediately after copy**, prefer importing the ArcPy patcher when present, and keep an **inline fallback** so the pipeline doesn’t depend on ArcPy being installed. A few sharp edges to fix/tighten (all small but worth it):
+
+## Quick review notes
+
+### 1) Backup filename (`with_suffix(...)`)
+
+* `html_path.suffix` for `foo.html` is `.html`
+* `html_path.with_suffix(html_path.suffix + ".bak")` produces **`foo.html.bak`** ✅ (that’s what you observed)
+* If you want **`foo.bak`** instead, use `with_suffix(".bak")` or `with_name(html_path.name + ".bak")`. I’d keep `foo.html.bak` (more informative, no ambiguity). ### 2) Don’t leave `sys.path` polluted
+
+If you `sys.path.insert(0, ...)`, wrap it in `try/finally` and remove it after import attempts. Otherwise a later import can behave differently and you’ll get “works on my machine” bugs. ### 3) Atomic writes for HTML patching
+
+Write to a temp file then replace. Prevents partial writes if the process is interrupted. ### 4) Version behavior in fallback
+
+Right now your inline fallback uses `cycle_info["version"]` only. If you want consistent behavior, have fallback also:
+
+* read `16_Reports/SCRPA/VERSION` **or**
+* read ArcPy `SCRPA_ArcPy/VERSION` if ArcPy root is discovered (even if import fails)
+
+### 5) Regex fragility (acceptable, but be explicit)
+
+Your regex strategy is fine given the HTML is template-controlled, but make it clear that it’s tailored to *that* HTML (so future template edits don’t silently break patching). ---
+
+## Drop-in improvements (safe + minimal)
+
+Paste/merge these edits into the helpers you added (this focuses on **sys.path hygiene + atomic write + consistent backup**). ```python
+from __future__ import annotations
+
+import os
+import re
+import sys
+import tempfile
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Mapping, Optional
+
+
+def _write_backup_and_atomic_replace(target: Path, new_text: str) -> None:
+    """
+    Writes `{target}.bak` and atomically replaces `target` content.
+    """ original = target.read_text(encoding="utf-8", errors="ignore")
+    backup_path = target.with_suffix(target.suffix + ".bak")  # foo.html -> foo.html.bak
+    backup_path.write_text(original, encoding="utf-8")
+
+    tmp_dir = target.parent
+    with tempfile.NamedTemporaryFile("w", delete=False, dir=tmp_dir, encoding="utf-8") as tmp:
+        tmp.write(new_text)
+        tmp_path = Path(tmp.name)
+    tmp_path.replace(target)
+
+
+def _try_import_arcpy_patcher(arcpy_root: Path):
+    """
+    Import patcher without permanently mutating sys.path. Returns (CycleInfo, patch_func) or (None, None).
+    """ patcher_dir = arcpy_root / "05_orchestrator"
+    if not (patcher_dir / "patch_executive_summary_html.py").exists():
+        return None, None
+
+    added = str(patcher_dir)
+    sys.path.insert(0, added)
+    try:
+        from patch_executive_summary_html import CycleInfo, patch_combined_executive_summary_html  # type: ignore
+        return CycleInfo, patch_combined_executive_summary_html
+    except Exception:
+        return None, None
+    finally:
+        # remove only the path we inserted (if still present)
+        try:
+            sys.path.remove(added)
+        except ValueError:
+            pass
+
+
+def _inline_patch_exec_summary_html(
+    html_path: Path,
+    cycle_id: str,
+    range_start: str,
+    range_end: str,
+    version: str = "",
+    *,
+    include_version_in_footer: bool = True,
+    remove_auto_detection_pill: bool = True,
+    footer_template: Optional[str] = None,
+) -> bool:
+    """
+    Inline fallback patcher (ArcPy-free). Returns True if changed. Tailored to the SCRPA Combined Executive Summary HTML template.
+    """ text = html_path.read_text(encoding="utf-8", errors="ignore")
+    original = text
+
+    pill_cycle = re.compile(r'(<div\s+class="pill">\s*Cycle:\s*)(.*? )(\s*</div>)', re.IGNORECASE)
+    pill_range = re.compile(r'(<div\s+class="pill">\s*Range:\s*)(.*? )(\s*</div>)', re.IGNORECASE)
+    pill_version = re.compile(r'(<div\s+class="pill">\s*Version:\s*)(.*? )(\s*</div>)', re.IGNORECASE)
+    auto_pill = re.compile(r'\s*<div\s+class="pill">\s*Auto-Detection:. *?</div>\s*', re.IGNORECASE | re.DOTALL)
+    footer_first_div = re.compile(r'(<footer\b[^>]*>\s*<div>)(.*? )(</div>)', re.IGNORECASE | re.DOTALL)
+
+    text = pill_cycle.sub(r"\1" + cycle_id + r"\3", text, count=1)
+    text = pill_range.sub(r"\1" + f"{range_start} - {range_end}" + r"\3", text, count=1)
+
+    if version:
+        text = pill_version.sub(r"\1" + version + r"\3", text, count=1)
+
+    if remove_auto_detection_pill:
+        text = auto_pill.sub("\n", text, count=1)
+
+    tpl = footer_template or (
+        "Hackensack Police Department - Safe Streets Operations Control Center | "
+        "Cycle: {cycle_id} | Range: {range_en}"
+        + (" | Version: {version}" if include_version_in_footer and version else "")
+    )
+    footer_text = tpl.format(
+        cycle_id=cycle_id,
+        range_start=range_start,
+        range_end=range_end,
+        range_hy=f"{range_start} - {range_end}",
+        range_en=f"{range_start} – {range_end}",
+        version=version,
+    )
+    text = footer_first_div.sub(r"\1" + footer_text + r"\3", text, count=1)
+
+    if text == original:
+        return False
+
+    _write_backup_and_atomic_replace(html_path, text)
+    return True
+```
+
+---
+
+## Two “sanity checks” I’d run after your change
+
+1. **Verify downstream doesn’t expect `rms_summary.html`**
+   If anything later references it, removing the copy might break. Search for `rms_summary` usage. 2. **Confirm copy selection logic**
+   Make sure the pipeline is copying the intended Combined Summary (latest timestamped file in `06_Output`, or a stable canonical filename). ---
+
+
+
+
+---
+
+**Cursor**
+
+
+Applying the drop-in improvements, adding sys.path hygiene and atomic writes, then searching the repo for `rms_summary` and adding a minimal pytest for the patcher. Applying improvements: adding atomic write, sys.path hygiene, and version resolution. Adding _try_import_arcpy_patcher and refactoring patch_scrpa_combined_exec_summary_after_copy to use it and resolve version in the fallback. Adding a minimal pytest suite for the patcher:
+
+
+
+Creating a minimal pytest suite. Running the tests:
+
+
+
+Fixing misinterpretation of `\1` and digits: `\126` is being interpreted as octal. Using explicit group references in the patcher:
+
+
+
+All tests passed. Adding a brief note to the test file about markdown (b):
+
+
+
+Summary of what was done:
+
+---
+
+## 1. Drop-in improvements
+
+- **Atomic write + backup:** Added `_write_backup_and_atomic_replace(target, new_text)`: writes `{target}.bak` (e.g. `foo.html.bak`), then writes new content to a temp file and replaces the target so a crash doesn’t leave a half-written file. - **sys.path hygiene:** Added `_try_import_arcpy_patcher(arcpy_root)` that inserts the patcher dir, imports, then **removes** it in a `finally` so `sys.path` isn’t left modified. - **patch_scrpa_combined_exec_summary_after_copy** now uses `_try_import_arcpy_patcher` instead of a bare `sys.path.insert` + import; ArcPy patcher is used only when the import succeeds, otherwise the inline fallback runs. - **Version in fallback:** Added `_resolve_version_for_fallback(cycle_info, arcpy_root)`: uses `cycle_info["version"]`, then ArcPy `VERSION` (if `arcpy_root` is set), then `16_Reports/SCRPA/VERSION`. The fallback path uses this so version is consistent. - **Regex note:** Docstring for `_inline_patch_exec_summary_html` states it’s tailored to the SCRPA Combined Executive Summary HTML template and that regex may need updates if the template changes. - **Backreference fix:** Replaced `\1`/`\3` with `\g<1>`/`\g<3>` in the inline patcher so `\1` + `"26BW02"` isn’t interpreted as octal `\126` (e.g. `'V'`). ---
+
+## 2. Sanity checks
+
+- **rms_summary:** The only code in 16_Reports\SCRPA that references `rms_summary` is `export_enriched_data_and_email.py`, which **removes** `*_rms_summary.html` from the Reports folder. Not copying `rms_summary.html` into the cycle folder doesn’t break that; it just means there’s nothing to remove. No change needed. - **Copy selection:** The pipeline still picks the **latest** `SCRPA_Combined_Executive_Summary_*.html` in 06_Output by modification time and copies it as `SCRPA_Combined_Executive_Summary.html` (canonical name). No change. ---
+
+## 3. Pytest suite (a)
+
+- **tests/test_patch_exec_summary.py** added with:
+  - **test_inline_patch_updates_cycle_range_version_footer:** Patches sample HTML, asserts Cycle/Range/Version/Footer text and that Auto-Detection pill is gone, and that `.html.bak` exists and contains the original. - **test_inline_patch_idempotent_no_change:** Patches twice with the same patch; second run reports no change and content is unchanged. - **test_write_backup_and_atomic_replace:** Asserts backup is written and target content is replaced. - A short note was added that markdown patching isn’t implemented yet and can be added when the pipeline copies the .md file. ---
+
+## 4. Markdown (b)
+
+- Markdown executive summary is **not** patched yet. The test file comment says we can add patching (and tests) when the pipeline starts copying `SCRPA_Combined_Executive_Summary_*.md` into the cycle folder. No code changes for markdown in this pass. ---
+
+**Run tests:** From repo root, `python -m pytest tests/test_patch_exec_summary.py -v` (all 3 tests pass). ---
+
+**User**
+
+✅ Your implementation summary is technically sound, and the key fixes you called out are the right ones:
+
+\1 + digits → octal escape: switching to \g<1> / \g<3> is the correct fix. sys.path hygiene: wrapping insert/remove in finally prevents long-tail import bugs. Atomic write: temp-file + replace is the right durability upgrade. rms_summary sanity check: if the only reference is a cleanup/remove, stopping the copy won’t break the pipeline. I also backfilled what you originally asked for (docs + changelog + rename/history) and added a pure-Python patcher + pytest suite into SCRPA_ArcPy
+
+This makes Option (B) fully supported even when ArcPy isn’t available in the downstream pipeline runtime (because the patcher has no ArcPy dependency). Included:
+
+07_doc/PROJECT_SUMMARY.md (explicitly answers “who creates the HTML?”)
+
+07_doc/summary_changelog.md (backfilled history: SCRPA_LAPTOP → SCRPA_ArcPy, + Option B decision)
+
+07_doc/PIPELINE_INTEGRATION.md (how to patch after copy, including sys.path snippet)
+
+05_orchestrator/patch_executive_summary_html.py (importable + CLI)
+
+tests/test_patch_exec_summary.py (2 minimal pytest tests)
+
+VERSION file (v1.1)
+
+README fixed so badges/links resolve cleanly
+
+=====================================================
+The updated path to the rework is C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\SCRPA_ArcPy\SCRPA_ArcPy_updated_with_docs_patcher_tests
+
+
+If you want one more “nice-to-have”
+
+In your downstream pipeline, log whether the patch ran via ArcPy patcher vs inline fallback (and whether changed=True/False). It makes troubleshooting much easier when someone asks “why is it still Auto-Detected?”
+
+a. Want me to generate a pre-commit config (black/isort/ruff) + a GitHub Actions workflow that runs the pytest suite automatically? b. Want a markdown patcher sibling (patch_executive_summary_md.py) so the Combined Summary .md can be kept consistent when you start copying it too? ---
+
+**Cursor**
+
+
+Adding the troubleshooting log (ArcPy vs inline, changed=True/False), then addressing (a) and (b). Continuing from the handoff: we're working on the remaining tasks, starting with documentation streamlining (stop writing per-cycle docs and use canonical locations). Checking the report summary template and whether a ChatGPT briefing template exists:
+
+
+
+Implementing documentation streamlining and the remaining handoff tasks. Checking whether `generate_documentation.py` imports pandas and adding the new functions. Adding cycle-only doc helpers to `generate_documentation.py` and switching the pipeline to use them. Updating the pipeline: building `summary_data` from the enriched dataframe and YAML, then writing only cycle docs.

@@ -1,0 +1,341 @@
+**Wait for Completion** - The automation will:
+   - Convert Excel to CSV
+   - Create report folder structure
+   - Copy Power BI template
+   - Generate HTML/PDF reports
+   - Organize all files
+
+---
+
+## Folder Structure
+
+```
+16_Reports\SCRPA\
+├── m_code\                               # Power BI M Code Queries
+│   ├── all_crimes.m                     # Main transformation query
+│   ├── q_RMS_Source.m                   # Staging: Loads Excel file
+│   ├── q_CycleCalendar.m                # Staging: Loads cycle calendar
+│   ├── q_CallTypeCategories.m           # Staging: Loads category mapping
+│   ├── archive\                         # Archived/deprecated M code
+│   └── README.md                        # M code documentation
+├── preview_tables\                       # Power BI CSV Preview Exports
+│   └── README.md                        # Preview tables documentation
+├── time_based\                           # Organized Report Folders
+│   ├── 2025\
+│   │   └── 25C12W49_25_12_09\          # Report folder (date-based)
+│   │       ├── 25C12W49_25_12_09.pbix  # Power BI template
+│   │       ├── Data\                    # CSV files
+│   │       ├── Reports\                 # HTML and PDF files
+│   │       └── Documentation\           # Markdown files and prompts
+│   └── 2026\
+├── doc\                                  # System documentation & analysis
+│   ├── raw\                             # Raw documentation files
+│   └── chunked\                         # Chunked documentation
+├── README.md                             # This file
+├── CHANGELOG.md                          # Version history
+├── SUMMARY.md                            # System summary
+└── PROJECT_STRUCTURE.md                  # Detailed structure guide
+```
+
+---
+
+## Report Naming Convention
+
+Reports follow this naming pattern:
+- **Format**: `YYCMMWww_YY_MM_DD`
+- **Example**: `25C12W49_25_12_09`
+  - `25` = Year (2025)
+  - `C` = Calendar
+  - `12` = Month (December)
+  - `W49` = Week number (with -1 offset)
+  - `_25_12_09` = Date suffix (YY_MM_DD)
+
+---
+
+## Workflow Steps
+
+### Step 1: Excel to CSV Conversion
+- **Location**: `05_EXPORTS\_RMS\scrpa\`
+- **Script**: `convert_all_xlsx.bat`
+- **Output**: CSV files with `*_ReportDate_Last7.csv` for 7-day filtered data
+
+### Step 2: Folder Structure Creation
+- **Script**: `generate_weekly_report.py`
+- **Creates**: Report folder with subfolders (Data/, Reports/, Documentation/)
+- **Copies**: Power BI template (`Base_Report.pbix`)
+
+### Step 3: Report Generation
+- **Location**: `SCRPA_ArcPy\06_Output\`
+- **Script**: `generate_all_reports.bat`
+- **Generates**: HTML and PDF reports
+
+### Step 4: File Organization
+- **Script**: `organize_report_files.py`
+- **Copies**: CSV files, reports, and documentation to report folder
+- **Creates**: Consolidated markdown summary
+
+---
+
+## Key Scripts
+
+### Main Automation
+- **`Run_SCRPA_Report_Folder.bat`** - Complete workflow automation
+  - Location: `02_ETL_Scripts\`
+  - Handles all 4 steps automatically
+
+### Data Processing
+- **`convert_all_xlsx.bat`** - Converts Excel files to CSV
+- **`export_excel_sheets_to_csv.py`** - Excel conversion engine
+- **`prepare_briefing_csv.py`** - Transforms CSV for ChatGPT briefing
+
+### Report Generation
+- **`generate_weekly_report.py`** - Creates folder structure and copies template
+- **`organize_report_files.py`** - Organizes files into report folder
+- **`generate_all_reports.bat`** - Generates HTML/PDF reports
+
+---
+
+## File Types
+
+### Data Files
+- **`*_SCRPA_RMS.csv`** - Full RMS export
+- **`*_ReportDate_Last7.csv`** - 7-day filtered data
+- **`SCRPA_Briefing_Ready_*.csv`** - ChatGPT-ready briefing format
+
+### Reports
+- **`*_rms_summary.html/pdf`** - Tactical summary reports
+- **`SCRPA_Combined_Executive_Summary_*.html/pdf`** - Strategic executive summaries
+
+### Documentation
+- **`CHATGPT_BRIEFING_PROMPT.md`** - Complete prompt for ChatGPT (includes embedded CSV data)
+- **`CHATGPT_USAGE_INSTRUCTIONS.md`** - Quick reference guide for using ChatGPT prompt
+- **`SCRPA_Report_Summary.md`** - Consolidated report summary
+- **`CHATGPT_PROMPT_GUIDE.md`** - Detailed usage guide
+
+---
+
+## Configuration
+
+### Paths
+- **Reports Base**: `16_Reports\SCRPA\Time_Based\`
+- **Template Source**: `15_Templates\Base_Report.pbix`
+- **Exports**: `05_EXPORTS\_RMS\scrpa\`
+- **Output**: `SCRPA_ArcPy\06_Output\`
+
+### Week Offset
+- **Current**: `-1` (adjusts ISO week number to match SCRPA cycle)
+- **Location**: `generate_weekly_report.py` line 16
+
+---
+
+## Dependencies
+
+- **Python 3.13+** (or compatible version)
+- **Power BI Desktop** (for `.pbix` files)
+- **Required Python Packages**:
+  - pandas
+  - openpyxl (or calamine for Excel processing)
+  - Other packages as needed by scripts
+
+---
+
+## Troubleshooting
+
+### Access Denied Errors
+- **Cause**: OneDrive sync conflicts
+- **Solution**: Wait for sync to complete, or close OneDrive temporarily
+
+### Missing CSV Files
+- **Cause**: Excel file archived before conversion
+- **Solution**: Check `archive\` folder and manually convert if needed
+
+### Python Not Found
+- **Cause**: Python not in PATH
+- **Solution**: Install Python or add to system PATH
+
+### Report Date Format
+- **Required**: MM/DD/YYYY (e.g., `12/09/2025`)
+- **Error**: Script will prompt for correct format
+
+---
+
+## Support
+
+For issues or questions:
+1. Check the log file: `02_ETL_Scripts\SCRPA_run_YYYY-MM-DD_HH-MM.log`
+2. Review documentation in `doc\` folder
+3. Check individual script error messages
+
+---
+
+## Known Issues
+
+### ✅ Resolved Issues
+
+#### Cycle and Range Data Issue (Fixed in v1.2.0)
+- **Status**: Fixed
+- **Solution**: Added CSV fallback support, fixed path case sensitivity, moved archive timing, enhanced debugging
+- **See**: `docs/CYCLE_FIX_SOLUTION.md` for details
+
+---
+
+## Recent Updates
+
+### v1.7.0 (Latest)
+- ✅ **Project Structure Reorganization**: Organized M code and preview tables into dedicated directories
+  - `m_code/` - Active Power BI M code queries
+  - `m_code/archive/` - Archived/deprecated M code
+  - `preview_tables/` - CSV preview exports from Power BI
+  - `doc/` - Documentation and analysis files
+- ✅ **Period Classification Fix**: Fixed Period calculation logic for accurate 7-Day/28-Day/YTD classification
+  - Improved cycle detection when Today is after cycle end
+  - Added explicit null checks for cycle boundaries
+  - Fixed 7-Day period check to prevent incorrect 28-Day classification
+  - Added diagnostic column (`_Period_Debug`) for troubleshooting
+- ✅ **Period Label Update**: Changed "2025 Historical" to "Prior Year" for cleaner, shorter labels
+  - Automatically applies to prior year (currently 2025, will be 2026 next year)
+  - More intuitive and consistent naming
+- ✅ **Color Scheme Update**: Updated visual color assignments
+  - Prior Year: `#7F92A2` (gray-blue)
+  - YTD: `#118DFF` (blue)
+  - 28-Day: `#77C99A` (green - unchanged)
+  - 7-Day: (existing color - unchanged)
+- ✅ **Cycle Calendar Update**: Updated filename timestamp to reflect 2026 data
+  - Renamed: `7Day_28Day_Cycle_20250414.csv` → `7Day_28Day_Cycle_20260106.csv`
+  - Updated all M code references to new filename
+- ✅ **M Code File Path Fixes**: Fixed broken file paths in M code queries
+  - All file paths now single continuous strings (no line breaks)
+  - Prevents syntax errors and incorrect path construction
+  - Updated VS Code settings to prevent auto-formatting of M files
+
+### v1.6.0
+- ✅ **Cycle Calendar 2026 Support**: Added all 2026 cycle entries to cycle calendar CSV
+- ✅ **7-Day CSV Date Range Fix**: Excel conversion now uses cycle calendar for accurate 7-day filtering
+  - Fixed date range calculation to use actual cycle boundaries instead of "today - 7 days"
+  - Script reads REPORT_DATE environment variable and looks up correct cycle dates
+  - 7-day filtered CSV files now match cycle calendar dates exactly
+  - Works with both openpyxl and calamine engines
+
+### v1.5.0
+- ✅ **Zone Formatting Fix**: Zone values now display as whole numbers (5, 8) instead of decimals (5.0, 8.0)
+- ✅ **Date Filtering Fix**: Incidents outside cycle date range are now correctly excluded
+  - Fixed in both `prepare_briefing_csv.py` and `scrpa_7day_restructure.py`
+  - `scrpa_7day_restructure.py` now uses cycle calendar CSV to determine correct cycle dates
+  - Filters incidents based on cycle calendar lookup (not min/max from data)
+  - Excludes incidents from previous cycles (e.g., 12/22 incidents excluded when cycle is 12/23-12/29)
+- ✅ **Data Dictionary Optimization**: Dictionary now stored once in reference location and reused for all reports
+- ✅ **Enhanced Narrative Extraction**: Improved ChatGPT prompt with explicit narrative extraction instructions
+- ✅ **Documentation Cleanup Guide**: Created guide explaining which documentation files are needed vs historical
+- ✅ **Documentation File Limiting**: `organize_report_files.py` now only copies essential documentation files, excluding historical development notes
+
+### v1.3.0
+- ✅ **ChatGPT Prompt Enhancements**: Added Reporting Parameters section, Loss And Monetary Rules, Cycle And Date Rules, Summary Table Rules
+- ✅ **Simplified Usage**: CSV data already embedded in prompt file - no separate upload needed
+- ✅ **Usage Guide**: Created `CHATGPT_USAGE_INSTRUCTIONS.md` for quick reference
+
+### v1.2.0
+- ✅ **Path Case Sensitivity**: Fixed folder name case mismatch (`SCRPA` vs `scrpa`)
+- ✅ **CSV Support**: Added fallback to CSV files when Excel files not available
+- ✅ **Archive Timing**: Archive now runs after HTML generation to prevent conflicts
+- ✅ **Enhanced Debugging**: Added extensive DEBUG logging throughout HTML generation
+- ✅ **CHATGPT Prompt**: Removed em dashes, added Loss Total calculation instructions
+
+### Technical Details
+- Scripts now handle both Excel (`.xlsx`) and CSV (`.csv`) file formats
+- Case-insensitive file search for better compatibility
+- Improved error messages with full tracebacks
+- File verification after write operations
+- ChatGPT prompt is self-contained with embedded CSV data
+
+---
+
+## Using ChatGPT for Briefing Generation
+
+### Quick Method
+1. Open `CHATGPT_BRIEFING_PROMPT.md` from the report's `Documentation/` folder
+2. Copy the **entire file** (Ctrl+A, Ctrl+C)
+3. Paste into ChatGPT
+4. ChatGPT will generate the HTML briefing
+
+**Note**: The CSV data is already embedded in the prompt file - no separate upload needed! For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentation folder. ---
+
+## Version
+
+**Current Version**: 1.7.0  
+**Last Updated**: January 6, 2026  
+**Maintained By**: R. A. Carucci
+
+---
+
+## License
+
+Internal use only - City of Hackensack Police Department
+
+
+```
+
+
+Updated README, SUMMARY, and CHANGELOG with the changes from this session. Summary:
+
+## Updates Made
+
+### README.md
+- Updated version to 1.7.0
+- Added v1.7.0 section with:
+  - Project structure reorganization
+  - Period classification fixes
+  - Period label updates
+  - Color scheme updates
+  - Cycle calendar filename update
+  - M code file path fixes
+- Updated folder structure diagram to show new directories (`m_code/`, `preview_tables/`, `doc/`)
+
+### SUMMARY.md
+- Updated version to 1.7.0
+- Added v1.7.0 section with improvements
+- Updated Recent Improvements section with details
+
+### CHANGELOG.md
+- Added v1.7.0 entry with:
+  - Added: Project structure reorganization, diagnostic column, documentation files
+  - Changed: Period labels, calculation logic, cycle calendar filename, color scheme, M code organization
+  - Fixed: M code file paths, Period classification issues, VS Code auto-formatting
+  - Technical: Query performance notes
+- Updated version number at bottom
+
+All three files now document:
+- Project structure reorganization
+- Period classification fixes
+- Color scheme updates (Prior Year: #7F92A2, YTD: #118DFF)
+- Cycle calendar maintenance
+- M code quality improvements
+- VS Code formatting configuration
+
+The documentation is now up to date with all changes from this session. ---
+
+**User**
+
+Case Number: 25-113412, Incident Type is Burglary - Auto see attachment 1 & 2
+DeBug: dI=12/29/2025 | HasCycle=true | CycleStart=1/6/2026 | CycleEnd=1/12/2026 | in7Day=false | in28Day=true | Year=2025
+period is showing as 28-Day has a cycle_name of 25C13W52
+iscurrent7daycycle i sfaluse and islagday is true
+
+Case Number: 26-001094, Incident Type is Burglary - Residence see attachment 3 & 4
+debug: dI=1/4/2026 | HasCycle=true | CycleStart=1/6/2026 | CycleEnd=1/12/2026 | in7Day=false | in28Day=true | Year=2026
+period is 28-Day
+
+
+---
+
+**Cursor**
+
+
+The debug shows the wrong cycle is being detected. The current cycle should be 26C01W01 (12/30/2025 to 1/5/2026), but it's detecting 1/6/2026 to 1/12/2026. Checking the cycle calendar and fixing the cycle detection logic:
+
+
+
+The cycle detection is using the wrong logic. The calendar has a `Report_Due_Date` column that should be used. Checking the cycle calendar structure and updating the detection logic:
+
+
+
+The cycle calendar CSV includes `Report_Due_Date`, but `q_CycleCalendar.m` isn't loading it.

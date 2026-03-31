@@ -1,0 +1,30 @@
+**Fixed all split paths** — Combined all paths into single strings:
+   - Line 18-19: `FolderPath` now a single string
+   - Line 182-184: Cycle calendar path now a single string
+   - Line 477-479: CallType categories path now a single string
+
+2. **Fixed logic error on line 223** — The `in` keyword was misplaced. Corrected to:
+   ```m
+   each let dI = [Incident_Date_Date],
+       dR = [Report_Date] in 
+           HasCurrentCycle and dI <> null and dR <> null and 
+           dI < CurrentCycleStart and dR >= CurrentCycleStart and dR <= CurrentCycleEnd,
+   ```
+
+All paths are now single strings without quotes in the middle, and the Backfill_7Day logic is correct. The query should load without errors in Power BI Desktop. ```plaintext
+   each let dI = [Incident_Date_Date],
+       dR = [Report_Date] in 
+           HasCurrentCycle and dI <> null and dR <> null and 
+           dI < CurrentCycleStart and dR >= CurrentCycleStart and dR <= CurrentCycleEnd,
+```
+
+---
+
+**User**
+
+@Updated_All_Crimes.m is the updated m code from ChatGPT. It also provided this prompt:
+You are a Power Query (M) expert. I’m getting “Token ',' expected” around line ~220 and other runtime errors. Tasks:
+
+Fix any syntax / parsing issues (especially incorrect try … otherwise chaining, missing separators, invalid operators like < > vs <>). Fix type misuse issues: joins return tables, so don’t use List.IsEmpty on them; use Table.IsEmpty (wrap in try where null is possible). Fix Text.From(null) patterns: rewrite Text.From(try … otherwise null) into try Text.From(...) otherwise null. Preserve all existing output columns and business logic. Keep performance reasonable (use buffering only where needed). Output requirements:
+Return the full corrected M script as a single code block. Also list the exact issues you fixed (bullet list) and where they were (function/step name). it also asked if 
+a. Want me to also refactor the repeated AsDate / AsTime helpers into shared functions to shrink the query + make debugging easier? b. If you paste the exact Power BI error details panel text (and the real line number), I can pinpoint any remaining parse edge cases in seconds.

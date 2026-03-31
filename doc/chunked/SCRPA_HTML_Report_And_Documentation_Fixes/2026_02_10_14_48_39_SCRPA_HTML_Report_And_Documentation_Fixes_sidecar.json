@@ -1,0 +1,110 @@
+{
+  "source_file": "SCRPA_HTML_Report_And_Documentation_Fixes.md",
+  "source_path": "C:\\_chunker\\02_data\\SCRPA_HTML_Report_And_Documentation_Fixes.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\SCRPA_HTML_Report_And_Documentation_Fixes\\2026_02_10_14_48_39_SCRPA_HTML_Report_And_Documentation_Fixes.origin.json",
+  "created_at": "2026_02_10_14_48_39",
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "docs",
+    "excel",
+    "it-ops",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "7-day",
+      "cycle",
+      "2026",
+      "html",
+      "pipeline",
+      "incidents"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "# Agent deployment for chat log analysis\n_Exported on 2/10/2026 at 14:48:20 EST from Cursor (2.4.31)_\n\n---\n\n**User**\n\ndepoly additional agents to read the chunked chat logs C:\\Users\\carucci_r\\OneDrive - City of\n  Hackensack\\16_Reports\\SC...",
+    "first_line": "# Agent deployment for chat log analysis"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-02-10T14:48:39+00:00_SCRPA_HTML_Report_And_Documentation_Fixes_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "7-day",
+        "ai",
+        "code",
+        "data",
+        "docs",
+        "excel",
+        "html",
+        "incident",
+        "incidents",
+        "it-ops",
+        "json",
+        "markdown",
+        "pipeline",
+        "police",
+        "python",
+        "sql"
+      ],
+      "key_terms": [
+        "html",
+        "7-day",
+        "json",
+        "incident",
+        "pipeline",
+        "incidents"
+      ],
+      "summary": "# Agent deployment for chat log analysis\n_Exported on 2/10/2026 at 14:48:20 EST from Cursor (2.4.31)_\n\n---\n\n**User**\n\ndepoly additional agents to read the chunked chat logs C:\\Users\\carucci_r\\OneDrive - City of\n  Hackensack\\16_Reports\\SC...",
+      "char_length": 15501,
+      "byte_length": 15963
+    },
+    {
+      "chunk_id": "2026-02-10T14:48:39+00:00_SCRPA_HTML_Report_And_Documentation_Fixes_chunk2",
+      "chunk_index": 2,
+      "file": "chunk_00001.txt",
+      "tags": [
+        "2026",
+        "7-day",
+        "ai",
+        "burglary",
+        "code",
+        "cycle",
+        "data",
+        "docs",
+        "documentation",
+        "excel",
+        "it-ops",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "report",
+        "sql"
+      ],
+      "key_terms": [
+        "7-day",
+        "cycle",
+        "2026",
+        "documentation",
+        "report",
+        "burglary"
+      ],
+      "summary": "---\n\nA short note explaining this is in **`doc/WHY_HTML_EXECUTIVE_SUMMARY_IS_WRONG.md`**.",
+      "char_length": 12175,
+      "byte_length": 12515
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

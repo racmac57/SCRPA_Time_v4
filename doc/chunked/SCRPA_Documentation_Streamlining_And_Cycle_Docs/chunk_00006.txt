@@ -1,0 +1,91 @@
+Fixing YAML load so `yaml_data` is always defined:
+
+
+
+Updating the pipeline docstring and README to state canonical Documentation and that we no longer write canonical docs into each cycle. Adding a README section on the Python pipeline and canonical Documentation:
+
+
+
+Summary of what was implemented from the handoff:
+
+---
+
+## 1. Documentation streamlining
+
+- **Per-cycle Documentation**  
+  The pipeline no longer writes `claude.md`, `PROJECT_SUMMARY.yaml/json`, or `data_dictionary.yaml/json` into each cycle’s `Documentation/` folder. - **Canonical docs**  
+  Those files are intended to live only in `16_Reports/SCRPA/Documentation`. They can be (re)generated with:
+  - `python scripts/generate_documentation.py -o "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\Documentation"`
+
+- **Pipeline Step 5**  
+  For each cycle it now only writes:
+  - **SCRPA_Report_Summary.md** – filled from pipeline data (see below)
+  - **CHATGPT_BRIEFING_PROMPT.md** – new; placeholders filled from `cycle_info`
+  - **EMAIL_TEMPLATE.txt** – unchanged (still from `create_email_template`)
+
+---
+
+## 2. SCRPA_Report_Summary.md populated from pipeline data
+
+- In **`generate_documentation.py`**:
+  - **`get_report_summary_with_data(cycle_info, summary_data)`** – builds the markdown. - **`write_report_summary_with_data(output_dir, cycle_info, summary_data)`** – writes the file. - In **`run_scrpa_pipeline.py`**, after the 7-day YAML is written, the pipeline:
+  - Loads that YAML and uses `df_enhanced` to build a `summary_data` dict (total, period_7/28/ytd/prior_year, lag/backfill counts, lag mean/median/max, `7day_by_crime_category`). - Calls `write_report_summary_with_data(..., summary_data)` so the cycle’s `SCRPA_Report_Summary.md` gets real counts and the 7-day-by-category table. ---
+
+## 3. CHATGPT_BRIEFING_PROMPT.md generated per cycle
+
+- In **`generate_documentation.py`**:
+  - **`CHATGPT_BRIEFING_TEMPLATE`** – markdown template with placeholders: `{cycle_id}`, `{biweekly}`, `{report_due}`, `{date_range_7}`, `{date_range_bw}`. - **`write_chatgpt_briefing_prompt(output_dir, cycle_info)`** – fills those from `cycle_info` and writes `CHATGPT_BRIEFING_PROMPT.md` (including the “HPD | SSOCC | SCRPA Report | Cycle: …” footer). - The pipeline calls `write_chatgpt_briefing_prompt(paths['documentation'], cycle_info)` in Step 5. ---
+
+## 4. Docstring and README
+
+- **`run_scrpa_pipeline.py`** docstring: output layout now describes only the three Data outputs and the cycle Documentation set (SCRPA_Report_Summary.md, CHATGPT_BRIEFING_PROMPT.md, EMAIL_TEMPLATE.txt), and states that canonical docs live under `16_Reports/SCRPA/Documentation` and are updated via `generate_documentation.py -o <path>`. - **README.md**:  
+  - Project structure now mentions `Documentation/` as the canonical doc folder and `scripts/run_scrpa_pipeline.py` as the Python-first pipeline. - “Quick Start” has a “Python pipeline (16_Reports/SCRPA)” subsection (Run_SCRPA_Pipeline.bat / `run_scrpa_pipeline.py`, where outputs go, and that canonical docs are not copied into each cycle). - The previous Quick Start is under “Quick Start (legacy 02_ETL_Scripts)”. ---
+
+## 5. Imports
+
+- **`run_scrpa_pipeline.py`**: `import yaml` added; `generate_all_documentation` removed; `write_report_summary_with_data` and `write_chatgpt_briefing_prompt` imported from `generate_documentation`. - **`generate_documentation.py`**: `generate_all_documentation` is unchanged and still used for the canonical folder (e.g. when you run the script with `-o`); its docstring now says it’s for the single canonical Documentation folder, not per cycle. ---
+
+Optional next steps from the handoff (not done in this pass):
+
+- **Pre-commit + CI**: Add a pre-commit config (e.g. black/isort/ruff) and a GitHub Actions workflow that runs the pytest suite. - **Markdown executive summary patcher**: When you start copying `SCRPA_Combined_Executive_Summary_*.md` into the cycle folder, add a `patch_executive_summary_md.py`-style step so the Combined Summary `.md` stays consistent with the HTML (e.g. cycle, range, version). ---
+
+**User**
+
+please update readme, summary and changelog and local git
+
+---
+
+**Cursor**
+
+
+Updating README, SUMMARY, and CHANGELOG, then staging and committing the changes. Updating all three files and committing. Staging changes and committing. Staging README, SUMMARY, CHANGELOG, VERSION, and the two scripts that implement the doc streamlining, then committing. Summary of what was updated and committed:
+
+---
+
+**README.md**
+- **File Types > Documentation**: Clarified canonical docs (only in `16_Reports/SCRPA/Documentation/`) vs per-cycle docs (`SCRPA_Report_Summary.md`, `CHATGPT_BRIEFING_PROMPT.md`, `EMAIL_TEMPLATE.txt`). Documented how to regenerate canonical docs with `generate_documentation.py -o <path>`. **SUMMARY.md**
+- **Workflow diagram**: Added a “Python-first pipeline” section (RMS → `run_scrpa_pipeline.py` → Data + cycle Documentation + copied Reports) and noted that canonical docs are not copied per cycle. Left the legacy 02_ETL_Scripts flow as “Legacy 02_ETL_Scripts workflow”. - **Recent improvements**: New **v1.9.4** entry for documentation streamlining, cycle-only docs, populated `SCRPA_Report_Summary.md`, and generated `CHATGPT_BRIEFING_PROMPT.md`. v1.9.3 kept as previous. - **Maintenance > Updates**: Pointed to Python pipeline and canonical Documentation path. - **Footer**: Version set to 1.9.4, date to January 28, 2026. **CHANGELOG.md**
+- ** [1.9.4] - 2026-01-28**:  
+  - **Changed**: Doc streamlining (no canonical docs in cycle folders); cycle Documentation contents. - **Added**: Populated `SCRPA_Report_Summary.md`; per-cycle `CHATGPT_BRIEFING_PROMPT.md`. - **Documentation**: README and SUMMARY updates. - Added `[1.9.4]` compare link for the repo. **VERSION**
+- Set to `1.9.4`. **Local git**
+- Staged: `CHANGELOG.md`, `README.md`, `SUMMARY.md`, `VERSION`, `scripts/generate_documentation.py`, `scripts/run_scrpa_pipeline.py`. - Committed on branch `docs/update-20260127-1900` as **d76b5fc** with message:
+  - `docs: v1.9.4 README, SUMMARY, CHANGELOG; documentation streamlining`  
+  - (Message body describes canonical vs cycle docs, pipeline helpers, and doc updates.) Other modified or untracked files (e.g. m_code, other scripts, doc deletes) were not staged; you can add and commit them in a separate commit if you want. ---
+
+**User**
+
+I'm preparing to export this chat. Please generate a descriptive filename that summarizes the main topic or task of this conversation. Requirements:
+• 4-8 words
+• Title Case (capitalize major words)
+• Replace spaces with underscores
+• Include .md extension
+• No dates or special characters
+
+Output only the filename, nothing else. After export, I'll process it using: scripts\quick_process_chatlog.bat
+
+---
+
+**Cursor**
+
+
+SCRPA_Documentation_Streamlining_And_Cycle_Docs.md

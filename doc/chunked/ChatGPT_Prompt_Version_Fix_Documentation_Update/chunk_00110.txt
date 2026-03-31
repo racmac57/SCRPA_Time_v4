@@ -1,0 +1,871 @@
+Clearance rate: <strong>23.8%</strong>.</p>
+
+          <div class="grid-3" aria-hidden="false">
+            <div class="dist-card">
+              <strong class="small">Incident Type Distribution</strong>
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Item</th><th class="small">Count</th><th class="small">%</th></tr></thead>
+                  <tbody>
+                    <tr><td>Burglary - Residence - 2C:18-2</td><td>5</td><td>23.8%</td></tr>
+                    <tr><td>Burglary - Auto - 2C:18-2</td><td>5</td><td>23.8%</td></tr>
+                    <tr><td>Motor Vehicle Theft - 2C:20-3</td><td>4</td><td>19.0%</td></tr>
+                    <tr><td>Robbery - 2C:15-1</td><td>2</td><td>9.5%</td></tr>
+                    <tr><td>Attempted Burglary - Commercial - 2C:18-2</td><td>1</td><td>4.8%</td></tr>
+                    <tr><td>Simple Assault - 2C:12-1a</td><td>1</td><td>4.8%</td></tr>
+                    <tr><td>Welfare Check</td><td>1</td><td>4.8%</td></tr>
+                    <tr><td>Burglary - Commercial - 2C:18-2</td><td>1</td><td>4.8%</td></tr>
+                    <tr><td>Criminal Sexual Contact - 2C:14-3a</td><td>1</td><td>4.8%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="dist-card">
+              <strong class="small">Zone Activity</strong>
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Zone</th><th>Count</th><th>%</th></tr></thead>
+                  <tbody>
+                    <tr><td>8</td><td>7</td><td>33.3%</td></tr>
+                    <tr><td>9</td><td>3</td><td>14.3%</td></tr>
+                    <tr><td>7</td><td>3</td><td>14.3%</td></tr>
+                    <tr><td>5</td><td>3</td><td>14.3%</td></tr>
+                    <tr><td>6</td><td>1</td><td>4.8%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="dist-card">
+              <strong class="small">Hourly Distribution</strong>
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Hour</th><th>Incidents</th><th>%</th></tr></thead>
+                  <tbody><tr><td>1</td><td>1</td><td>4.8%</td></tr><tr><td>3</td><td>2</td><td>9.5%</td></tr><tr><td>9</td><td>2</td><td>9.5%</td></tr><tr><td>10</td><td>1</td><td>4.8%</td></tr><tr><td>14</td><td>2</td><td>9.5%</td></tr><tr><td>15</td><td>1</td><td>4.8%</td></tr><tr><td>18</td><td>3</td><td>14.3%</td></tr><tr><td>19</td><td>2</td><td>9.5%</td></tr><tr><td>20</td><td>1</td><td>4.8%</td></tr><tr><td>21</td><td>1</td><td>4.8%</td></tr><tr><td>22</td><td>1</td><td>4.8%</td></tr><tr><td>23</td><td>4</td><td>19.0%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+          </div>
+
+          <div style="margin-top:12px;page-break-inside:avoid;break-inside:avoid;">
+            <strong class="small">Day of Week</strong>
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Day</th><th>Incidents</th><th>%</th></tr></thead>
+                <tbody>
+                  <tr><td>Monday</td><td>4</td><td>19.0%</td></tr>
+                  <tr><td>Tuesday</td><td>6</td><td>28.6%</td></tr>
+                  <tr><td>Wednesday</td><td>0</td><td>0.0%</td></tr>
+                  <tr><td>Thursday</td><td>2</td><td>9.5%</td></tr>
+                  <tr><td>Friday</td><td>1</td><td>4.8%</td></tr>
+                  <tr><td>Saturday</td><td>4</td><td>19.0%</td></tr>
+                  <tr><td>Sunday</td><td>4</td><td>19.0%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="incidents" style="margin-top:12px;">
+            <strong class="small">Recent Significant Incidents</strong>
+            <ul>
+            </ul>
+          </div>
+        </div>
+        <div class="report-card" id="rytd" role="region" aria-label="YTD Executive Summary">
+          <div class="report-header">
+            <div>
+              <h2>YTD Executive Summary</h2>
+              <div class="sub small">Strategic view for allocation and trend analysis</div>
+            </div>
+            <div class="tag">YTD</div>
+            
+            
+          </div>
+
+          <p class="summary"><strong>231 incidents</strong> across <strong>6 zones</strong>. Primary incident: <strong>Burglary - Auto - 2C:18-2 - 58 occurrences (25.1%)</strong>. Clearance rate: <strong>67.5%</strong>.</p>
+
+          <div class="grid-3" aria-hidden="false">
+            <div class="dist-card">
+              <strong class="small">Incident Type Distribution</strong>
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Item</th><th class="small">Count</th><th class="small">%</th></tr></thead>
+                  <tbody>
+                    <tr><td>Burglary - Auto - 2C:18-2</td><td>58</td><td>25.1%</td></tr>
+                    <tr><td>Motor Vehicle Theft - 2C:20-3</td><td>53</td><td>22.9%</td></tr>
+                    <tr><td>Burglary - Residence - 2C:18-2</td><td>43</td><td>18.6%</td></tr>
+                    <tr><td>Robbery - 2C:15-1</td><td>21</td><td>9.1%</td></tr>
+                    <tr><td>Burglary - Commercial - 2C:18-2</td><td>16</td><td>6.9%</td></tr>
+                    <tr><td>Sexual Assault - 2C:14-2b</td><td>14</td><td>6.1%</td></tr>
+                    <tr><td>Criminal Sexual Contact - 2C:14-3a</td><td>10</td><td>4.3%</td></tr>
+                    <tr><td>Exceptionally Cleared/Closed</td><td>3</td><td>1.3%</td></tr>
+                    <tr><td>Suspicious Incident</td><td>2</td><td>0.9%</td></tr>
+                    <tr><td>Simple Assault - 2C:12-1a</td><td>2</td><td>0.9%</td></tr>
+                    <tr><td>Dispute</td><td>1</td><td>0.4%</td></tr>
+                    <tr><td>Mental Health Incident</td><td>1</td><td>0.4%</td></tr>
+                    <tr><td>Warrant Arrest</td><td>1</td><td>0.4%</td></tr>
+                    <tr><td>Recovered Stolen Vehicle</td><td>1</td><td>0.4%</td></tr>
+                    <tr><td>Attempted Burglary - 2C:18-2</td><td>1</td><td>0.4%</td></tr>
+                    <tr><td>Attempted Burglary - Residence - 2C:18-2</td><td>1</td><td>0.4%</td></tr>
+                    <tr><td>Fraud</td><td>1</td><td>0.4%</td></tr>
+                    <tr><td>Attempted Burglary - Commercial - 2C:18-2</td><td>1</td><td>0.4%</td></tr>
+                    <tr><td>Welfare Check</td><td>1</td><td>0.4%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="dist-card">
+              <strong class="small">Zone Activity</strong>
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Zone</th><th>Count</th><th>%</th></tr></thead>
+                  <tbody>
+                    <tr><td>8</td><td>61</td><td>26.4%</td></tr>
+                    <tr><td>7</td><td>49</td><td>21.2%</td></tr>
+                    <tr><td>9</td><td>42</td><td>18.2%</td></tr>
+                    <tr><td>5</td><td>34</td><td>14.7%</td></tr>
+                    <tr><td>6</td><td>24</td><td>10.4%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="dist-card">
+              <strong class="small">Hourly Distribution</strong>
+              <div class="table-wrapper">
+                <table>
+                  <thead><tr><th>Hour</th><th>Incidents</th><th>%</th></tr></thead>
+                  <tbody><tr><td>0</td><td>6</td><td>2.6%</td></tr><tr><td>1</td><td>10</td><td>4.3%</td></tr><tr><td>2</td><td>7</td><td>3.0%</td></tr><tr><td>3</td><td>9</td><td>3.9%</td></tr><tr><td>4</td><td>6</td><td>2.6%</td></tr><tr><td>5</td><td>3</td><td>1.3%</td></tr><tr><td>6</td><td>10</td><td>4.3%</td></tr><tr><td>7</td><td>3</td><td>1.3%</td></tr><tr><td>8</td><td>9</td><td>3.9%</td></tr><tr><td>9</td><td>8</td><td>3.5%</td></tr><tr><td>10</td><td>8</td><td>3.5%</td></tr><tr><td>11</td><td>9</td><td>3.9%</td></tr><tr><td>12</td><td>18</td><td>7.8%</td></tr><tr><td>13</td><td>9</td><td>3.9%</td></tr><tr><td>14</td><td>14</td><td>6.1%</td></tr><tr><td>15</td><td>11</td><td>4.8%</td></tr><tr><td>16</td><td>9</td><td>3.9%</td></tr><tr><td>17</td><td>5</td><td>2.2%</td></tr><tr><td>18</td><td>15</td><td>6.5%</td></tr><tr><td>19</td><td>12</td><td>5.2%</td></tr><tr><td>20</td><td>12</td><td>5.2%</td></tr><tr><td>21</td><td>8</td><td>3.5%</td></tr><tr><td>22</td><td>14</td><td>6.1%</td></tr><tr><td>23</td><td>16</td><td>6.9%</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+          </div>
+
+          <div style="margin-top:12px;page-break-inside:avoid;break-inside:avoid;">
+            <strong class="small">Day of Week</strong>
+            <div class="table-wrapper">
+              <table>
+                <thead><tr><th>Day</th><th>Incidents</th><th>%</th></tr></thead>
+                <tbody>
+                  <tr><td>Monday</td><td>42</td><td>18.2%</td></tr>
+                  <tr><td>Tuesday</td><td>42</td><td>18.2%</td></tr>
+                  <tr><td>Wednesday</td><td>25</td><td>10.8%</td></tr>
+                  <tr><td>Thursday</td><td>34</td><td>14.7%</td></tr>
+                  <tr><td>Friday</td><td>26</td><td>11.3%</td></tr>
+                  <tr><td>Saturday</td><td>23</td><td>10.0%</td></tr>
+                  <tr><td>Sunday</td><td>39</td><td>16.9%</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="incidents" style="margin-top:12px;page-break-inside:avoid;break-inside:avoid;">
+            <strong class="small">Recent Significant Incidents</strong>
+            <ul>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Combined analysis notes -->
+      <section class="report-card" role="region" aria-label="Combined Analysis Notes" style="page-break-before:always;break-before:page;">
+        <h2 style="margin:0 0 6px 0;">Combined Analysis Notes</h2>
+        <div style="margin:8px 0 0 0;color:var(--muted);">
+          <p><strong>Key Insights Across All Periods:</strong></p>
+          <ul style="margin:8px 0 0 18px;">
+            <li><strong>7-Day Analysis:</strong> 2 incidents recorded in the most recent week with Motor Vehicle Theft - 2C:20-3 being the most frequent. This provides immediate trend identification for tactical adjustments.</li>
+            <li><strong>28-Day Analysis:</strong> 21 incidents over the past month across 6 zones. This monthly perspective supports operational planning and patrol allocation.</li>
+            <li><strong>Year-to-Date:</strong> 231 total incidents with a 67.5% clearance rate. This enables strategic assessment for longer-term resourcing and investigative focus areas.</li>
+          </ul>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>
+      <div>Hackensack Police Department - Safe Streets Operations Control Center | Cycle: 25C13W52</div>
+      <div>Page 1 of 1</div>
+    </footer>
+  </div>
+</body>
+</html>
+```
+
+```html
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SCRPA - Combined Executive Summary (Print-safe)</title>
+<style>
+:root {
+    --primary: #0c233d;
+    --text: #1a1a1a;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --bg: #ffffff;
+    --callout: #f5f7fb;
+    --danger: #b91c1c;
+}
+
+html, body {
+    font-family: "DIN", "Bahnschrift", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    padding: 0;
+    line-height: 1.38;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+@page {
+    size: Letter landscape;
+    margin: 0.4in;
+}
+
+.wrap {
+    max-width: 8.5in;
+    margin: 0 auto;
+    padding: 0.6in;
+    box-sizing: border-box;
+}
+
+h1, h2, h3 {
+    color: var(--primary);
+    margin: 0 0 6px 0;
+    font-weight: 800;
+}
+
+h1 {
+    font-size: 22px;
+}
+
+h2 {
+    font-size: 15.5px;
+    border-bottom: 2px solid var(--primary);
+    padding-bottom: 2px;
+    margin: 14px 0 8px;
+}
+
+.small {
+    font-size: 12.5px;
+    color: var(--muted);
+}
+
+.pill {
+    display: inline-block;
+    background: var(--bg);
+    padding: 8px 12px;
+    border-radius: 999px;
+    box-shadow: 0 4px 10px rgba(12,35,61,.08);
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 4px 8px 4px 0;
+}
+
+.overview, .report-card {
+    background: var(--bg);
+    padding: 16px;
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(12,35,61,.06);
+    page-break-inside: avoid;
+    border: 1px solid var(--border);
+    margin: 8px 0 10px;
+}
+
+.metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.metric {
+    background: linear-gradient(180deg, var(--callout), #fff);
+    border-radius: 10px;
+    padding: 12px;
+    border: 1px solid var(--border);
+}
+
+.metric .label {
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+.metric .value {
+    font-weight: 700;
+    font-size: 20px;
+    color: var(--primary);
+}
+
+.table-wrapper {
+    width: 100%;
+    margin-top: 8px;
+    overflow: visible !important;
+    max-width: 100%;
+}
+
+table {
+    width: 100%;
+    max-width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    margin: 0;
+    table-layout: fixed;
+    border: 1px solid var(--border);
+    box-sizing: border-box;
+}
+
+thead th {
+    background: #f8fafc;
+    font-weight: 800;
+    color: var(--primary);
+    font-size: 12.25px;
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+th, td {
+    padding: 6px 8px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    font-size: 11.5px;
+}
+
+td.money {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: rgba(12,35,61,.08);
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 12px;
+}
+
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    width: 100%;
+}
+
+.dist-card {
+    background: #fff;
+    padding: 8px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    min-width: 0;
+    overflow: hidden;
+}
+
+.incidents ul {
+    margin: 8px 0 0 16px;
+    padding: 0;
+    color: var(--text);
+    font-size: 12.75px;
+}
+
+.incidents li {
+    margin: 6px 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.badge-incomplete {
+    font-style: italic;
+    color: var(--danger);
+    font-weight: 600;
+}
+
+footer {
+    margin-top: 12px;
+    padding-top: 8px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 11.5px;
+    display: flex;
+    justify-content: space-between;
+}
+/* print optimizations for landscape */
+@media print {
+    .wrap{max-width:none;padding:8mm;}
+    .report-card{
+        margin-bottom:12px;
+        page-break-inside:avoid;
+        break-inside:avoid;
+    }
+    /* Force Combined Analysis Notes to start on new page */
+    .report-card[aria-label="Combined Analysis Notes"] {
+        page-break-before: always;
+        break-before: page;
+    }
+    .grid-3{
+        gap:6px;
+        margin-bottom:12px;
+        grid-template-columns: repeat(3, 1fr);
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    /* Prevent table rows from breaking */
+    tbody tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    /* Keep Day of Week sections together */
+    .table-wrapper {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    .dist-card{
+        padding:6px;
+        margin-bottom:6px;
+        page-break-inside:avoid;
+        break-inside:avoid;
+    }
+    .dist-card th,.dist-card td{
+        padding:3px 4px;
+        font-size:9.5px;
+    }
+    .dist-card table{
+        font-size:9.5px;
+        width:100%;
+        max-width:100%;
+    }
+    .summary{margin-bottom:8px;font-size:11px;}
+    .report-header{margin-bottom:6px;}
+    .report-header h2{font-size:14px;margin:0;}
+    .report-header .sub{font-size:10px;}
+    .tag{font-size:9px;padding:2px 5px;}
+    .meta{font-size:9px;}
+    .small{font-size:9.5px;}
+    footer{margin-top:6px;font-size:8px;}
+    th, td{
+        padding:3px 4px;
+        font-size:9.5px;
+    }
+    .table-wrapper{
+        overflow:visible !important;
+        max-width:100%;
+    }
+}
+
+@media (max-width: 640px) {
+    .wrap {
+        padding: 16px;
+    }
+    h1 {
+        font-size: 20px;
+    }
+    .metric .value {
+        font-size: 18px;
+    }
+}
+
+@media print {
+    html, body {
+        background: #fff;
+        color: #000;
+    }
+    .wrap {
+        max-width: 100%;
+        margin: 0;
+        padding: 8mm;
+    }
+    .report-card, .overview {
+        page-break-inside: avoid;
+        break-inside: avoid;
+        margin-bottom: 12px;
+    }
+    .grid-3 {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    .dist-card {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    /* Prevent individual table rows from breaking */
+    tbody tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    /* Keep table headers with content */
+    thead {
+        display: table-header-group;
+    }
+    /* Prevent Day of Week tables from breaking */
+    .table-wrapper {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+    table {
+        -webkit-print-color-adjust: exact;
+        width: 100%;
+        max-width: 100%;
+        table-layout: fixed;
+        font-size: 9.5px;
+    }
+    thead {
+        display: table-header-group;
+    }
+    tfoot {
+        display: table-footer-group;
+    }
+    .table-wrapper {
+        overflow: visible !important;
+        max-width: 100%;
+    }
+    tr {
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
+}
+
+  /* Legacy styles below */
+  :root{
+    margin:0;
+    background: linear-gradient(180deg, #f4f7fb 0%, var(--bg) 100%);
+    font-family: var(--font-sans);
+    color:#0f172a;
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    line-height:1.38;
+  }
+
+  .wrap{
+    max-width:var(--max-w);
+    margin:28px auto;
+    padding:28px;
+    box-sizing:border-box;
+    background:transparent;
+  }
+
+  header.top {
+    display:flex;
+    align-items:center;
+    gap:18px;
+    margin-bottom:18px;
+  }
+
+  .logo{
+    width:74px;
+    height:74px;
+    border-radius:12px;
+    background:#0c233d;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:white;
+    font-weight:700;
+    font-size:22px;
+    box-shadow:0 6px 18px rgba(12,35,61,0.12);
+    flex-shrink:0;
+  }
+
+  .title-block h1{
+    margin:0;
+    font-size:20px;
+    letter-spacing:0.2px;
+  }
+  .title-block p{
+    margin:4px 0 0 0;
+    color:var(--muted);
+    font-size:13px;
+  }
+
+  .meta {
+    margin-top:14px;
+    display:flex;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .pill{
+    background:var(--card);
+    padding:8px 12px;
+    border-radius:999px;
+    box-shadow:0 4px 10px rgba(15,23,42,0.04);
+    font-size:13px;
+    color:var(--muted);
+  }
+
+  main{
+    margin-top:18px;
+    display:grid;
+    gap:18px;
+  }
+
+  .overview {
+    background:var(--card);
+    border-radius:var(--radius);
+    padding:18px;
+    box-shadow:0 6px 20px rgba(15,23,42,0.04);
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .metrics {
+    display:grid;
+    grid-template-columns: repeat(auto-fit,minmax(200px,1fr));
+    gap:12px;
+    margin-top:12px;
+  }
+
+  .metric {
+    background:linear-gradient(180deg,var(--metric-bg),#ffffff);
+    border-radius:10px;
+    padding:12px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,0.6);
+  }
+  .metric .label{font-size:12px;color:var(--muted);margin-bottom:6px;}
+  .metric .value{font-weight:700;font-size:20px;color:#0f172a;}
+
+  section.report {
+    display:grid;
+    gap:12px;
+  }
+
+  .report-card{
+    background:var(--card);
+    padding:16px;
+    border-radius:10px;
+    box-shadow:0 6px 18px rgba(12,20,40,0.04);
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  .report-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+    margin-bottom:10px;
+  }
+  .report-header h2{margin:0;font-size:16px;}
+  .report-header .sub{color:var(--muted);font-size:13px;}
+
+  .summary { color:var(--muted); font-size:14px; margin-bottom:8px; }
+
+  /* tables and wrappers */
+  .table-wrapper{
+    width:100%;
+    overflow:auto;            /* horizontal scroll on narrow screens */
+    -webkit-overflow-scrolling:touch;
+    margin-top:8px;
+  }
+
+  table{
+    width:100%;
+    max-width:100%;
+    border-collapse:collapse;
+    font-size:12px;
+    margin:0;
+    table-layout:fixed;        /* fixed layout for better control */
+    box-sizing:border-box;
+  }
+  .table-wrapper{
+    width:100%;
+    max-width:100%;
+    overflow-x:visible;
+    box-sizing:border-box;
+  }
+  thead th{
+    background:linear-gradient(90deg, #fafcff, #ffffff);
+    font-weight:700;
+    color:#111827;
+    top:0;
+    z-index:2;
+  }
+  th,td{
+    padding:6px 8px;
+    text-align:left;
+    border-bottom:1px solid #eef1f6;
+    vertical-align:top;
+    white-space:normal;               /* allow wrapping */
+    overflow-wrap:break-word;           /* break long strings */
+    word-break:break-word;
+    hyphens:auto;
+    font-size:11.5px;
+  }
+  .small{font-size:13px;color:var(--muted);}
+  .muted{color:var(--muted)}
+  .tag{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(11,92,255,0.08);color:var(--accent);font-weight:600;font-size:12px}
+
+  /* prevent rows/cards splitting awkwardly when printing */
+  tr, .report-card, .overview {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* distributions (compact) */
+  .grid-3 {
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:8px;
+    width:100%;
+  }
+  .dist-card{
+    background:linear-gradient(180deg,#fff,#fbfdff);
+    padding:8px;
+    border-radius:8px;
+    border:1px solid #f1f6ff;
+    min-width:0;
+    overflow:hidden;
+  }
+
+  /* incident list - allow long entries to wrap */
+  .incidents ul{margin:8px 0 0 16px;padding:0;color:#0f172a}
+  .incidents li{margin:6px 0; white-space:normal; overflow-wrap:anywhere; word-break:break-word; hyphens:auto;}
+
+  footer{
+    margin-top:14px;
+    font-size:12px;
+    color:var(--muted);
+    display:flex;
+    justify-content:space-between;
+    gap:12px;
+    align-items:center;
+  }
+
+  /* keep header from overlapping content on print */
+  thead th.sticky {
+    position:sticky;
+  }
+
+  /* responsive tweaks */
+  @media (max-width:640px){
+    .title-block h1{font-size:17px}
+    .metric .value{font-size:18px}
+    .wrap{padding:16px}
+    table{min-width:520px}
+  }
+
+  /* Print-focused rules */
+  @media print {
+    html,body{background: #fff; color:#000;}
+    .wrap{max-width:100%; margin:0; padding:8mm;}
+    header.top{position:static; display:flex; align-items:center; gap:8px;}
+    .logo{display:none}               /* remove decorative logo for print */
+    .report-card, .overview { 
+      page-break-inside: avoid; 
+      break-inside: avoid; 
+      margin-bottom: 12px;
+    }
+    .grid-3 {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      gap: 6px;
+    }
+    .dist-card {
+      page-break-inside: avoid;
+      break-inside: avoid;
+      padding: 6px;
+    }
+    table { 
+      page-break-inside: auto; 
+      -webkit-print-color-adjust: exact; 
+      width: 100%;
+      max-width: 100%;
+      table-layout: fixed;
+      font-size: 9.5px;
+    }
+    th, td {
+      padding: 3px 4px;
+      font-size: 9.5px;
+    }
+    thead { display: table-header-group; }  /* repeat headers on each printed page */
+    tfoot { display: table-footer-group; }
+    thead th.sticky { position:static; }    /* disable sticky in print */
+    .table-wrapper{ 
+      overflow:visible !important; 
+      max-width: 100%;
+    } /* allow normal flow for printing */
+    .metric .value{color:#000}
+    footer{position:relative; bottom:0; margin-top: 6px; font-size: 8px;}
+  }
+</style>
+</head>
+<body>
+  <div class="wrap" role="main" aria-labelledby="reportTitle">
+    <header class="top" role="banner">
+      <div class="logo" aria-hidden="true">SCRPA</div>
+      <div class="title-block">
+        <h1 id="reportTitle">SCRPA Combined Executive Summary</h1>
+        <p class="small">Generated: <strong>2025-12-30 00:34:15</strong> - Report Periods: <strong>7-Day, 28-Day, Year-to-Date</strong></p>
+        <div class="meta">
+          <div class="pill">Cycle: 25C13W52</div>
+          <div class="pill">Range: 12/23/2025 - 12/29/2025</div>
+          <div class="pill">Prepared by: P.O. R. A. Carucci</div>
+          <div class="pill">Submitted to: Captain Smith</div>
+          <div class="pill">Version: v1.1</div>
+        </div>
+        <div class="meta">
+          <div class="pill">Auto-Detection: SCRPA Statistical Export System</div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Executive overview -->
+      <section class="overview" aria-labelledby="overviewHeading">
+        <h2 id="overviewHeading" style="margin:0 0 6px 0;">Executive Overview</h2>
+        <p class="summary">This combined report provides a concise, cross-period view of crime statistics to support operational decisions and resource allocation. It highlights short-term trends (7-day), monthly perspective (28-day), and longer-term strategic patterns (YTD).</p>
+
+        <div class="metrics" aria-hidden="false">
+          <div class="metric">
+            <div class="label">Primary Focus (YTD)</div>
+            <div class="value">Burglary - Auto - 2C:18-2 - 58 (25.1%)</div>
+          </div>
+          <div class="metric">
+            <div class="label">YTD Total Incidents</div>
+            <div class="value">231</div>
+          </div>
+          <div class="metric">
+            <div class="label">28-Day Incidents</div>
+            <div class="value">21</div>
+          </div>
+          <div class="metric">
+            <div class="label">7-Day Incidents</div>
+            <div class="value">2</div>
+          </div>
+          <div class="metric">
+            <div class="label">YTD Clearance Rate</div>
+            <div class="value">67.5%</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Report sections -->
+      <section class="report" aria-labelledby="r7">
+        <div class="report-card" id="r7" role="region" aria-label="7-Day Executive Summary">
+          <div class="report-header">
+            <div>
+              <h2>7-Day Executive Summary</h2>
+              <div class="sub small">Period snapshot and key metrics (most recent 7 days)</div>
+            </div>
+            <div class="tag">Short-term</div>
+            
+            
+          </div>
+
+          <p class="summary"><strong>2 incidents</strong> across <strong>2 zones</strong>. Primary incident: <strong>Motor Vehicle Theft - 2C:20-3 - 2 occurrences (100.0%)</strong>.

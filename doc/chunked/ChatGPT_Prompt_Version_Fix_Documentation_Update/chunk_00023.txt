@@ -1,0 +1,626 @@
+Burglary - Residence</div>
+      <div class="case-card">
+        <div class="case-head">Case {{CaseNumber}} | {{MM/DD/YY HH:mm}} | {{IncidentType}} - {{Statute}}</div>
+        <ul class="bullets">
+          <li><b>Location:</b> {{FullAddress}}</li>
+          <li><b>Grid/Zone:</b> {{Grid}} / {{Zone}}</li>
+          <li><b>Point of Entry:</b> {{PointOfEntry}} (extract from Narrative: door, window, bed cover, etc. )</li>
+          <li><b>Means of Entry:</b> {{MeansOfEntry}} (extract from Narrative: forced, unlocked, broken, etc. )</li>
+          <li><b>Suspect Description:</b> {{SuspectDesc}} (use "Data Incomplete" if blank)</li>
+          <li><b>Suspect Vehicle:</b> {{SuspectVehicle}} (use "Unknown" if blank)</li>
+          <li><b>Loss Items:</b> {{LossItems}} (extract from Narrative; use "No reported loss" if blank)</li>
+          <li><b>Loss Total:</b> {{LossTotal}} (calculate by summing all individual loss items; use "$0.00" if missing)</li>
+          <li><b>Status:</b> {{Status}}</li>
+        </ul>
+      </div>
+      <!-- Repeat case-card div for each case in this category -->
+    </div>
+
+    <!-- Key Takeaways Section -->
+    <div class="divider"></div>
+    <div class="section-title">Key Takeaways</div>
+    <ul class="bullets">
+      <li>Total cases by type (summarize from all sections)</li>
+      <li>Most common entry method (for burglaries)</li>
+      <li>Hot-spots (zones/grids with most activity)</li>
+      <li>Peak times/days</li>
+    </ul>
+
+    <!-- Summary Table -->
+    <div class="divider"></div>
+    <div class="section-title">Summary</div>
+    <table aria-label="Summary Table">
+      <thead>
+        <tr>
+          <th>Case #</th>
+          <th>Cycle</th>
+          <th>Type</th>
+          <th>Date/Time</th>
+          <th>Loss Total</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- One row per case, sorted chronologically -->
+        <tr>
+          <td>{{CaseNumber}}</td>
+          <td>{cycle_id}</td>
+          <td>{{IncidentType}}</td>
+          <td>{{MM/DD/YY HH:mm}}</td>
+          <td>{{LossTotal}}</td>
+          <td>{{Status}}</td>
+        </tr>
+        <!-- Repeat for each case -->
+      </tbody>
+    </table>
+
+    <div class="footer">
+      <div>HPD | SSOCC | SCRPA Report | Cycle: {cycle_id}</div>
+      <div>Generated: {generated_date_str}</div>
+    </div>
+  </div>
+</body>
+</html>
+"""
+            f.write(html_template)
+            f.write("```\n\n")
+            
+            # Formatting Requirements
+            f.write("### Formatting Requirements\n\n")
+            f.write("* **Font:** DIN\n")
+            f.write("* **Color for Titles/Headers:** HEX `#0d233c`\n")
+            f.write("* **Page Layout:** Aim for **single page** output suitable for PDF inclusion.\n\n")
+            f.write("* **Header block:** title, Cycle ID, date range, Prepared by, Submitted to, Version.\n\n")
+            f.write("* **Section numbering:** Use Roman numerals (I, II, III, IV, V, VI).\n\n")
+            f.write("* **Case header line format:** `Case {#} | {MM/DD/YY HH:mm} | {Incident Type} - {Statute}`.\n\n")
+            f.write("* **Grid/Zone format:** `H4 / 8` or `F3 / 6`.\n\n")
+            f.write("* **Parking Location label:** Present for MV Theft and Burglary - Auto.\n\n")
+            f.write("* **Victim Vehicle:** Include make, model, and plate with state.\n\n")
+            f.write("* **Explicit \"Data Incomplete\":** Where any field is blank.\n\n")
+            f.write("* **Method field:** For MV Theft; Point/Means of Entry for burglaries.\n\n")
+            f.write("* **Status:** Accepts combos like `Active/Administratively Closed`.\n\n")
+            f.write("* **Summary table columns:** Case #, Cycle, Type, Date/Time, Loss Total, Status.\n\n")
+            f.write("* **Footer:** \"HPD | SSOCC | SCRPA Report | Cycle: {Cycle}\" and Generated date.\n\n")
+            f.write("* **Single-page layout:** Avoid page breaks inside cards or the table.\n\n")
+            f.write("---\n\n")
+            
+            # CSV Column Mapping
+            f.write("### CSV Column Mapping\n\n")
+            f.write("The CSV file contains the following columns. Use them as follows:\n\n")
+            f.write("**Direct Use (Pre-processed):**\n")
+            f.write("- `CaseNumber` → Use directly\n")
+            f.write("- `IncidentDateTime` → Format as MM/DD/YY HH:mm\n")
+            f.write("- `IncidentType` → Use for case categorization\n")
+            f.write("- `Subtype` → Use for specific incident type\n")
+            f.write("- `Statute` → Include in case header\n")
+            f.write("- `FullAddress` → Use for Location field\n")
+            f.write("- `Grid` → Format as Grid/Zone (e.g., \"H4 / 8\")\n")
+            f.write("- `Zone` → Format as Grid/Zone (e.g., \"H4 / 8\")\n")
+            f.write("- `VictimVehicleMake` → Combine with Model and Plate\n")
+            f.write("- `VictimVehicleModel` → Combine with Make and Plate\n")
+            f.write("- `Plate` → Include with state\n")
+            f.write("- `PlateState` → Include with plate\n")
+            f.write("- `LossTotal` → Calculate by summing all individual loss item values from the Narrative.\n")
+            f.write("  If individual loss items are extracted, add their values together to get the total.\n")
+            f.write("  If LossTotal is provided in CSV, verify it matches the sum of individual items.\n")
+            f.write("- `Status` → Use directly\n")
+            f.write("- `CycleID` → Use in header and footer\n")
+            f.write("- `RangeStart` → Use in header\n")
+            f.write("- `RangeEnd` → Use in header\n\n")
+            f.write("**Extract from Narrative (AI Processing Required):**\n")
+            f.write("- `SuspectDesc` → Parse from Narrative column\n")
+            f.write("- `SuspectVehicle` → Parse from Narrative column\n")
+            f.write("- `LossItems` → Parse specific items and values from Narrative\n")
+            f.write("- `Method` → Extract method of theft (for MV Theft)\n")
+            f.write("- `PointOfEntry` → Extract entry point (for burglaries)\n")
+            f.write("- `MeansOfEntry` → Extract how entry was made (for burglaries)\n")
+            f.write("- `Allegation` → Extract nature of offense (for sexual offenses)\n")
+            f.write("- `VictimSex` → Extract from Narrative\n")
+            f.write("- `VictimAdultJuvenile` → Extract from Narrative\n")
+            f.write("- `ParkingLocation` → Extract context (driveway, street, lot, etc. )\n")
+            f.write("- `Context` → Extract location context\n\n")
+            f.write("---\n\n")
+            
+            # Data Processing Instructions
+            f.write("### Data Processing Instructions\n\n")
+            f.write("**From the CSV file, extract and process:**\n\n")
+            f.write("1. **Parse Narrative column** to extract:\n")
+            f.write("   - Suspect descriptions (clothing, physical traits, age, race, gender)\n")
+            f.write("   - Suspect vehicles (type, color, make/model if mentioned)\n")
+            f.write("   - Loss items (specific items stolen and their values)\n")
+            f.write("     **IMPORTANT**: Calculate Loss Total by summing all individual loss item values.\n")
+            f.write("   - Methods of entry (for burglaries)\n")
+            f.write("   - Point of entry (door, window, etc. )\n")
+            f.write("   - Means of entry (forced, unlocked, etc. )\n")
+            f.write("   - Allegations (for sexual offenses)\n")
+            f.write("   - Victim details (gender, adult/juvenile, relationship)\n")
+            f.write("   - Parking/location context (driveway, street, lot, garage, business)\n\n")
+            f.write("2. **Use pre-processed columns** directly:\n")
+            f.write("   - CaseNumber, IncidentDateTime, IncidentType, Statute\n")
+            f.write("   - FullAddress, Grid, Zone\n")
+            f.write("   - VictimVehicleMake, VictimVehicleModel, Plate, PlateState\n")
+            f.write("   - LossTotal, Status, Officer, Squad, Detective\n")
+            f.write("   - CycleID, RangeStart, RangeEnd\n\n")
+            f.write("3. **Format dates** as MM/DD/YY HH:mm\n\n")
+            f.write("4. **Format money** with commas and two decimals: $1,024.00\n")
+            f.write("   **Loss Total Calculation**: Loss Total must be calculated by adding the sum of all individual loss items.\n")
+            f.write("   Extract individual loss items and their values from the Narrative, then sum them to get the total.\n\n")
+            f.write("5. **Sort chronologically** within each section (oldest to newest)\n\n")
+            f.write("6. **Handle missing data**: Use \"Data Incomplete\" for blank suspect descriptions, ")
+            f.write("\"Unknown\" for missing vehicles, \"$0.00\" for missing loss values\n\n")
+            f.write("---\n\n")
+            
+            # Key Takeaways Section
+            f.write("### Key Takeaways\n\n")
+            f.write("At the end, include a **Key Takeaways** section with:\n\n")
+            f.write("* Total cases by type\n")
+            f.write("* Most common entry method (for burglaries)\n")
+            f.write("* Hot-spots (zones/grids with most activity)\n")
+            f.write("* Peak times/days\n\n")
+            f.write("---\n\n")
+            
+            # Final Instructions
+            f.write("## Final Instructions\n\n")
+            f.write("1. **Read the CSV file** I've uploaded\n")
+            f.write("2. **Process all cases** according to the instructions above\n")
+            f.write("3. **Generate HTML** using the template structure provided\n")
+            f.write("4. **Organize by category** (I-VI) with Roman numerals\n")
+            f.write("5. **Sort chronologically** within each section\n")
+            f.write("6. **Extract from Narrative** all missing details\n")
+            f.write("7. **Create summary table** with all cases\n")
+            f.write("8. **Add Key Takeaways** section\n")
+            f.write("9. **Output complete HTML** ready for PDF conversion\n\n")
+            f.write("**Important:** Use the exact HTML template structure provided above. ") f.write("Replace all placeholders with actual data from the CSV. ") f.write("Flag any missing data as \"Data Incomplete\". ") f.write("Ensure the output fits on a single page when printed.\n\n")
+            f.write("---\n\n")
+            f.write(f"**CSV File**: `{os.path.basename(csv_filename)}`\n")
+            f.write(f"**Total Cases**: {total_cases}\n")
+            f.write(f"**Cycle**: {cycle_id}\n")
+            f.write(f"**Date Range**: {range_start} to {range_end}\n")
+        
+        print(f"✅ ChatGPT prompt file created: {os.path.basename(prompt_file)}")
+        return prompt_file
+        
+    except Exception as e:
+        print(f"⚠️  Could not create ChatGPT prompt file: {e}")
+        import traceback
+        traceback.print_exc()
+        return None
+
+def create_instructions_file(output_folder, csv_filename):
+    """Create basic instruction file (legacy, kept for backward compatibility)"""
+    try:
+        instructions_file = os.path.join(output_folder, "BRIEFING_INSTRUCTIONS.txt")
+        
+        with open(instructions_file, 'w', encoding='utf-8') as f:
+            f.write("=" * 60 + "\n")
+            f.write("SCRPA BRIEFING GENERATION INSTRUCTIONS\n")
+            f.write("=" * 60 + "\n\n")
+            f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n")
+            f.write("STEP 1: Upload CSV to ChatGPT\n")
+            f.write(f"File: {os.path.basename(csv_filename)}\n\n")
+            f.write("STEP 2: Use the ChatGPT Prompt File\n")
+            f.write("Open CHATGPT_BRIEFING_PROMPT.md and copy the entire prompt.\n")
+            f.write("Paste it into ChatGPT after uploading the CSV.\n\n")
+            f.write("STEP 3: ChatGPT Will Generate HTML\n")
+            f.write("ChatGPT will process the CSV and generate a complete HTML briefing\n")
+            f.write("matching the template structure provided in the prompt.\n\n")
+            f.write("OUTPUT:\n")
+            f.write("ChatGPT will return a complete HTML file ready for PDF conversion.\n")
+            f.write("=" * 60 + "\n")
+        
+        print(f"✅ Instructions file created: {os.path.basename(instructions_file)}")
+        
+    except Exception as e:
+        print(f"⚠️  Could not create instructions file: {e}")
+
+def main():
+    """Main execution"""
+    print("🚀 Starting SCRPA Briefing CSV Preparation\n")
+    
+    # Step 1: Find latest 7-day CSV
+    csv_path = find_latest_7day_csv()
+    if not csv_path:
+        print("\n❌ Cannot proceed without 7-day CSV file")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 2: Get cycle information
+    print("\n📅 Loading cycle information...")
+    # Check for REPORT_DATE environment variable (set by automation batch file)
+    report_date_str = os.environ.get('REPORT_DATE', None)
+    if report_date_str:
+        print(f"   Using Report Date from environment: {report_date_str}")
+        try:
+            report_date_obj = datetime.strptime(report_date_str, "%m/%d/%Y")
+            cycle_info = get_cycle_info_from_calendar(report_date_obj)
+        except ValueError:
+            print(f"   ⚠️  Invalid REPORT_DATE format: {report_date_str}, using today's date")
+            cycle_info = get_current_cycle_info()
+    else:
+        cycle_info = get_current_cycle_info()
+    
+    # Step 3: Transform CSV
+    print("\n🔄 Transforming CSV to briefing format...")
+    briefing_df = transform_to_briefing_format(csv_path, cycle_info)
+    
+    if briefing_df is None:
+        print("\n❌ Transformation failed")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 4: Save briefing CSV
+    print("\n💾 Saving briefing CSV...")
+    output_file = save_briefing_csv(briefing_df, OUTPUT_FOLDER)
+    
+    if not output_file:
+        print("\n❌ Failed to save CSV")
+        safe_input("\nPress Enter to exit...")
+        return False
+    
+    # Step 5: Create ChatGPT prompt file
+    print("\n📝 Creating ChatGPT prompt file...")
+    prompt_file = create_chatgpt_prompt_file(OUTPUT_FOLDER, output_file, briefing_df, cycle_info)
+    
+    # Step 6: Create basic instructions file
+    print("\n📝 Creating instructions file...")
+    create_instructions_file(OUTPUT_FOLDER, output_file)
+    
+    # Success summary
+    print("\n" + "=" * 60)
+    print("✅ SUCCESS - BRIEFING CSV READY FOR CHATGPT")
+    print("=" * 60)
+    print(f"\n📂 Output Location: {OUTPUT_FOLDER}")
+    print(f"📄 CSV File: {os.path.basename(output_file)}")
+    print(f"📋 ChatGPT Prompt: CHATGPT_BRIEFING_PROMPT.md")
+    print(f"📋 Instructions: BRIEFING_INSTRUCTIONS.txt")
+    print("\n🤖 Next Steps:")
+    print("   1. Upload the CSV file to ChatGPT")
+    print("   2. Open CHATGPT_BRIEFING_PROMPT.md")
+    print("   3. Copy the entire prompt and paste it into ChatGPT")
+    print("   4. ChatGPT will generate the HTML briefing")
+    print("   5. Save the HTML output and convert to PDF")
+    print("\n" + "=" * 60)
+    
+    safe_input("\nPress Enter to exit...")
+    return True
+
+if __name__ == "__main__":
+    try:
+        success = main()
+        sys.exit(0 if success else 1)
+    except KeyboardInterrupt:
+        print("\n\n❌ Interrupted by user")
+        sys.exit(1)
+    except Exception as e:
+        print(f"\n❌ Unexpected error: {e}")
+        import traceback
+        traceback.print_exc()
+        safe_input("\nPress Enter to exit...")
+        sys.exit(1)
+
+
+
+
+
+```
+
+```markdown
+# SCRPA Reporting System - Changelog
+
+All notable changes to the SCRPA Reporting System will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). ---
+
+## [1.5.0] - 2025-12-29
+
+### Fixed
+- **Zone Formatting Issue**
+  - Fixed Zone values displaying as decimals (5.0, 8.0) instead of whole numbers (5, 8)
+  - Updated `generate_briefing_html.py` to convert Zone values to integers before display
+  - Updated `prepare_briefing_csv.py` to format Zone as whole number during CSV transformation
+  - Added instructions to ChatGPT prompt to format Zone as whole number
+
+- **Date Filtering Issue**
+  - Fixed incidents with Report Date outside cycle range being included in reports
+  - Added filtering logic in `prepare_briefing_csv.py` to exclude incidents with Report Date before cycle start or after cycle end
+  - Script now correctly filters to only include incidents within the 7-day cycle date range
+  - Reports how many records were excluded if any fall outside the cycle range
+
+### Changed
+- **Data Dictionary Storage**
+  - Data Dictionary now stored once in reference location: `09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md`
+  - Script checks for existing reference dictionary and copies from there instead of regenerating
+  - Ensures consistency across all reports and eliminates redundant generation
+  - First run creates the dictionary in reference location, all future runs copy from there
+
+- **ChatGPT Prompt Enhancement**
+  - Enhanced narrative extraction instructions with explicit "CRITICAL - NARRATIVE EXTRACTION" section
+  - Added detailed list of what to extract from Narrative column (suspect descriptions, vehicles, loss items, methods, etc.) - Emphasized that Narrative column contains more complete information than structured fields
+  - Added note: "DO NOT rely solely on pre-processed columns"
+
+### Added
+- **Documentation Guide**
+  - Created `DOCUMENTATION_FILES_EXPLAINED.md` explaining which files are needed vs historical notes
+  - Clarified that only `CHATGPT_BRIEFING_PROMPT.md` is needed for ChatGPT usage
+  - Documented which historical development files can be removed from Documentation/ folder
+
+---
+
+## [1.3.0] - 2025-12-09
+
+### Added
+- **ChatGPT Prompt Enhancements (Based on ChatGPT Recommendations)**
+  - Added "Reporting Parameters For This Run" section with Cycle ID, Date Range (ISO format), Version, Prepared By, Submitted To
+  - Added "Loss And Monetary Rules" section with 5-step process for calculating Loss Total
+  - Added "Cycle And Date Rules" section ensuring consistency across HTML output
+  - Added "Summary Table Rules" section ensuring Loss Total matches between bullets and table
+  - Created `CHATGPT_USAGE_INSTRUCTIONS.md` quick reference guide
+  - Clarified that CSV data is embedded in prompt file (no separate upload required)
+
+### Changed
+- **CHATGPT_BRIEFING_PROMPT Instructions**
+  - Updated instructions to clarify CSV data is already embedded
+  - Added Option 1 (recommended): Copy entire prompt file
+  - Added Option 2 (alternative): Upload CSV separately
+  - Improved clarity on what to provide to ChatGPT
+
+### Fixed
+- **Date Format Handling**
+  - Reporting Parameters section uses ISO format (YYYY-MM-DD) as recommended by ChatGPT
+  - HTML template continues to use MM/DD/YYYY format for display
+  - Date conversion function handles edge cases gracefully
+
+---
+
+## [1.2.0] - 2025-12-09
+
+### Fixed
+- **Path Case Sensitivity**
+  - Fixed case mismatch in config paths (`SCRPA` vs `scrpa`)
+  - Updated `config.py` to use lowercase `scrpa` folder name
+  - Updated fallback paths in `RMS_Statistical_Export_FINAL_COMPLETE.py`
+  - Scripts now correctly find Excel/CSV files in exports folder
+
+- **CSV File Support**
+  - Added CSV file fallback when Excel files not found
+  - Updated `get_latest_rms_file()` to search for CSV files if Excel unavailable
+  - Updated `load_and_analyze_rms_data()` to handle both Excel and CSV formats
+  - Added case-insensitive file search for better compatibility
+
+- **Archive Timing**
+  - Moved archive function to run AFTER HTML generation (was running before)
+  - Prevents archiving newly generated HTML files
+  - Archive now runs after all reports are generated
+
+- **Batch File Syntax Error**
+  - Fixed "may was unexpected at this time" error in `generate_all_reports.bat`
+  - Escaped parentheses in echo statements for proper batch parsing
+  - Improved error message formatting
+
+- **Enhanced Debugging**
+  - Added extensive DEBUG logging throughout HTML generation process
+  - Added file path verification and existence checks
+  - Added file size verification after write operations
+  - Improved error messages with full tracebacks
+
+### Changed
+- **CHATGPT_BRIEFING_PROMPT Generation**
+  - Removed em dashes (—) and replaced with regular hyphens (-)
+  - Updated HTML template to use standard ASCII characters
+  - Added explicit Loss Total calculation instructions
+  - Loss Total now clearly documented as sum of individual loss items
+  - Updated all HTML template sections with Loss Total calculation guidance
+
+### Added
+- **Loss Total Calculation Logic**
+  - Added instructions that Loss Total = sum of all individual loss items
+  - Updated all HTML template sections with calculation guidance
+  - Added verification instructions in data processing section
+
+---
+
+## [1.1.0] - 2025-12-09
+
+### Changed
+- **Project Reorganization**
+  - Moved scripts to `SCRPA\scripts\` folder
+  - Moved logs to `SCRPA\logs\` folder
+  - Moved documentation to `SCRPA\docs\` folder
+  - Created archive folder for old/broken scripts
+
+- **Cycle Lookup System**
+  - Updated scripts to use cycle calendar CSV (`7Day_28Day_Cycle_20250414.csv`)
+  - Replaced calculated cycle names with calendar-based lookup
+  - Added REPORT_DATE environment variable support
+
+- **Version Numbering**
+  - Updated Combined Executive Summary HTML version from v1.0 to v1.1
+
+### Fixed
+- **Folder Overwrite Prompt**
+  - Fixed prompt to always appear when folder exists
+  - Improved handling of non-interactive mode
+
+- **Path References**
+  - Updated batch file paths after script reorganization
+  - Fixed PowerShell script path references
+  - Updated log file location to `SCRPA\logs\`
+
+### Fixed (by Claude AI)
+- **✅ Cycle/Range Data Issue - Root Cause Fixed**
+  - **Root Cause**: Output suppression (`>nul 2>&1`) hid all errors - script reported success even when HTML wasn't created
+  - **Fix Applied**: Added output capture to temporary log file with error display
+  - **Fix Applied**: Added extensive DEBUG logging throughout HTML generation
+  - **Fix Applied**: Added file creation verification with size check
+  - **Status**: Fixes applied - Testing required to verify HTML generation works correctly
+  - **See**: `docs/CYCLE_FIX_SOLUTION.md` and `docs/CLAUDE_FIX_SUMMARY.md` for details
+
+---
+
+## [1.0.0] - 2025-12-09
+
+### Added
+- **Complete Automation Workflow**
+  - `Run_SCRPA_Report_Folder.bat` - Comprehensive automation script
+  - Handles all 4 steps: folder creation, report generation, file organization
+  - Date-aware workflow with user prompts
+
+- **Folder Structure Generation**
+  - `generate_weekly_report.py` - Creates report folders with naming convention
+  - Automatic Power BI template copying
+  - Subfolder creation (Data/, Reports/, Documentation/)
+
+- **File Organization System**
+  - `organize_report_files.py` - Automatically organizes all report files
+  - Copies CSV files, reports, and documentation to appropriate folders
+  - Creates consolidated markdown summaries
+
+- **Excel to CSV Conversion**
+  - `convert_all_xlsx.bat` - Batch conversion script
+  - `export_excel_sheets_to_csv.py` - Excel processing engine
+  - Support for 7-day filtered exports (`--report-last7`)
+
+- **Briefing Preparation**
+  - `prepare_briefing_csv.py` - Transforms CSV for ChatGPT processing
+  - Automatic prompt generation (`CHATGPT_BRIEFING_PROMPT.md`)
+  - Cycle-aware data processing
+
+- **Report Generation**
+  - HTML and PDF report generation
+  - Tactical summaries (`*_rms_summary.html/pdf`)
+  - Strategic executive summaries (`SCRPA_Combined_Executive_Summary_*.html/pdf`)
+
+- **Documentation**
+  - README.md - System overview and quick start guide
+  - CHANGELOG.md - Version history
+  - SUMMARY.md - System summary
+  - In-folder documentation (CHATGPT_PROMPT_GUIDE.md, etc.) ### Changed
+- **Report Folder Structure**
+  - Moved from `SCRPA_ArcPy` to `16_Reports\SCRPA\Time_Based\`
+  - Organized by year and date-based folders
+  - Standardized subfolder structure
+
+- **Naming Convention**
+  - Implemented `YYCMMWww_YY_MM_DD` format
+  - Week offset adjustment (-1) for SCRPA cycle alignment
+
+- **Workflow Integration**
+  - Consolidated multiple scripts into single automation
+  - Reduced manual steps from 5+ to 1 batch file execution
+
+### Fixed
+- **File Archiving**
+  - Fixed archive step running before conversion
+  - Improved error handling for archived files
+
+- **OneDrive Sync Issues**
+  - Added handling for "Access Denied" errors during folder operations
+  - Improved folder clearing logic
+
+- **Python Detection**
+  - Enhanced Python path detection in batch files
+  - Support for multiple Python installations
+
+### Security
+- **Path Validation**
+  - Ensures output stays within OneDrive directory
+  - Prevents accidental file system access outside workspace
+
+---
+
+## [0.9.0] - 2025-12-02
+
+### Added
+- Initial folder structure creation
+- Power BI template copying
+- Basic CSV file organization
+
+### Changed
+- Reorganized ETL scripts structure
+- Separated SCRPA scripts from SCRPA_ArcPy production folder
+
+---
+
+## [0.8.0] - 2025-12-01
+
+### Added
+- Excel to CSV conversion scripts
+- Briefing CSV preparation
+- ChatGPT prompt generation
+
+---
+
+## [0.7.0] - 2025-11-25
+
+### Added
+- Initial report generation scripts
+- HTML/PDF report templates
+- Basic file organization
+
+---
+
+## Future Enhancements
+
+### Planned
+- [ ] Dry-run mode for archiving
+- [ ] Config file for path management
+- [ ] Log rotation for better log management
+- [ ] ProcessPoolExecutor for CPU-bound operations
+- [ ] Airflow pipeline orchestration
+- [ ] Automated email distribution
+- [ ] Report scheduling
+
+### Under Consideration
+- [ ] Multi-user support
+- [ ] Web-based interface
+- [ ] Database integration
+- [ ] Real-time data updates
+- [ ] Advanced analytics features
+
+---
+
+## Notes
+
+- Version numbers follow Semantic Versioning (MAJOR.MINOR.PATCH)
+- Dates follow ISO 8601 format (YYYY-MM-DD)
+- All changes are documented with clear descriptions
+
+---
+
+**Last Updated**: 2025-12-29  
+**Current Version**: 1.4.0  
+**Maintained By**: R. A. Carucci
+
+
+```
+
+```markdown
+# SCRPA Reporting System - Changelog
+
+All notable changes to the SCRPA Reporting System will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html). ---
+
+## [1.5.0] - 2025-12-29
+
+### Fixed
+- **Zone Formatting Issue**
+  - Fixed Zone values displaying as decimals (5.0, 8.0) instead of whole numbers (5, 8)
+  - Updated `generate_briefing_html.py` to convert Zone values to integers before display
+  - Updated `prepare_briefing_csv.py` to format Zone as whole number during CSV transformation
+  - Added instructions to ChatGPT prompt to format Zone as whole number
+
+- **Date Filtering Issue**
+  - Fixed incidents with Report Date outside cycle range being included in reports
+  - Added filtering logic in `prepare_briefing_csv.py` to exclude incidents with Report Date before cycle start or after cycle end
+  - Script now correctly filters to only include incidents within the 7-day cycle date range
+  - Reports how many records were excluded if any fall outside the cycle range
+
+### Changed
+- **Data Dictionary Storage**
+  - Data Dictionary now stored once in reference location: `09_Reference\Standards\RMS\SCRPA\SCRPA_7Day_Data_Dictionary.md`
+  - Script checks for existing reference dictionary and copies from there instead of regenerating
+  - Ensures consistency across all reports and eliminates redundant generation
+  - First run creates the dictionary in reference location, all future runs copy from there
+
+- **ChatGPT Prompt Enhancement**
+  - Enhanced narrative extraction instructions with explicit "CRITICAL - NARRATIVE EXTRACTION" section
+  - Added detailed list of what to extract from Narrative column (suspect descriptions, vehicles, loss items, methods, etc.)

@@ -1,0 +1,191 @@
+---
+
+## Confirmation
+
+**Yes. **
+
+- **You will use:**  
+  `16_Reports\SCRPA\scripts\run_scrpa_pipeline.py`  
+  (run as: `python scripts/run_scrpa_pipeline.py "<path_to_rms.xlsx>" --report-date MM/DD/YYYY`)
+
+- **You will not use:**
+  - `02_ETL_Scripts\Run_SCRPA_Report_Folder.bat`
+  - `02_ETL_Scripts\Run_SCRPA_Report_Folder.ps1`
+  - `02_ETL_Scripts\Run_SCRPA_Report_Folder (1).bat`
+
+---
+
+## Is `02_ETL_Scripts\SCRPA` still used? **No. ** All SCRPA report processing has moved to **`16_Reports\SCRPA`**. - The three runners in `02_ETL_Scripts` were the old entry points. They set `SCRPA_DIR=%WORK_ROOT%\SCRPA` (i.e. `02_ETL_Scripts\SCRPA`) and called scripts there (e.g. `generate_weekly_report.py`, `organize_report_files.py`, `scripts\generate_all_reports.bat`), then called `16_Reports\SCRPA\scripts\export_enriched_data_and_email.py`. - The new workflow uses only **`16_Reports\SCRPA`** and **`scripts\run_scrpa_pipeline.py`**. Nothing in `02_ETL_Scripts` is required for the current pipeline. So: **`02_ETL_Scripts\SCRPA` is legacy** and can be archived along with the three runners. ---
+
+## Archive plan (recommended: archive, don’t delete)
+
+**Recommendation:** Archive the old runners and the old `SCRPA` folder under `02_ETL_Scripts\_Archive` so you can revert or reference them later. 1. **Create archive folder**  
+   - `02_ETL_Scripts\_Archive\SCRPA_Legacy_2026\`
+
+2. **Move into it**
+   - The three runners (from `02_ETL_Scripts\`):
+     - `Run_SCRPA_Report_Folder.bat`
+     - `Run_SCRPA_Report_Folder.ps1`
+     - `Run_SCRPA_Report_Folder (1).bat`
+   - The whole legacy SCRPA tree:
+     - `02_ETL_Scripts\SCRPA\` → move to  
+       `02_ETL_Scripts\_Archive\SCRPA_Legacy_2026\SCRPA\`
+
+3. **Add a short README** in the archive  
+   - Path: `02_ETL_Scripts\_Archive\SCRPA_Legacy_2026\README.md`  
+   - Content: state that these are the pre–2026 SCRPA entry points and scripts; the **current** entry point is  
+     `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py`  
+     and all processing now lives under `16_Reports\SCRPA`. 4. **Optional**
+   - In `16_Reports\SCRPA\.claude\settings.local.json`, the key `Bash(cmd /c Run_SCRPA_Report_Folder.bat)` can be updated to run `run_scrpa_pipeline.py` instead (e.g. a command that runs the Python script with the right args), so your IDE/shortcuts match the new workflow. If you prefer **removal** instead of archive, the same files/folders would be deleted rather than moved; the rest of the answer stays the same. ---
+
+**Summary**
+
+| Question | Answer |
+|----------|--------|
+| Use only `run_scrpa_pipeline.py`? | Yes. |
+| Still use the three runners in `02_ETL_Scripts`? | No. |
+| Is `02_ETL_Scripts\SCRPA` still used? | No; processing is in `16_Reports\SCRPA`. |
+| Archive or remove old scripts? | Recommended: **archive** under `_Archive\SCRPA_Legacy_2026\` and add README; optional: update `.claude` to point at `run_scrpa_pipeline.py`. |
+
+If you tell me whether you want **archive** or **delete**, I can outline exact step-by-step commands (e.g. PowerShell) to run on your machine, or adapt this into a checklist for you to execute. ---
+
+**User**
+
+I want to archive to C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\_Archive please do steps 1-4
+
+---
+
+**Cursor**
+
+
+Creating the archive folder, moving the three runners and the SCRPA folder, adding the README, and updating `.claude/settings.local.json`. Updating `.claude/settings.local.json` to replace legacy bat permissions with the new pipeline. Summary of what was done:
+
+**1. Archive folder**  
+Created:  
+`C:\Users\carucci_r\OneDrive - City of Hackensack\02_ETL_Scripts\_Archive\SCRPA_Legacy_2026`
+
+**2. Runners moved**  
+Into that folder:
+- `Run_SCRPA_Report_Folder.bat`
+- `Run_SCRPA_Report_Folder.ps1`
+- `Run_SCRPA_Report_Folder (1).bat`
+
+**3. Legacy SCRPA tree moved**  
+`02_ETL_Scripts\SCRPA` (and its contents) is now:  
+`_Archive\SCRPA_Legacy_2026\SCRPA\`
+
+**4. README added**  
+`_Archive\SCRPA_Legacy_2026\README.md` explains that these are pre-2026 entry points and points to the current entry point:  
+`16_Reports\SCRPA\scripts\run_scrpa_pipeline.py`
+
+**5. `.claude` settings updated**  
+In `16_Reports\SCRPA\.claude\settings.local.json`, the old bat-based permissions were replaced with:  
+`"Bash(python scripts/run_scrpa_pipeline.py *)"`  
+so the allowed “run” action uses the new pipeline. Current layout under `_Archive\SCRPA_Legacy_2026`:
+- `README.md`
+- `Run_SCRPA_Report_Folder.bat`
+- `Run_SCRPA_Report_Folder.ps1`
+- `Run_SCRPA_Report_Folder (1).bat`
+- `SCRPA\` (legacy scripts: `generate_weekly_report.py`, `organize_report_files.py`, `scripts\`, `docs\`, etc.) Use the new workflow from `16_Reports\SCRPA` with:  
+`python scripts/run_scrpa_pipeline.py "<path_to_rms.xlsx>" --report-date MM/DD/YYYY`
+
+---
+
+**User**
+
+GREAT JOB!! Can you provide the main processing command so it may be run from any location
+
+---
+
+**Cursor**
+
+
+Main processing command that can be run from any location:
+
+
+
+Main processing command (run from any location):
+
+```powershell
+python "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py" "<path_to_rms.xlsx>" --report-date MM/DD/YYYY
+```
+
+**Example:**
+```powershell
+python "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py" "C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa\2026_01_28_12_45_44_SCRPA_RMS.xlsx" --report-date 01/28/2026
+```
+
+**Optional arguments:**
+- `-o` or `--output-dir`: Specify custom output directory (default: auto-generated based on cycle and date)
+- `--validate`: Validate against a reference CSV
+- `--help`: Show full help
+
+**Quick reference:**
+- Script: `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py`
+- Input: RMS export (typically from `05_EXPORTS\_RMS\scrpa\*.xlsx`)
+- Output: `16_Reports\SCRPA\Time_Based\2026\<cycle>_<date>\`
+
+Should I create a batch file wrapper (e.g., `run_scrpa.bat`) so you can run it with a shorter command? ---
+
+**User**
+
+can you make a .bat so I only have to double click the file and the n enter the report date? ---
+
+**Cursor**
+
+
+Checking how the pipeline expects the RMS input so the batch file can prompt only for the report date. Creating a .bat that uses the latest RMS export in your exports folder and prompts only for the report date. Here's what the batch file does:
+
+**`16_Reports\SCRPA\Run_SCRPA_Pipeline.bat`**
+
+1. **Uses the latest RMS export**  
+   Looks in `05_EXPORTS\_RMS\scrpa` and picks the most recent `.xlsx` (by name/date). 2. **Asks only for the report date**  
+   Prompts: `Enter report date (MM/DD/YYYY):` — you type e.g. `01/28/2026`. 3. **Runs from any location**  
+   Uses full paths for the script and RMS folder, so you can run it by double‑clicking from Explorer or from any working directory. 4. **Keeps the window open**  
+   Pauses at the end so you can read the output; it also reports success or error. **Usage:**  
+Double‑click `Run_SCRPA_Pipeline.bat`, then enter the report date when prompted (e.g. `01/28/2026`). **If your RMS folder is different**  
+Edit the line in the batch file that sets `RMS_DIR` (around line 12) to your actual path, e.g. :
+
+```bat
+set "RMS_DIR=C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+```
+
+---
+
+**User**
+
+refrence to the RMS foer do you mean the folder the rms exports goes to? ---
+
+**Cursor**
+
+
+Yes. **RMS folder** in the batch file means **the folder where your RMS exports end up** after the watchdog moves them. In the script that’s:
+
+- **`C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa`**
+
+So the flow is:
+
+1. You export from RMS (e.g. to Desktop) and rename to something like `SCRPA_RMS_Export`. 2. The watchdog moves that file into **`05_EXPORTS\_RMS\scrpa`** and renames it with a timestamp (e.g. `2026_01_28_12_45_44_SCRPA_RMS.xlsx`). 3. The batch file uses that same folder and picks the **latest** `.xlsx` in it. If your watchdog is set to a different path (e.g. `05_EXPORTS\_RMS\SCRPA` with different casing, or another drive/folder), change this line in `Run_SCRPA_Pipeline.bat` to that path:
+
+```bat
+set "RMS_DIR=C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+```
+
+So: **RMS folder = the folder the RMS exports go to** (where the watchdog puts the timestamped `.xlsx` files). ---
+
+**User**
+
+will you know the folder as the watcher script moves the export to C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa
+
+---
+
+**Cursor**
+
+
+Yes. The batch file already uses that folder. In `Run_SCRPA_Pipeline.bat` you have:
+
+```bat
+set "RMS_DIR=C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa"
+```
+
+So it’s already set to the same path the watcher uses: **`C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa`**. No change needed.

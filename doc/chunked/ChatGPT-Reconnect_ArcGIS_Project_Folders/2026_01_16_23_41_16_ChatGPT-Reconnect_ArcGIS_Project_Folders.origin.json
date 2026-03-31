@@ -1,0 +1,48 @@
+{
+  "integrity_sha256": "c3849daf817ef39cbdf34a5fe6609f4be094c5dda7087243274e8ca164ddd029",
+  "sent_at": "2026-01-17T04:41:07.3740340Z",
+  "original_full_path": "C:\\Users\\carucci_r\\Downloads\\ChatGPT-Reconnect ArcGIS Project Folders.json",
+  "source_cleanup": "not_required",
+  "original_directory": "C:\\Users\\carucci_r\\Downloads",
+  "original_filename": "ChatGPT-Reconnect ArcGIS Project Folders.json",
+  "modified_time": "2026-01-17T04:40:23.3856543Z",
+  "size_bytes": 11725,
+  "destination_status": "present",
+  "created_time": "2026-01-17T04:40:22.5760966Z",
+  "operation": "MOVE",
+  "tags": [
+    "ai",
+    "code",
+    "dataset",
+    "excel",
+    "it-ops",
+    "json",
+    "police",
+    "powershell",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "data",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "esriexport",
+        "hpd2022lawsoft",
+        "lawenforcementdatamanagement_new",
+        "xlsx",
+        "name",
+        "server"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "{\n  \"metadata\": {\n    \"title\": \"Reconnect ArcGIS Project Folders\",\n    \"user\": {\n      \"name\": \"Anonymous\",\n      \"email\": \"gmfzqprc7z@privaterelay.appleid.com\"\n    },\n    \"dates\": {\n      \"created\": \"1/16/2026 19:13:01\",\n      \"updated\"...",
+      "first_line": "{"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-16T23:41:16.413732",
+  "department": "admin"
+}

@@ -1,0 +1,13 @@
+YTD,,,28-DAY,,,7-DAY,
+INC_Date,(All),,INC_Date,02/03/25,,INC_Date,(All)
+,,,,,,,
+Row Labels,Count of Case Number,,Row Labels,Count of Case Number,,Row Labels,Count of Case Number
+Burglary - Auto,,,Robbery,,,Burglary - Auto,
+"Pangborn Pl, 0 Block",1,,"Hackensack Ave, 400 Block",1,,"Pangborn Pl, 0 Block",1
+Motor Vehicle Theft,,,Grand Total,1,,Motor Vehicle Theft,
+"Lookout Ave, 300 Block",1,,,,,"Lookout Ave, 300 Block",1
+"Ross Ave, 0 Block",1,,,,,"Ross Ave, 0 Block",1
+Robbery,,,,,,Robbery,
+"Hackensack Ave, 400 Block",2,,,,,"Hackensack Ave, 400 Block",2
+"Main St, 600 Block",1,,,,,"Main St, 600 Block",1
+Grand Total,6,,,,,Grand Total,6

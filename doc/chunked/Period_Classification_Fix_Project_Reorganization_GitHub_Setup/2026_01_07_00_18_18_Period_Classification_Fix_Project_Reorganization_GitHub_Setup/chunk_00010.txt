@@ -1,0 +1,69 @@
+The diagnostic column `_Period_Debug` will show:
+- The incident date being compared
+- Whether the current cycle was found
+- The cycle start/end dates
+- Whether the date falls in the 7-Day or 28-Day window
+- The incident year
+
+## Quick check
+
+In Power BI, after refreshing with the updated M code:
+1. Filter to Case 26-001094
+2. Check the `_Period_Debug` column — it shows why the Period was assigned
+3. Check the `Period` column — what value does it have? ## Most likely issues
+
+1. Current cycle not detected — if `HasCurrentCycle = false`, Period defaults to YTD/Historical
+2. Date comparison failing — year boundary or date type mismatch
+3. Date parsing — `Incident_Date_Date` may not be parsed correctly
+
+The diagnostic column will help identify which one. After you refresh and check the `_Period_Debug` column for those two cases, share the values and we can fix it. The cycle calendar has the correct entry (26C01W01: 12/30/2025 - 1/05/2026), so the issue is likely in the date comparison or cycle detection logic. ---
+
+**User**
+
+this show the @Time_Based/2026/26C01W01_26_01_06/All_Crime_2026_01_06.csv 
+
+---
+
+**Cursor**
+
+
+Checking the Period values for those cases in the CSV:
+
+
+
+Found the issue. Both cases are showing "28-Day" instead of the expected values:
+
+- Case 26-001094 (01/04/2026): Period = "28-Day" (should be "7-Day")
+- Case 25-113412 (12/29/2025): Period = "28-Day" (should be "Prior Year")
+
+This suggests the 7-Day check isn't matching. Checking the logic:
+
+
+```markdown
+# Period Calculation Fix - Solution
+
+## Problem Identified
+
+Both cases are showing **"28-Day"** instead of expected values:
+- **Case 26-001094** (01/04/2026): Shows "28-Day" but should be **"7-Day"**
+- **Case 25-113412** (12/29/2025): Shows "28-Day" but should be **"Prior Year"**
+
+## Root Cause
+
+The 7-Day period check is failing, causing incidents to fall through to the 28-Day check. This means:
+- `HasCurrentCycle` might be `false`, OR
+- The date comparison `dI >= CurrentCycleStart and dI <= CurrentCycleEnd` is failing
+
+## Current Cycle Detection Issue
+
+When "Today" is 01/06/2026 (after cycle end 01/05/2026):
+- The `InCycle` check fails (01/06/26 is not <= 01/05/26)
+- The `MostRecent` logic should find cycle 26C01W01
+- But if this fails, `HasCurrentCycle = false`, and Period defaults to 28-Day/YTD/Historical
+
+## Solution
+
+The issue is likely that when Today is AFTER the cycle end, the cycle detection might not be working correctly. Let me verify and fix the logic. ```
+
+
+Both cases show "28-Day" instead of the expected values. This suggests the 7-Day check is failing.

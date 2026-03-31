@@ -1,0 +1,581 @@
+ENHANCEMENTS:
+- Report_Date tracking with cascading logic
+- LagDays calculation for reporting delay analysis
+- Backfill_7Day flag (cycle-aware, not rolling window)
+- Narrative text cleaning (line breaks, whitespace normalization)
+- Vehicle_1, Vehicle_2, Vehicle_1_and_Vehicle_2 formatting (uppercase)
+- Period_SortKey for proper chart ordering (7-Day, 28-Day, YTD, Historical)
+- Attempted Burglary normalization for visual grouping
+- cycle_name_adjusted for backfilled cases
+*/
+
+let
+    // ===========================================
+    // IMPORT MOST RECENT EXCEL FILE DYNAMICALLY
+    // ===========================================
+
+    FolderPath = "C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\SCRPA",
+    AllFiles = Folder.Files(FolderPath),
+    XlsxFiles = Table.SelectRows(AllFiles, each Text.EndsWith([Name], ".xlsx", Comparer.OrdinalIgnoreCase)),
+    SortedFiles = Table.Sort(XlsxFiles, {{"Date modified", Order.Descending}}),
+    LatestFilePath = SortedFiles{0}[Folder Path] & SortedFiles{0}[Name],
+    Source = Excel.Workbook(File.Contents(LatestFilePath), true),
+    FirstTable = Source{0}[Data],
+    
+    // ===========================================
+    // ENHANCED TIME PROCESSING WITH INLINE CASCADING LOGIC
+    // ===========================================
+    
+    BestTimeValueAdded = Table.AddColumn(
+        FirstTable,
+        "BestTimeValue", 
+        each 
+            let
+                ParsedIncidentTime = 
+                    if [Incident Time] = null or [Incident Time] = "" then null
+                    else if Value.Type([Incident Time]) = type time then [Incident Time]
+                    else if Value.Type([Incident Time]) = type duration then try Time.From([Incident Time]) otherwise null
+                    else if Value.Type([Incident Time]) = type text then
+                        let
+                            CleanText = Text.Trim([Incident Time]),
+                            ParsedTime = 
+                                try Time.FromText(CleanText)
+                                otherwise try Time.FromText(CleanText & ":00")
+                                otherwise try 
+                                    let
+                                        TimePattern = Text.AfterDelimiter(CleanText, " ", {0, RelativePosition.FromEnd}),
+                                        ExtractedTime = if Text.Contains(TimePattern, ":") then Time.FromText(TimePattern) else null
+                                    in ExtractedTime
+                                otherwise null
+                        in ParsedTime
+                    else if Value.Type([Incident Time]) = type datetime then Time.From([Incident Time])
+                    else if Value.Type([Incident Time]) = type number then try Time.From([Incident Time]) otherwise null
+                    else null,
+                
+                ParsedIncidentTimeBetween = 
+                    if [Incident Time_Between] = null or [Incident Time_Between] = "" then null
+                    else if Value.Type([Incident Time_Between]) = type time then [Incident Time_Between]
+                    else if Value.Type([Incident Time_Between]) = type duration then try Time.From([Incident Time_Between]) otherwise null
+                    else if Value.Type([Incident Time_Between]) = type text then
+                        let
+                            CleanText = Text.Trim([Incident Time_Between]),
+                            ParsedTime = 
+                                try Time.FromText(CleanText)
+                                otherwise try Time.FromText(CleanText & ":00")
+                                otherwise try 
+                                    let
+                                        TimePattern = Text.AfterDelimiter(CleanText, " ", {0, RelativePosition.FromEnd}),
+                                        ExtractedTime = if Text.Contains(TimePattern, ":") then Time.FromText(TimePattern) else null
+                                    in ExtractedTime
+                                otherwise null
+                        in ParsedTime
+                    else if Value.Type([Incident Time_Between]) = type datetime then Time.From([Incident Time_Between])
+                    else if Value.Type([Incident Time_Between]) = type number then try Time.From([Incident Time_Between]) otherwise null
+                    else null,
+                
+                ParsedReportTime = 
+                    if [Report Time] = null or [Report Time] = "" then null
+                    else if Value.Type([Report Time]) = type time then [Report Time]
+                    else if Value.Type([Report Time]) = type duration then try Time.From([Report Time]) otherwise null
+                    else if Value.Type([Report Time]) = type text then
+                        let
+                            CleanText = Text.Trim([Report Time]),
+                            ParsedTime = 
+                                try Time.FromText(CleanText)
+                                otherwise try Time.FromText(CleanText & ":00")
+                                otherwise try 
+                                    let
+                                        TimePattern = Text.AfterDelimiter(CleanText, " ", {0, RelativePosition.FromEnd}),
+                                        ExtractedTime = if Text.Contains(TimePattern, ":") then Time.FromText(TimePattern) else null
+                                    in ExtractedTime
+                                otherwise null
+                        in ParsedTime
+                    else if Value.Type([Report Time]) = type datetime then Time.From([Report Time])
+                    else if Value.Type([Report Time]) = type number then try Time.From([Report Time]) otherwise null
+                    else null,
+                
+                BestTime = 
+                    if ParsedIncidentTime <> null then ParsedIncidentTime
+                    else if ParsedIncidentTimeBetween <> null then ParsedIncidentTimeBetween
+                    else if ParsedReportTime <> null then ParsedReportTime
+                    else null
+            in BestTime,
+        type nullable time
+    ),
+    
+    TimeSourceAdded = Table.AddColumn(
+        BestTimeValueAdded,
+        "TimeSource",
+        each 
+            let
+                IncidentTimeParsed = 
+                    if [Incident Time] = null or [Incident Time] = "" then null
+                    else if Value.Type([Incident Time]) = type time then [Incident Time]
+                    else if Value.Type([Incident Time]) = type duration then try Time.From([Incident Time]) otherwise null
+                    else if Value.Type([Incident Time]) = type text then try Time.FromText(Text.Trim([Incident Time])) otherwise null
+                    else if Value.Type([Incident Time]) = type datetime then Time.From([Incident Time])
+                    else if Value.Type([Incident Time]) = type number then try Time.From([Incident Time]) otherwise null
+                    else null,
+                
+                IncidentTimeBetweenParsed = 
+                    if [Incident Time_Between] = null or [Incident Time_Between] = "" then null
+                    else if Value.Type([Incident Time_Between]) = type time then [Incident Time_Between]
+                    else if Value.Type([Incident Time_Between]) = type duration then try Time.From([Incident Time_Between]) otherwise null
+                    else if Value.Type([Incident Time_Between]) = type text then try Time.FromText(Text.Trim([Incident Time_Between])) otherwise null
+                    else if Value.Type([Incident Time_Between]) = type datetime then Time.From([Incident Time_Between])
+                    else if Value.Type([Incident Time_Between]) = type number then try Time.From([Incident Time_Between]) otherwise null
+                    else null,
+                
+                ReportTimeParsed = 
+                    if [Report Time] = null or [Report Time] = "" then null
+                    else if Value.Type([Report Time]) = type time then [Report Time]
+                    else if Value.Type([Report Time]) = type duration then try Time.From([Report Time]) otherwise null
+                    else if Value.Type([Report Time]) = type text then try Time.FromText(Text.Trim([Report Time])) otherwise null
+                    else if Value.Type([Report Time]) = type datetime then Time.From([Report Time])
+                    else if Value.Type([Report Time]) = type number then try Time.From([Report Time]) otherwise null
+                    else null,
+                
+                Source = 
+                    if IncidentTimeParsed <> null then "Incident Time"
+                    else if IncidentTimeBetweenParsed <> null then "Incident Time_Between"
+                    else if ReportTimeParsed <> null then "Report Time"
+                    else "None"
+            in Source,
+        type text
+    ),
+
+    Incident_Time_Added = Table.AddColumn(
+        TimeSourceAdded, 
+        "Incident_Time", 
+        each 
+            try
+                let
+                    BestTime = [BestTimeValue],
+                    TimeText = 
+                        if BestTime <> null then
+                            let
+                                Hours = Time.Hour(BestTime),
+                                Minutes = Time.Minute(BestTime),
+                                Seconds = Time.Second(BestTime),
+                                FormattedTime = 
+                                    Text.PadStart(Text.From(Hours), 2, "0") & ":" &
+                                    Text.PadStart(Text.From(Minutes), 2, "0") & ":" &
+                                    Text.PadStart(Text.From(Seconds), 2, "0")
+                            in FormattedTime
+                        else "00:00:00"
+                in TimeText
+            otherwise "Time_Error",
+        type text
+    ),
+
+    // ===========================================
+    // ENHANCED INCIDENT_DATE PROCESSING WITH CASCADING LOGIC
+    // ===========================================
+    
+    Incident_Date_Added = Table.AddColumn(
+        Incident_Time_Added, 
+        "Incident_Date", 
+        each 
+            let
+                ParsedIncidentDate = 
+                    if [Incident Date] = null or [Incident Date] = "" then null
+                    else if Value.Type([Incident Date]) = type date then [Incident Date]
+                    else if Value.Type([Incident Date]) = type datetime then Date.From([Incident Date])
+                    else if Value.Type([Incident Date]) = type text then try Date.FromText([Incident Date]) otherwise null
+                    else if Value.Type([Incident Date]) = type number then try Date.From([Incident Date]) otherwise null
+                    else null,
+                
+                ParsedIncidentDateBetween = 
+                    if [Incident Date_Between] = null or [Incident Date_Between] = "" then null
+                    else if Value.Type([Incident Date_Between]) = type date then [Incident Date_Between]
+                    else if Value.Type([Incident Date_Between]) = type datetime then Date.From([Incident Date_Between])
+                    else if Value.Type([Incident Date_Between]) = type text then try Date.FromText([Incident Date_Between]) otherwise null
+                    else if Value.Type([Incident Date_Between]) = type number then try Date.From([Incident Date_Between]) otherwise null
+                    else null,
+                
+                ParsedReportDate = 
+                    if [Report Date] = null or [Report Date] = "" then null
+                    else if Value.Type([Report Date]) = type date then [Report Date]
+                    else if Value.Type([Report Date]) = type datetime then Date.From([Report Date])
+                    else if Value.Type([Report Date]) = type text then try Date.FromText([Report Date]) otherwise null
+                    else if Value.Type([Report Date]) = type number then try Date.From([Report Date]) otherwise null
+                    else null,
+                
+                BestDate = 
+                    if ParsedIncidentDate <> null then ParsedIncidentDate
+                    else if ParsedIncidentDateBetween <> null then ParsedIncidentDateBetween
+                    else if ParsedReportDate <> null then ParsedReportDate
+                    else null,
+                
+                DateText = 
+                    if BestDate <> null then Date.ToText(BestDate, "MM/dd/yy")
+                    else "Unknown"
+            in DateText,
+        type text
+    ),
+
+    Incident_Date_Date_Added = Table.AddColumn(
+        Incident_Date_Added,
+        "Incident_Date_Date",
+        each 
+            let
+                ParsedIncidentDate = 
+                    if [Incident Date] = null or [Incident Date] = "" then null
+                    else if Value.Type([Incident Date]) = type date then [Incident Date]
+                    else if Value.Type([Incident Date]) = type datetime then Date.From([Incident Date])
+                    else if Value.Type([Incident Date]) = type text then try Date.FromText([Incident Date]) otherwise null
+                    else if Value.Type([Incident Date]) = type number then try Date.From([Incident Date]) otherwise null
+                    else null,
+                
+                ParsedIncidentDateBetween = 
+                    if [Incident Date_Between] = null or [Incident Date_Between] = "" then null
+                    else if Value.Type([Incident Date_Between]) = type date then [Incident Date_Between]
+                    else if Value.Type([Incident Date_Between]) = type datetime then Date.From([Incident Date_Between])
+                    else if Value.Type([Incident Date_Between]) = type text then try Date.FromText([Incident Date_Between]) otherwise null
+                    else if Value.Type([Incident Date_Between]) = type number then try Date.From([Incident Date_Between]) otherwise null
+                    else null,
+                
+                ParsedReportDate = 
+                    if [Report Date] = null or [Report Date] = "" then null
+                    else if Value.Type([Report Date]) = type date then [Report Date]
+                    else if Value.Type([Report Date]) = type datetime then Date.From([Report Date])
+                    else if Value.Type([Report Date]) = type text then try Date.FromText([Report Date]) otherwise null
+                    else if Value.Type([Report Date]) = type number then try Date.From([Report Date]) otherwise null
+                    else null,
+                
+                BestDate = 
+                    if ParsedIncidentDate <> null then ParsedIncidentDate
+                    else if ParsedIncidentDateBetween <> null then ParsedIncidentDateBetween
+                    else if ParsedReportDate <> null then ParsedReportDate
+                    else null
+            in BestDate,
+        type date
+    ),
+
+    // ===========================================
+    // REPORT DATE PROCESSING WITH CASCADING LOGIC
+    // ===========================================
+    
+    Report_Date_Added = Table.AddColumn(
+        Incident_Date_Date_Added,
+        "Report_Date",
+        each 
+            let
+                ParsedReportDate = 
+                    if [Report Date] = null or [Report Date] = "" then null
+                    else if Value.Type([Report Date]) = type date then [Report Date]
+                    else if Value.Type([Report Date]) = type datetime then Date.From([Report Date])
+                    else if Value.Type([Report Date]) = type text then try Date.FromText([Report Date]) otherwise null
+                    else if Value.Type([Report Date]) = type number then try Date.From([Report Date]) otherwise null
+                    else null,
+                
+                ParsedEntryDate = 
+                    if [EntryDate] = null or [EntryDate] = "" then null
+                    else if Value.Type([EntryDate]) = type date then [EntryDate]
+                    else if Value.Type([EntryDate]) = type datetime then Date.From([EntryDate])
+                    else if Value.Type([EntryDate]) = type text then try Date.FromText([EntryDate]) otherwise null
+                    else if Value.Type([EntryDate]) = type number then try Date.From([EntryDate]) otherwise null
+                    else null,
+                
+                BestReportDate = 
+                    if ParsedReportDate <> null then ParsedReportDate
+                    else if ParsedEntryDate <> null then ParsedEntryDate
+                    else [Incident_Date_Date]
+            in BestReportDate,
+        type nullable date
+    ),
+
+    // ===========================================
+    // REPORT DATE TEXT (FORMATTED MM/dd/yy)
+    // ===========================================
+    
+    Report_Date_Text_Added = Table.AddColumn(
+        Report_Date_Added,
+        "Report_Date_Text",
+        each 
+            if [Report_Date] <> null then
+                Date.ToText([Report_Date], "MM/dd/yy")
+            else null,
+        type nullable text
+    ),
+    
+    // ===========================================
+    // INCIDENT TO REPORT DAYS (QA METRIC - REPORTING DELAY)
+    // ===========================================
+    
+    IncidentToReportDays_Added = Table.AddColumn(
+        Report_Date_Text_Added,
+        "IncidentToReportDays",
+        each 
+            if [Report_Date] <> null and [Incident_Date_Date] <> null then
+                Duration.Days([Report_Date] - [Incident_Date_Date])
+            else null,
+        Int64.Type
+    ),
+    
+    // ===========================================
+    // PERIOD BUCKETS
+    // ===========================================
+    
+    Period_Added = Table.AddColumn(
+        IncidentToReportDays_Added,
+        "Period",
+        each let d = Duration.Days(Date.From(DateTime.LocalNow()) - [Incident_Date_Date]) in
+            if d <= 7 then "7-Day"
+            else if d <= 28 then "28-Day"
+            else if Date.Year([Incident_Date_Date]) = Date.Year(DateTime.LocalNow()) then "YTD"
+            else "Historical",
+        type text
+    ),
+
+    // ===========================================
+    // PERIOD SORT KEY
+    // ===========================================
+    
+    Period_SortKey_Added = Table.AddColumn(
+        Period_Added,
+        "Period_SortKey",
+        each 
+            if [Period] = "7-Day" then 1
+            else if [Period] = "28-Day" then 2
+            else if [Period] = "YTD" then 3
+            else if [Period] = "Historical" then 4
+            else 99,
+        Int64.Type
+    ),
+
+    // ===========================================
+    // LOAD CYCLE CALENDAR (USED BY BACKFILL & CYCLE_NAME)
+    // ===========================================
+    
+    CycleCalendar = Csv.Document(File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20250414.csv")),
+    CycleCalendarTable0 = Table.PromoteHeaders(CycleCalendar),
+    CycleCalendarTable = Table.TransformColumnTypes(CycleCalendarTable0,
+        {{"7_Day_Start", type date},
+         {"7_Day_End", type date},
+         {"Report_Name", type text}}),
+
+    // ===========================================
+    // BACKFILL FLAG (CYCLE-AWARE)
+    // ===========================================
+    
+    Backfill_Flag_Added = Table.AddColumn(
+        Period_SortKey_Added,
+        "Backfill_7Day",
+        each 
+            let
+                IncidentDate = [Incident_Date_Date],
+                ReportDate = [Report_Date],
+                
+                // Find the current 7-Day cycle (where today falls within start/end dates)
+                Today = Date.From(DateTime.LocalNow()),
+                CurrentCycle = Table.SelectRows(
+                    CycleCalendarTable,
+                    each Today >= [7_Day_Start] and Today <= [7_Day_End]
+                ),
+                
+                // Extract current cycle boundaries
+                HasCurrentCycle = not Table.IsEmpty(CurrentCycle),
+                CycleStartDate = if HasCurrentCycle then CurrentCycle{0}[7_Day_Start] else null,
+                CycleEndDate = if HasCurrentCycle then CurrentCycle{0}[7_Day_End] else null,
+                
+                // Calculate previous cycle boundaries (7 days before current cycle)
+                PreviousCycleStart = if HasCurrentCycle then CycleStartDate - #duration(7, 0, 0, 0) else null,
+                PreviousCycleEnd = if HasCurrentCycle then CycleStartDate - #duration(1, 0, 0, 0) else null,
+                
+                // Enhanced backfill logic: Incident before current cycle, but reported within current OR previous cycle
+                IsBackfill = 
+                    if HasCurrentCycle and IncidentDate <> null and ReportDate <> null then
+                        let
+                            // Check if reported in current cycle
+                            ReportedInCurrentCycle = (ReportDate >= CycleStartDate and ReportDate <= CycleEndDate),
+                            
+                            // Check if reported in previous cycle
+                            ReportedInPreviousCycle = (ReportDate >= PreviousCycleStart and ReportDate <= PreviousCycleEnd),
+                            
+                            // Backfill if incident before current cycle AND reported in current or previous cycle
+                            IsBackfillResult = (IncidentDate < CycleStartDate) and (ReportedInCurrentCycle or ReportedInPreviousCycle)
+                        in IsBackfillResult
+                    else false
+            in IsBackfill,
+        type logical
+    ),
+
+    // ===========================================
+    // CYCLE_NAME (SCRPA CYCLE ASSIGNMENT)
+    // ===========================================
+    
+    CycleName_Added = Table.AddColumn(
+        Backfill_Flag_Added,
+        "cycle_name",
+        each 
+            let
+                IncidentDate = [Incident_Date_Date],
+                CycleResult = 
+                    if IncidentDate = null then "Unknown"
+                    else
+                        let
+                            MatchingCycles = Table.SelectRows(
+                                CycleCalendarTable, 
+                                each 
+                                    let
+                                        StartDate = Date.FromText([7_Day_Start]),
+                                        EndDate = Date.FromText([7_Day_End])
+                                    in IncidentDate >= StartDate and IncidentDate <= EndDate
+                            ),
+                            
+                            CycleName = 
+                                if Table.IsEmpty(MatchingCycles) then "Historical"
+                                else MatchingCycles{0}[Report_Name]
+                        in CycleName
+            in CycleResult,
+        type text
+    ),
+
+    // ===========================================
+    // CYCLE NAME OVERRIDE FOR BACKFILLED CASES
+    // ===========================================
+    
+    Cycle_Name_Adjusted = Table.AddColumn(
+        CycleName_Added,
+        "cycle_name_adjusted",
+        each 
+            if [Backfill_7Day] = true then
+                let
+                    Today = Date.From(DateTime.LocalNow()),
+                    CurrentCycle = Table.SelectRows(
+                        CycleCalendarTable,
+                        each Today >= [7_Day_Start] and Today <= [7_Day_End]
+                    ),
+                    CurrentCycleName = if not Table.IsEmpty(CurrentCycle) then CurrentCycle{0}[Report_Name] else [cycle_name]
+                in CurrentCycleName
+            else [cycle_name],
+        type text
+    ),
+
+    // ===========================================
+    // IS LAG DAY & LAG DAYS (CYCLE-AWARE: DAYS INCIDENT PRECEDES CYCLE START)
+    // ===========================================
+    
+    IsLagDay_Added = Table.AddColumn(
+        Cycle_Name_Adjusted,
+        "IsLagDay",
+        each 
+            let
+                IncidentDate = [Incident_Date_Date],
+                ReportDate = [Report_Date]
+            in
+                if IncidentDate = null or ReportDate = null then false
+                else
+                    let
+                        // Find the cycle that the Report Date falls into
+                        ReportCycle = Table.SelectRows(
+                            CycleCalendarTable,
+                            each ReportDate >= [7_Day_Start] and ReportDate <= [7_Day_End]
+                        ),
+                        HasReportCycle = not Table.IsEmpty(ReportCycle),
+                        CycleStartForReport = if HasReportCycle then ReportCycle{0}[7_Day_Start] else null,
+                        // IsLagDay: true if incident date precedes cycle start
+                        IsLagDayValue = CycleStartForReport <> null and IncidentDate < CycleStartForReport
+                    in IsLagDayValue,
+        type logical
+    ),
+
+    LagDays_Added = Table.AddColumn(
+        IsLagDay_Added,
+        "LagDays",
+        each 
+            let
+                IncidentDate = [Incident_Date_Date],
+                ReportDate = [Report_Date],
+                IsLag = [IsLagDay]
+            in
+                if IncidentDate = null or ReportDate = null then null
+                else if not IsLag then 0
+                else
+                    let
+                        // Find the cycle that the Report Date falls into
+                        ReportCycle = Table.SelectRows(
+                            CycleCalendarTable,
+                            each ReportDate >= [7_Day_Start] and ReportDate <= [7_Day_End]
+                        ),
+                        HasReportCycle = not Table.IsEmpty(ReportCycle),
+                        CycleStartForReport = if HasReportCycle then ReportCycle{0}[7_Day_Start] else null,
+                        // Calculate LagDays: days incident precedes cycle start (0 if not lagday)
+                        LagDaysValue = if CycleStartForReport <> null then
+                            Duration.Days(CycleStartForReport - IncidentDate) else 0
+                    in LagDaysValue,
+        Int64.Type
+    ),
+
+    StartOfHour_Added = Table.AddColumn(
+        LagDays_Added, 
+        "StartOfHour",
+        each 
+            try
+                if [BestTimeValue] <> null then
+                    let
+                        Hour = Time.Hour([BestTimeValue]),
+                        StartTime = #time(Hour, 0, 0)
+                    in Time.ToText(StartTime, "hh:mm:ss")
+                else "00:00:00"
+            otherwise "00:00:00",
+        type text
+    ),
+
+    TimeOfDay_Added = Table.AddColumn(
+        StartOfHour_Added, 
+        "TimeOfDay", 
+        each 
+            try
+                if [BestTimeValue] <> null then
+                    let
+                        Hour = Time.Hour([BestTimeValue]),
+                        Category = 
+                            if Hour >= 4 and Hour < 8 then "Early Morning (04:00–07:59)"
+                            else if Hour >= 8 and Hour < 12 then "Morning (08:00–11:59)"
+                            else if Hour >= 12 and Hour < 16 then "Afternoon (12:00–15:59)"
+                            else if Hour >= 16 and Hour < 20 then "Evening Peak (16:00–19:59)"
+                            else if Hour >= 20 and Hour < 24 then "Night (20:00–23:59)"
+                            else "Late Night (00:00–03:59)"
+                    in Category
+                else "Unknown Time"
+            otherwise "Time_Category_Error",
+        type text
+    ),
+
+    TimeOfDay_SortKey_Added = Table.AddColumn(
+        TimeOfDay_Added,
+        "TimeOfDay_SortKey",
+        each 
+            let
+                TimeOfDay = [TimeOfDay],
+                SortKey = 
+                    if TimeOfDay = "Late Night (00:00–03:59)" then 1
+                    else if TimeOfDay = "Early Morning (04:00–07:59)" then 2
+                    else if TimeOfDay = "Morning (08:00–11:59)" then 3
+                    else if TimeOfDay = "Afternoon (12:00–15:59)" then 4
+                    else if TimeOfDay = "Evening Peak (16:00–19:59)" then 5
+                    else if TimeOfDay = "Night (20:00–23:59)" then 6
+                    else if TimeOfDay = "Unknown Time" then 99
+                    else 0
+            in SortKey,
+        Int64.Type
+    ),
+
+    AllIncidents_Added = Table.AddColumn(
+        TimeOfDay_SortKey_Added,
+        "ALL_INCIDENTS",
+        each
+            [Incident Type_1]
+            & (if [Incident Type_2] <> null then ", "&[Incident Type_2] else "")
+            & (if [Incident Type_3] <> null then ", "&[Incident Type_3] else ""),
+        type text
+    ),
+
+    CrimeCategory_Added = Table.AddColumn(
+        AllIncidents_Added,
+        "Crime_Category",
+        each let
+            L = Text.Upper([ALL_INCIDENTS] ? ? ""),
+            N = Text.Upper([Narrative] ? ? "")

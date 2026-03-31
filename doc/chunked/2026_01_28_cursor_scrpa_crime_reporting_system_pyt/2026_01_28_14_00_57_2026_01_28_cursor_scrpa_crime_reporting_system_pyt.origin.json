@@ -1,0 +1,39 @@
+{
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "docs",
+    "excel",
+    "json",
+    "markdown",
+    "police",
+    "powershell",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "csv",
+        "scrpa",
+        "2026",
+        "code",
+        "scripts",
+        "you"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# SCRPA crime reporting system Python conversion\n_Exported on 1/28/2026 at 14:00:16 EST from Cursor (2.4.21)_\n\n---\n\n**User**\n\nExcellent — here's a **full conversion** of your updated workflow into a **Cursor AI \"Plan\" prompt**, followed...",
+      "first_line": "# SCRPA crime reporting system Python conversion"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-28T14:00:57.049551",
+  "department": "admin"
+}

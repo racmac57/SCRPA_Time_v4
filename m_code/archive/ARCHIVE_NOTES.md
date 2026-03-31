@@ -7,7 +7,12 @@
 ### 2026_01_06_All_Crimes.m
 - **Date Archived**: 2026-01-06
 - **Reason**: Dated version of all_crimes.m (snapshot from 2026-01-06)
-- **Current Version**: See `m_code/all_crimes.m`
+- **Superseded by**: `2026_01_27_all_crimes.m` (see below)
+
+### 2026_01_27_all_crimes.m
+- **Date Archived**: 2026-01-27
+- **Reason**: Snapshot before reverting to standalone All_Crimes.m workflow.
+- **Current Version**: Use `m_code/All_Crimes.m`.
 
 ### Export_Formatting.m
 - **Date Archived**: 2026-01-06

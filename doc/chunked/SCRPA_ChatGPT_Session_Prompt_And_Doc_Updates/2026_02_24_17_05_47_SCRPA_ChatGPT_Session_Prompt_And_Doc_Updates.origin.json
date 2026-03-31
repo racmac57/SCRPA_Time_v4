@@ -1,0 +1,38 @@
+{
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "docs",
+    "excel",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "7-day",
+        "html",
+        "cycle",
+        "incident",
+        "data",
+        "incidents"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# Report generation from export file\n_Exported on 2/24/2026 at 17:05:19 EST from Cursor (2.5.20)_\n\n---\n\n**User**\n\ni have a new export C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\05_EXPORTS\\_RMS\\scrpa\\2026_02_24_11_57_18_SCRPA_RMS.xl...",
+      "first_line": "# Report generation from export file"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-02-24T17:05:47.314060",
+  "department": "admin"
+}

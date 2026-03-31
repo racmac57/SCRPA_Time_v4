@@ -1,0 +1,486 @@
+')[0]
+      692 +            return int(zone)
+      693 +
+      694 +        # Handle float
+      695 +        if isinstance(zone, float):
+      696 +            return int(zone)
+      697 +
+      698 +        # Handle int
+      699 +        if isinstance(zone, int):
+      700 +            return zone
+      701 +
+      702 +        return int(zone)
+      703 +    except (ValueError, TypeError):
+      704 +        return None
+      705 +
+      706 +
+      707  def clean_narrative(narrative: Any) -> Optional[str]:
+      708      """
+      709      Clean narrative text: remove line breaks, collapse whitespace. ● Now let me update the Category_Type/Response_Type section to use the lookup function. ● Update(scripts\scrpa_transform.py)
+  ⎿  Added 12 lines, removed 6 lines
+      1151      )
+      1152
+      1153      # =========================================================================
+      1154 -    # STEP 15: Category_Type and Response_Type (simplified - no fuzzy matching)
+      1154 +    # STEP 15: Category_Type and Response_Type (lookup from CallType_Categories.csv)
+      1155      # =========================================================================
+      1156 -    # Note: The M code uses fuzzy matching against CallTypeCategories table. 1157 -    # For Python, we'll use a simplified direct lookup or default to "Unknown"
+      1158 -    # This can be enhanced with a call_type_categories.csv file later
+      1159 -    df['Category_Type'] = "Unknown"
+      1160 -    df['Response_Type'] = "Unknown"
+      1156 +    # Load CallType_Categories reference table
+      1157 +    calltype_df = load_calltype_categories()
+      1158
+      1159 +    def get_category_response(row):
+      1160 +        """Look up Category_Type and Response_Type using IncidentKey.""" 1161 +        incident_key = row.get('IncidentKey')
+      1162 +        return lookup_category_response(incident_key, calltype_df)
+      1163 +
+      1164 +    cat_resp_results = df.apply(get_category_response, axis=1)
+      1165 +    df['Category_Type'] = [r[0] for r in cat_resp_results]
+      1166 +    df['Response_Type'] = [r[1] for r in cat_resp_results]
+      1167 +
+      1168      # =========================================================================
+      1169      # STEP 16: Time Validation (matches M code lines 719-729)
+      1170      # =========================================================================
+
+● Now let me add the BiWeekly_Report_Name column. I'll add it near the cycle resolution section. ● Read 1 file (ctrl+o to expand)
+
+● Update(scripts\scrpa_transform.py)
+  ⎿  Added 7 lines
+      827          current_cycle_28_start = cycle['28_Day_Start']
+      828          current_cycle_28_end = cycle['28_Day_End']
+      829          current_cycle_name = cycle['Report_Name']
+      830 +        # Extract BiWeekly_Report_Name if available (e.g., 26BW01, 26BW02)
+      831 +        current_biweekly_name = None
+      832 +        if 'BiWeekly_Report_Name' in cycle.index:
+      833 +            bw_name = cycle['BiWeekly_Report_Name']
+      834 +            if pd.notna(bw_name) and str(bw_name).strip():
+      835 +                current_biweekly_name = str(bw_name).strip()
+      836      else:
+      837          current_cycle_report_due = None
+      838          current_cycle_start = None
+     ...
+      834          current_cycle_28_start = None
+      835          current_cycle_28_end = None
+      836          current_cycle_name = None
+      837 +        current_biweekly_name = None
+      838
+      839      # =========================================================================
+      840      # STEP 2: Time Processing with Cascading Logic (matches M code lines 64-109)
+
+● Searched for 2 patterns, read 1 file (ctrl+o to expand)
+
+● Update(scripts\scrpa_transform.py)
+  ⎿  Added 4 lines
+      1011          axis=1
+      1012      )
+      1013
+      1014 +    # BiWeekly_Report_Name: Add bi-weekly cycle name from calendar (e.g., 26BW02)
+      1015 +    # This is the bi-weekly label for the current reporting cycle (when available)
+      1016 +    df['BiWeekly_Report_Name'] = current_biweekly_name
+      1017 +
+      1018      # =========================================================================
+      1019      # STEP 8: IsCurrent7DayCycle (matches M code lines 348-358)
+      1020      # =========================================================================
+
+● Now let me add Zone coercion and time formatting. I'll read the end of the function to find where to add these. ● Read 1 file (ctrl+o to expand)
+
+● Update(scripts\scrpa_transform.py)
+  ⎿  Added 17 lines, removed 4 lines
+      1212      )
+      1213
+      1214      # =========================================================================
+      1215 -    # STEP 18: Select and order columns to match preview table
+      1215 +    # STEP 18: Format columns for CSV output
+      1216      # =========================================================================
+      1217 +    # Zone: Coerce to integer (whole number, range 5-9)
+      1218 +    if 'Zone' in df.columns:
+      1219 +        df['Zone'] = df['Zone'].apply(coerce_zone_to_int)
+      1220 +
+      1221 +    # Time columns: Format as HH:mm:ss (not "0 days HH:mm:ss")
+      1222 +    time_columns_to_format = ['Incident Time', 'Incident Time_Between', 'Report Time', 'BestTimeValue']
+      1223 +    for col in time_columns_to_format:
+      1224 +        if col in df.columns:
+      1225 +            df[col] = df[col].apply(format_time_for_csv)
+      1226 +
+      1227 +    # =========================================================================
+      1228 +    # STEP 19: Select and order columns to match preview table
+      1229 +    # =========================================================================
+      1230      output_columns = [
+      1231          # Original RMS columns
+      1232          'Case Number', 'Incident Date', 'Incident Time', 'Incident Date_Between',
+     ...
+      1227          'BestTimeValue', 'TimeSource', 'Incident_Time', 'Incident_Date',
+      1228          'Incident_Date_Date', 'Report_Date', 'Report_Date_Text',
+      1229          'IncidentToReportDays', 'Period', '_Period_Debug', 'Period_SortKey',
+      1230 -        'cycle_name', 'Backfill_7Day', 'cycle_name_adjusted', 'IsCurrent7DayCycle',
+      1231 -        'IsLagDay', 'LagDays', 'StartOfHour', 'TimeOfDay', 'TimeOfDay_SortKey',
+      1232 -        'ALL_INCIDENTS', 'Crime_Category', 'Incident_Type_1_Norm',
+      1230 +        'cycle_name', 'Backfill_7Day', 'cycle_name_adjusted', 'BiWeekly_Report_Name',
+      1231 +        'IsCurrent7DayCycle', 'IsLagDay', 'LagDays', 'StartOfHour', 'TimeOfDay',
+      1232 +        'TimeOfDay_SortKey', 'ALL_INCIDENTS', 'Crime_Category', 'Incident_Type_1_Norm',
+      1233          'Incident_Type_2_Norm', 'Incident_Type_3_Norm', 'Vehicle_1', 'Vehicle_2',
+      1234          'Vehicle_1_and_Vehicle_2', 'Clean_Address', 'IncidentKey', 'Category_Type',
+      1235          'Response_Type', 'Time_Validation'
+
+● Now let me add a clarifying comment to the Period classification section. ● Read 1 file (ctrl+o to expand)
+
+● Update(scripts\scrpa_transform.py)
+  ⎿  Added 6 lines
+      419      Classify incident into reporting period. 420      Matches M code lines 242-273. 421
+      422 +    IMPORTANT: The 7-Day window uses the CALENDAR's fixed 7_Day_Start and 7_Day_End
+      423 +    for the resolved cycle (e.g., 01/20/2026 - 01/26/2026 for 26C01W04), NOT
+      424 +    "today minus 7 days". This means an incident on 01/27/2026 when running the
+      425 +    01/27/2026 report would be classified as YTD (not 7-Day) because it falls
+      426 +    outside the cycle's 7-Day window which ended on 01/26/2026. 427 +
+      428      Priority order: 7-Day -> Prior Year (currentYear-1) -> 28-Day -> YTD -> Historical
+      429
+      430      Returns:
+
+● Let me verify the script syntax and test it. ● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -m py_compile scripts/scrpa_transform.py && echo "Syntax
+      OK")
+  ⎿  Syntax OK
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python scripts/scrpa_transform.py
+      "Time_Based\2026\26C01W04_26_01_27\Data\2026_01_27_1…)
+  ⎿  Loading RMS export: Time_Based\2026\26C01W04_26_01_27\Data\2026_01_27_13_29_35_SCRPA_RMS.csv
+       250 rows loaded
+     Loading cycle calendar: C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Temporal\SCRPA_Cycle\7Day_28Day_Cycle_20260106.csv
+     … +16 lines (ctrl+o to expand)
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -c "
+      import pandas as pd…)
+  ⎿  === Time Column Formatting ===
+     Incident Time samples: ['12:52:04', '23:10:48', '00:00:00']
+     BestTimeValue samples: ['16:40:35', '16:30:00', '09:39:40']
+     … +24 lines (ctrl+o to expand)
+
+* Compacting conversation… (esc to interrupt · ctrl+t to hide tasks · 5m 22s · ↓ 10.0k tokens)
+  ⎿  ■ Fix time column formatting (no "0 days" prefix)
+     □ Coerce Zone to integer
+     □ Implement Category_Type/Response_Type lookup
+     □ Add BiWeekly_Report_Name column
+     □ Update data_dictionary with clarifications
+
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+> 
+───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  ⏵⏵ accept edits on (shift+Tab to cycle) · 50 files +163 -4530                                               Context left until auto-compact: 0%
+
+╭─── Claude Code v2.1.20 ─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                                    │ Tips for getting started                                                                   │
+│                  Welcome back RAC! │ Run /init to create a CLAUDE.md file with instructions for Claude                          │
+│                                                    │ ────────────────────────────────────────────────────────────────────────────────────────── │
+│                                                    │ Recent activity                                                                            │
+│                       ▐▛███▜▌                      │ 23h ago  please read C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\CL… │
+│                      ▝▜█████▛▘                     │ 23h ago  please read C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\CL… │
+│                        ▘▘ ▝▝                       │ 23h ago  please read C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\CL… │
+│  Opus 4.5 · Claude Pro · racarucci@icloud.com's    │ /resume for more                                                                           │
+│  Organization                                      │                                                                                            │
+│  ~\OneDrive - City of Hackensack\16_Reports\SCRPA  │                                                                                            │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+✻ Conversation compacted (ctrl+o for history)
+
+  ⎿  Referenced file scripts\scrpa_transform.py
+  ⎿  Read doc\CLAUDE_CODE_FOLLOWUP_SCRPA_EDITS.md (171 lines)
+  ⎿  Read m_code\All_Crimes_Simple.m (167 lines)
+  ⎿  Read scripts\README.md (130 lines)
+  ⎿  Read Time_Based\2026\26C01W04_26_01_27\Data\validation_report.json (108 lines)
+
+● Continuing with the pending tasks. I need to:
+  1. Fix Zone column to output as integer (currently showing 9.0 instead of 9)
+  2. Update data_dictionary with clarifications
+  3. Regenerate Documentation files
+  4. Commit to local git
+
+  Let me first read the current scrpa_transform.py to fix the Zone issue. ● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● The issue is that pandas converts integer columns with None values to float64. I need to use pandas nullable Int64 type. Let me fix this. ● Update(scripts\scrpa_transform.py)
+  ⎿  Added 2 lines
+      1221      # STEP 18: Format columns for CSV output
+      1222      # =========================================================================
+      1223      # Zone: Coerce to integer (whole number, range 5-9)
+      1224 +    # Use pandas nullable Int64 type to handle NaN values while keeping integer format
+      1225      if 'Zone' in df.columns:
+      1226          df['Zone'] = df['Zone'].apply(coerce_zone_to_int)
+      1227 +        df['Zone'] = df['Zone'].astype('Int64')  # Nullable integer type
+      1228
+      1229      # Time columns: Format as HH:mm:ss (not "0 days HH:mm:ss")
+      1230      time_columns_to_format = ['Incident Time', 'Incident Time_Between', 'Report Time', 'BestTimeValue']
+
+● Now let me verify the fix works and then update the documentation. First, let me run a quick test. ● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -c " timeout: 1m 0s
+      import pandas as pd…)
+  ⎿  Error: Exit code 1
+     Traceback (most recent call last):
+       File "<string>", line 3, in <module>
+         from scripts.scrpa_transform import transform_rms_data
+     ImportError: cannot import name 'transform_rms_data' from 'scripts.scrpa_transform' (C:\Users\carucci_r\OneDrive - City of
+     Hackensack\16_Reports\SCRPA\scripts\scrpa_transform.py)
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -c " timeout: 1m 0s
+      import pandas as pd…)
+  ⎿  === Zone Column Before ===
+     Zone dtype: float64
+     Zone samples: [9.0, 7.0, 7.0, 9.0, 8.0]
+     … +17 lines (ctrl+o to expand)
+
+● Zone is now properly formatted as integer. Let me update task progress and then update the documentation. ● Now let me read the generate_documentation.py to update the data dictionary with clarifications. ● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Now I'll update the data dictionary definitions in generate_documentation.py with the clarifications. ● Update(scripts\generate_documentation.py)
+  ⎿  Added 3 lines, removed 2 lines
+      104              'source': 'RMS Export'
+      105          },
+      106          'Zone': {
+      107 -            'type': 'string',
+      108 -            'description': 'Police zone number',
+      107 +            'type': 'integer',
+      108 +            'description': 'Police zone number (whole number, observed range 5-9)',
+      109              'example': '9',
+      110 +            'format': 'Integer (no decimals)',
+      111              'source': 'RMS Export'
+      112          },
+      113          'Narrative': {
+
+● Update(scripts\generate_documentation.py)
+  ⎿  Added 4 lines, removed 2 lines
+      125      'computed_fields': {
+      126          'BestTimeValue': {
+      127              'type': 'time',
+      128 -            'description': 'Best available time using cascade: Incident Time -> Incident Time_Between -> Report Time',
+      129 -            'calculation': 'Coalesce(Incident Time, Incident Time_Between, Report Time)',
+      128 +            'description': 'Best available time of incident. Used for time-of-day analysis. ',
+      129 +            'format': 'HH:mm:ss',
+      130 +            'calculation': 'Cascade: Incident Time → if null, Incident Time_Between → if null, Report Time',
+      131 +            'usage': 'Derives Incident_Time (HH:MM:SS), StartOfHour, TimeOfDay, and TimeOfDay_SortKey',
+      132              'source': 'Computed'
+      133          },
+      134          'TimeSource': {
+
+● Update(scripts\generate_documentation.py)
+  ⎿  Added 2 lines, removed 1 line
+      203          },
+      204          'cycle_name': {
+      205              'type': 'string',
+      206 -            'description': 'Cycle name based on when incident occurred',
+      206 +            'description': 'Weekly cycle name (Report_Name) that contains Incident_Date',
+      207              'example': '26C01W04',
+      208 +            'note': 'Set to "Historical" if Incident_Date falls outside all calendar 7-day windows (e.g., day after cycle end)',
+      209              'source': 'Computed'
+      210          },
+      211          'Backfill_7Day': {
+
+● Update(scripts\generate_documentation.py)
+  ⎿  Added 3 lines, removed 2 lines
+      216          },
+      217          'cycle_name_adjusted': {
+      218              'type': 'string',
+      219 -            'description': 'Cycle name adjusted for backfill cases',
+      220 -            'calculation': 'If Backfill_7Day then CurrentCycleName else cycle_name',
+      219 +            'description': 'Cycle name adjusted for backfill cases
+          +. For backfill lag incidents, attributes them to current report cycle. ',
+      220 +            'calculation': 'If Backfill_7Day=True then CurrentCycleName (current report cycle) else cycle_name',
+      221 +            'note': 'Allows lag incidents reported during current 7-day window to be attributed to the current cycle for
+          +reporting',
+      222              'source': 'Computed'
+      223          },
+      224          'IsCurrent7DayCycle': {
+
+● Update(scripts\generate_documentation.py)
+  ⎿  Added 1 line, removed 1 line
+      187              'description': 'Reporting period classification based on Incident_Date',
+      188              'values': ['7-Day', '28-Day', 'YTD', 'Prior Year', 'Historical'],
+      189              'priority_order': '7-Day > Prior Year > 28-Day > YTD > Historical',
+      190 -            'note': 'Based on Incident_Date, NOT Report_Date. Prior Year checked before 28-Day. ',
+      190 +            'note': 'Based on Incident_Date, NOT Report_Date. 7-Day uses calendar 7_Day_Start/7_Day_End for the resolved cycle
+          +(fixed window), not "today minus 7 days". ',
+      191              'source': 'Computed'
+      192          },
+      193          '_Period_Debug': {
+
+● Now let me add the BiWeekly_Report_Name field definition. ● Read 1 file (ctrl+o to expand)
+
+● Update(scripts\generate_documentation.py)
+  ⎿  Added 7 lines
+      221              'note': 'Allows lag incidents reported during current 7-day window to be attributed to the current cycle for
+           reporting',
+      222              'source': 'Computed'
+      223          },
+      224 +        'BiWeekly_Report_Name': {
+      225 +            'type': 'string',
+      226 +            'description': 'Bi-weekly report name from cycle calendar (e.g., 26BW02)',
+      227 +            'example': '26BW02',
+      228 +            'note': 'Populated from cycle calendar BiWeekly_Report_Name column when present. Format: YYBW## (YY=year,
+          +BW=bi-weekly, ##=period number)',
+      229 +            'source': 'Computed from cycle calendar'
+      230 +        },
+      231          'IsCurrent7DayCycle': {
+      232              'type': 'boolean',
+      233              'description': 'True if Report_Date_ForLagday falls within current 7-day cycle window',
+
+● Let me also check and update Category_Type and Response_Type field definitions. ● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Update(scripts\generate_documentation.py)
+  ⎿  Added 11 lines, removed 6 lines
+      336          },
+      337          'Category_Type': {
+      338              'type': 'string',
+      339 -            'description': 'CAD category type (from CallTypeCategories lookup)',
+      340 -            'default': 'Unknown',
+      341 -            'source': 'Computed'
+      339 +            'description': 'Incident category classification (e.g., Criminal Incidents, Public Safety and Welfare)',
+      340 +            'lookup': '09_Reference/Classifications/CallTypes/CallType_Categories.csv',
+      341 +            'lookup_method': 'Exact match on Incident column, then Incident_Norm column',
+      342 +            'default': 'Unknown (when no match found)',
+      343 +            'source': 'Computed via CallType lookup'
+      344          },
+      345          'Response_Type': {
+      346              'type': 'string',
+      347 -            'description': 'Response classification (Emergency/Non-Emergency)',
+      348 -            'default': 'Unknown',
+      349 -            'source': 'Computed'
+      347 +            'description': 'Response priority classification',
+      348 +            'values': ['Emergency', 'Urgent', 'Routine', 'Unknown'],
+      349 +            'lookup': '09_Reference/Classifications/CallTypes/CallType_Categories.csv',
+      350 +            'lookup_method': 'Exact match on Incident column, then Incident_Norm column',
+      351 +            'default': 'Unknown (when no match found)',
+      352 +            'source': 'Computed via CallType lookup'
+      353          },
+      354          'Time_Validation': {
+      355              'type': 'string',
+
+● Now let me regenerate the documentation files with these updates. ● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python scripts/generate_documentation.py -o
+      "Time_Based\2026\26C01W04_26_01_28\Documen…)
+  ⎿  Generating documentation to: Time_Based\2026\26C01W04_26_01_28\Documentation
+       Created: data_dictionary.yaml
+       Created: data_dictionary.json
+     … +6 lines (ctrl+o to expand)
+
+● Now let me copy the updated documentation to the main Documentation folder. ● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && copy     timeout: 30s
+      "Time_Based\2026\26C01W04_26_01_28\Documentation\data_dictionary.yaml" "Documenta…)
+  ⎿  Error: Exit code 2
+     /usr/bin/bash: eval: line 1: unexpected EOF while looking for matching `"'
+  ⎿  Loaded Time_Based\2026\26C01W04_26_01_28\Documentation\CLAUDE.md
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && powershell -Command "Copy-Item  timeout: 30s
+      'Time_Based\2026\26C01W04_26_01_28\Documentation\*' -De…)
+  ⎿  Documentation copied successfully
+
+● Now let me run the full transformation with all fixes applied. ● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python scripts/run_scrpa_pipeline.py  timeout: 3m 0s
+      "m_code\preview_tables\all_crimes\2026_01_28_all_…)
+  ⎿  Traceback (most recent call last):
+       File "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\scripts\run_scrpa_pipeline.py", line 288, in run_pipeline
+         rms_df = read_rms_export(rms_path)
+     … +30 lines (ctrl+o to expand)
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -c " timeout: 30s
+      import pandas as pd…)
+  ⎿  Encoding utf-8 works! Rows: 5
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -c " timeout: 30s
+      import pandas as pd…)
+  ⎿  Encoding utf-8 failed: 'utf-8' codec can't decode byte 0x92 in position 242: invalid start byte
+     Encoding cp1252 works! Total rows: 241
+
+● The file uses Windows cp1252 encoding. Let me fix the read_rms_export function. ● Searched for 1 pattern, read 1 file (ctrl+o to expand)
+
+● Update(scripts\scrpa_transform.py)
+  ⎿  Added 13 lines, removed 1 line
+      785      if path.suffix.lower() in ['.xlsx', '.xls']:
+      786          df = pd.read_excel(path)
+      787      else:
+      788 -        df = pd.read_csv(path, low_memory=False)
+      788 +        # Try multiple encodings - RMS exports may use Windows encoding
+      789 +        encodings = ['utf-8', 'cp1252', 'latin-1', 'iso-8859-1']
+      790 +        df = None
+      791 +        last_error = None
+      792 +        for encoding in encodings:
+      793 +            try:
+      794 +                df = pd.read_csv(path, low_memory=False, encoding=encoding)
+      795 +                break
+      796 +            except UnicodeDecodeError as e:
+      797 +                last_error = e
+      798 +                continue
+      799 +        if df is None:
+      800 +            raise last_error or ValueError(f"Could not read CSV with any supported encoding: {encodings}")
+      801
+      802      return df
+      803
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python scripts/run_scrpa_pipeline.py  timeout: 3m 0s
+      "m_code\preview_tables\all_crimes\2026_01_28_all_…)
+  ⎿  ======================================================================
+     SCRPA PIPELINE - Python-First Crime Data Processing
+     ======================================================================
+     … +82 lines (ctrl+o to expand)
+
+● Pipeline completed successfully. Let me verify the output has all fixes applied. ● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -c " timeout: 1m 0s
+      import pandas as pd…)
+  ⎿  === Time Column Formatting ===
+     Incident Time samples: ['00:00:00', '21:30:00', '17:00:00']
+     BestTimeValue samples: []
+     … +25 lines (ctrl+o to expand)
+
+● Zone is still showing as float (9.0). The Int64 nullable integer gets converted to float in CSV when there are NA values. Let me fix this by
+  converting Zone to string representation without decimals before writing. ● Searched for 1 pattern (ctrl+o to expand)
+
+● Update(scripts\scrpa_transform.py)
+  ⎿  Added 9 lines, removed 3 lines
+      1233      # STEP 18: Format columns for CSV output
+      1234      # =========================================================================
+      1235      # Zone: Coerce to integer (whole number, range 5-9)
+      1236 -    # Use pandas nullable Int64 type to handle NaN values while keeping integer format
+      1236 +    # Convert to string representation without decimals for CSV output
+      1237      if 'Zone' in df.columns:
+      1238 -        df['Zone'] = df['Zone'].apply(coerce_zone_to_int)
+      1239 -        df['Zone'] = df['Zone'].astype('Int64')  # Nullable integer type
+      1238 +        def zone_to_str(z):
+      1239 +            if z is None or pd.isna(z):
+      1240 +                return ''
+      1241 +            try:
+      1242 +                return str(int(float(z)))
+      1243 +            except (ValueError, TypeError):
+      1244 +                return ''
+      1245 +        df['Zone'] = df['Zone'].apply(zone_to_str)
+      1246
+      1247      # Time columns: Format as HH:mm:ss (not "0 days HH:mm:ss")
+      1248      time_columns_to_format = ['Incident Time', 'Incident Time_Between', 'Report Time', 'BestTimeValue']
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python scripts/run_scrpa_pipeline.py  timeout: 3m 0s
+      "m_code\preview_tables\all_crimes\2026_01_28_all_…)
+  ⎿  ======================================================================
+     SCRPA PIPELINE - Python-First Crime Data Processing
+     ======================================================================
+     … +22 lines (ctrl+o to expand)
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -c " timeout: 30s
+      import pandas as pd…)
+  ⎿  === Zone Column ===
+     Zone dtype: float64
+     Zone samples: [9.0, 7.0, 7.0, 9.0, nan]
+     … +13 lines (ctrl+o to expand)
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && head -5  timeout: 30s
+      "Time_Based\2026\26C01W04_26_01_28\Data\SCRPA_All_Crimes_Enhanced.csv" | cut -…)
+  ⎿ Case Number,Incident Date,Incident Time,Incident Date_Between,Incident Time_Between,Report Date,Report Time,Incident Type_1,Incident Type_
+    2,Incident Type_3,FullAddress,Grid,Zone,Narrative,Total Value
+    25-009438,,,,,02/03/2025,16:40:35,Robbery,,,"400 Hackensack Avenue, Hackensack, NJ, 07601",I6,9,"On Monday, February 3, 2025 at approximat
+    … +7 lines (ctrl+o to expand)
+
+
+
+● The CSV shows Zone as integers (9, 7, 7, 9). The fix is working - pandas just reads integers back as float when loading. Let me verify more
+  clearly. ● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && python -c " timeout: 30s
+      import csv…)
+  ⎿  Row 1 Zone raw value: "9"
+     Row 2 Zone raw value: "7"
+     Row 3 Zone raw value: "7"
+     … +3 lines (ctrl+o to expand)
+
+● Zone is now correctly stored as integers in CSV. Now let me update the main Documentation folder and commit to git. ● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && powershell -Command "Copy-Item  timeout: 30s
+      'Time_Based\2026\26C01W04_26_01_28\Documentation\*' -De…)
+  ⎿  Documentation updated in main folder
+
+● Bash(cd "C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA" && git status) timeout: 30s
+  ⎿  On branch docs/update-20260127-1900
+     Your branch is up to date with 'origin/docs/update-20260127-1900'.

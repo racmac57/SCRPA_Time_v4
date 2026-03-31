@@ -1,0 +1,132 @@
+{
+  "source_file": "SCRPA_ChatGPT_Prompt_Template_No_Dashes.md",
+  "source_path": "C:\\_chunker\\02_data\\SCRPA_ChatGPT_Prompt_Template_No_Dashes.md",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\SCRPA_ChatGPT_Prompt_Template_No_Dashes\\2026_01_13_11_57_33_SCRPA_ChatGPT_Prompt_Template_No_Dashes.origin.json",
+  "created_at": "2026_01_13_11_57_33",
+  "tags": [
+    "ai",
+    "code",
+    "data",
+    "docs",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "documentation",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "div",
+      "class",
+      "burglary",
+      "vehicle",
+      "var",
+      "entry"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "# Report project headstart\n_Exported on 1/13/2026 at 11:56:11 EST from Cursor (2.3.34)_\n\n---\n\n**User**\n\nreview th changelog and summary for context, then tell me how to start the project. The report is due tomorrow but want to get a head...",
+    "first_line": "# Report project headstart"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-13T11:57:33+00:00_SCRPA_ChatGPT_Prompt_Template_No_Dashes_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "ai",
+        "burglary",
+        "class",
+        "code",
+        "data",
+        "docs",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "sql",
+        "vehicle"
+      ],
+      "key_terms": [
+        "div",
+        "class",
+        "var",
+        "vehicle",
+        "data",
+        "burglary"
+      ],
+      "summary": "# Report project headstart\n_Exported on 1/13/2026 at 11:56:11 EST from Cursor (2.3.34)_\n\n---\n\n**User**\n\nreview th changelog and summary for context, then tell me how to start the project.",
+      "char_length": 24678,
+      "byte_length": 25380
+    },
+    {
+      "chunk_id": "2026-01-13T11:57:33+00:00_SCRPA_ChatGPT_Prompt_Template_No_Dashes_chunk2",
+      "chunk_index": 2,
+      "file": "chunk_00001.txt",
+      "tags": [
+        "ai",
+        "burglary",
+        "class",
+        "code",
+        "data",
+        "docs",
+        "entry",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "sql",
+        "vehicle"
+      ],
+      "key_terms": [
+        "div",
+        "class",
+        "vehicle",
+        "var",
+        "burglary",
+        "entry"
+      ],
+      "summary": "Burglary – Residence</div>\n      <div class=\"case-card\">\n        <div class=\"case-head\">Case 25-107816 | 12/11/25 14:26 | Burglary - Residence – 2C:18-2</div>\n        <ul class=\"bullets\">\n          <li><b>Location:</b> 256 Second Street,...",
+      "char_length": 28722,
+      "byte_length": 29424
+    },
+    {
+      "chunk_id": "2026-01-13T11:57:33+00:00_SCRPA_ChatGPT_Prompt_Template_No_Dashes_chunk3",
+      "chunk_index": 3,
+      "file": "chunk_00002.txt",
+      "tags": [
+        "ai",
+        "burglary",
+        "class",
+        "code",
+        "data",
+        "docs",
+        "incidenttype",
+        "json",
+        "markdown",
+        "police",
+        "python",
+        "section",
+        "sql",
+        "write"
+      ],
+      "key_terms": [
+        "div",
+        "class",
+        "burglary",
+        "write",
+        "section",
+        "incidenttype"
+      ],
+      "summary": "Insert the date range from the Reporting Parameters in the header meta block in MM/DD/YYYY - MM/DD/YYYY format.\\n\\n\")\n@@\n-            f.write(\"- **Section I (Burglary – Auto)**: If `IncidentType` = 'Burglary - Auto'\\n\")\n+            f.wr...",
+      "char_length": 11312,
+      "byte_length": 11589
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

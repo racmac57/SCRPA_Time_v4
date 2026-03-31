@@ -1,0 +1,72 @@
+{
+  "source_file": "ChatGPT-Reconnect ArcGIS Project Folders.json",
+  "source_path": "C:\\_chunker\\02_data\\ChatGPT-Reconnect ArcGIS Project Folders.json",
+  "manifest_path": "C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\KB_Shared\\04_output\\ChatGPT-Reconnect_ArcGIS_Project_Folders\\2026_01_16_23_41_16_ChatGPT-Reconnect_ArcGIS_Project_Folders.origin.json",
+  "created_at": "2026_01_16_23_41_16",
+  "tags": [
+    "ai",
+    "code",
+    "dataset",
+    "excel",
+    "it-ops",
+    "json",
+    "police",
+    "powershell",
+    "sql"
+  ],
+  "metadata": {
+    "project_name": "02_data",
+    "source_type": "data",
+    "language": "en",
+    "department": "admin",
+    "key_terms": [
+      "esriexport",
+      "hpd2022lawsoft",
+      "lawenforcementdatamanagement_new",
+      "xlsx",
+      "name",
+      "server"
+    ],
+    "enrichment_version": "1.0.0"
+  },
+  "summaries": {
+    "file_summary": "{\n  \"metadata\": {\n    \"title\": \"Reconnect ArcGIS Project Folders\",\n    \"user\": {\n      \"name\": \"Anonymous\",\n      \"email\": \"gmfzqprc7z@privaterelay.appleid.com\"\n    },\n    \"dates\": {\n      \"created\": \"1/16/2026 19:13:01\",\n      \"updated\"...",
+    "first_line": "{"
+  },
+  "chunks": [
+    {
+      "chunk_id": "2026-01-16T23:41:16+00:00_ChatGPT-Reconnect_ArcGIS_Project_Folders_chunk1",
+      "chunk_index": 1,
+      "file": "chunk_00000.txt",
+      "tags": [
+        "ai",
+        "code",
+        "dataset",
+        "esriexport",
+        "excel",
+        "hpd2022lawsoft",
+        "it-ops",
+        "json",
+        "lawenforcementdatamanagement_new",
+        "name",
+        "police",
+        "powershell",
+        "server",
+        "sql",
+        "xlsx"
+      ],
+      "key_terms": [
+        "esriexport",
+        "hpd2022lawsoft",
+        "lawenforcementdatamanagement_new",
+        "xlsx",
+        "name",
+        "server"
+      ],
+      "summary": "{\n  \"metadata\": {\n    \"title\": \"Reconnect ArcGIS Project Folders\",\n    \"user\": {\n      \"name\": \"Anonymous\",\n      \"email\": \"gmfzqprc7z@privaterelay.appleid.com\"\n    },\n    \"dates\": {\n      \"created\": \"1/16/2026 19:13:01\",\n      \"updated\"...",
+      "char_length": 11711,
+      "byte_length": 11754
+    }
+  ],
+  "enrichment_version": "1.0.0"
+}

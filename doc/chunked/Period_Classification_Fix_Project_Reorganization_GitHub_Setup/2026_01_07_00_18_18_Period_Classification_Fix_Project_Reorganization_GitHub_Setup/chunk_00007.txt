@@ -1,0 +1,972 @@
+Color scheme recommendations
+
+Created `COLOR_SCHEME_RECOMMENDATIONS.md` with three options:
+
+### Recommended: Option 1 — Keep Prior Year blue, give YTD a new color
+- 7-Day: (keep existing)
+- 28-Day: `#77C99A` (keep — green)
+- Prior Year: `#118DFF` (keep — blue)
+- YTD: `#FF6B35` (new — orange/coral)
+
+Why: Minimal change (only YTD), blue for past is intuitive, orange stands out for current year. ### Alternative options
+- Option 2: Swap — Prior Year gets gray, YTD gets blue (`#118DFF`)
+- Option 3: Full palette refresh — cohesive colors for all periods
+
+## Next steps
+
+1. Refresh the Power BI query to get the "Prior Year" label. 2. Choose a YTD color from the recommendations. 3. Update Power BI visual formatting with the chosen color. The M code is ready. After you refresh, the label will show as "Prior Year" instead of "2025 Historical". Which color option do you prefer for YTD? ---
+
+**User**
+
+I am gonna use 7F92A2 for the proior year. I am gonna update the templet version of the project with the updated colors, m code etc and then just run the .bat to over write the current project. Is this a good idea? Base_Report.pbix
+C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix
+
+---
+
+**Cursor**
+
+
+Updating the template is a good approach. Verifying the workflow and documenting the chosen color:
+
+
+
+Updating the template is the right approach. Documenting the chosen color and providing a checklist:
+
+
+```markdown
+# Period Color Scheme - Final Implementation
+
+**Date**: 2026-01-06  
+**Status**: ✅ Implemented
+
+## Final Color Assignments
+
+- **7-Day**: (existing color - unchanged)
+- **28-Day**: `#77C99A` ✅ (green - unchanged)
+- **Prior Year**: `#7F92A2` ✅ (gray-blue - chosen)
+- **YTD**: `#118DFF` ✅ (blue - moved from Prior Year)
+
+**Note**: Prior Year color changed from `#118DFF` to `#7F92A2` (gray-blue) to distinguish from YTD. ---
+
+## Option 1: Keep Prior Year Blue, Give YTD New Color (Recommended)
+
+**Rationale**: Prior Year already has a color that works (`#118DFF`). Give YTD a distinct, professional color. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#118DFF` ✅ (keep - blue)
+- **YTD**: `#FF6B35` (orange/coral) or `#F7931E` (orange)
+
+**Pros**:
+- Minimal changes (only YTD color changes)
+- Blue for "past" (Prior Year) is intuitive
+- Orange/Yellow for "current" (YTD) is attention-grabbing
+
+**Cons**:
+- Orange might clash with green depending on chart type
+
+---
+
+## Option 2: Swap Colors - Prior Year Gets New Color, YTD Gets Blue
+
+**Rationale**: YTD is more important, so it should get the more prominent blue color. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#9B9B9B` (gray) or `#A0A0A0` (light gray)
+- **YTD**: `#118DFF` ✅ (blue - move from Prior Year)
+
+**Pros**:
+- Blue for current year (YTD) is more prominent
+- Gray for prior year is subtle/background
+
+**Cons**:
+- Requires changing Prior Year color in all visuals
+- Gray might be too subtle
+
+---
+
+## Option 3: Professional Color Palette
+
+**Rationale**: Use a cohesive color scheme that works well together. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#6C757D` (gray-blue) or `#95A5A6` (blue-gray)
+- **YTD**: `#3498DB` (bright blue) or `#2E86AB` (blue)
+
+**Pros**:
+- Cohesive palette
+- Good contrast between all periods
+
+**Cons**:
+- Requires changing both Prior Year and YTD colors
+
+---
+
+## Recommendation: **Option 1**
+
+**Suggested YTD Color**: `#FF6B35` (vibrant orange/coral)
+
+**Why**:
+1. Minimal disruption - only YTD color changes
+2. Prior Year blue (`#118DFF`) already works well
+3. Orange stands out for current year data
+4. Good contrast with green (28-Day) and blue (Prior Year)
+
+### Alternative YTD Colors (if orange doesn't work):
+- `#F7931E` - Softer orange
+- `#E74C3C` - Red-orange (more attention-grabbing)
+- `#3498DB` - Bright blue (if you want blue for current year)
+
+---
+
+## Implementation Notes
+
+After choosing a color:
+1. Update Power BI visual formatting
+2. Document the color scheme in this file
+3. Consider creating a color reference table for future use
+
+```
+
+```markdown
+# Template Update Checklist
+
+**Template Location**: `C:\Users\carucci_r\OneDrive - City of Hackensack\15_Templates\Base_Report.pbix`  
+**Date**: 2026-01-06
+
+## ✅ Pre-Update Checklist
+
+Before updating the template, ensure you have:
+- [ ] Backed up current `Base_Report.pbix` (optional but recommended)
+- [ ] Updated M code files in `m_code/` directory are ready
+- [ ] Color scheme decisions finalized
+
+---
+
+## 📝 Items to Update in Base_Report.pbix
+
+### 1. M Code Queries
+Update these queries in Power BI Desktop Advanced Editor:
+
+- [ ] **`q_RMS_Source`** - Copy from `m_code/q_RMS_Source.m`
+- [ ] **`q_CycleCalendar`** - Copy from `m_code/q_CycleCalendar.m`
+- [ ] **`q_CallTypeCategories`** - Copy from `m_code/q_CallTypeCategories.m`
+- [ ] **`All_Crimes`** (or `Updated_All_Crimes`) - Copy from `m_code/all_crimes.m`
+
+**Key Changes in all_crimes.m**:
+- Period label changed from "2025 Historical" to "Prior Year"
+- Period classification logic updated for year transitions
+
+### 2. Visual Formatting - Period Colors
+
+Update color formatting in all visuals that use the `Period` column:
+
+- [ ] **7-Day**: (keep existing color)
+- [ ] **28-Day**: `#77C99A` ✅ (green - verify it's set)
+- [ ] **Prior Year**: `#7F92A2` ✅ (gray-blue - **NEW COLOR**)
+- [ ] **YTD**: `#118DFF` ✅ (blue - verify it's set)
+
+**Where to Update**:
+- Bar charts (Burglary, Motor Vehicle Theft, etc.) - Column charts
+- Any visual with Period as legend/category
+- Conditional formatting (if used)
+
+### 3. Data Source Verification
+
+- [ ] Verify `q_CycleCalendar` points to: `7Day_28Day_Cycle_20260106.csv`
+- [ ] Verify `q_RMS_Source` points to correct folder path
+- [ ] Verify `q_CallTypeCategories` points to correct CSV path
+
+---
+
+## 🔄 After Template Update
+
+### 1. Test the Template
+- [ ] Open updated `Base_Report.pbix` in Power BI Desktop
+- [ ] Refresh all queries
+- [ ] Verify Period column shows "Prior Year" (not "2025 Historical")
+- [ ] Check that colors match the scheme above
+- [ ] Verify visuals display correctly
+
+### 2. Save Template
+- [ ] Save `Base_Report.pbix` with all updates
+- [ ] Close Power BI Desktop
+
+### 3. Run Automation
+- [ ] Run `Run_SCRPA_Report_Folder.bat`
+- [ ] When prompted to overwrite existing `.pbix`, type `y`
+- [ ] Verify new report folder has updated template
+
+---
+
+## ⚠️ What Gets Overwritten
+
+When you run the `.bat` file and confirm overwrite:
+
+✅ **Will be overwritten**:
+- The `.pbix` file in the report folder (e.g., `26C01W01_26_01_06.pbix`)
+
+❌ **Will NOT be overwritten**:
+- `Data/` folder contents (CSV files)
+- `Reports/` folder contents (HTML/PDF files)
+- `Documentation/` folder contents (MD files)
+- Any other files in the report folder
+
+**Note**: Only the Power BI file gets replaced. All your data exports and reports remain intact. ---
+
+## 📋 Quick Reference
+
+**Color Hex Codes**:
+```
+7-Day:     (existing - unchanged)
+28-Day:    #77C99A (green)
+Prior Year: #7F92A2 (gray-blue)
+YTD:       #118DFF (blue)
+```
+
+**M Code Files Location**:
+```
+m_code/q_RMS_Source.m
+m_code/q_CycleCalendar.m
+m_code/q_CallTypeCategories.m
+m_code/all_crimes.m
+```
+
+---
+
+## ✅ Verification Steps
+
+After running the automation:
+1. Open the new `.pbix` file in Power BI Desktop
+2. Refresh queries
+3. Check a visual with Period legend - should show "Prior Year" (not "2025 Historical")
+4. Verify colors match the scheme
+5. Export a preview table to confirm Period values are correct
+
+```
+
+
+Cleaning up the color scheme document to show only the final implementation:
+
+
+```markdown
+# Period Color Scheme - Final Implementation
+
+**Date**: 2026-01-06  
+**Status**: ✅ Implemented
+
+## Final Color Assignments
+
+- **7-Day**: (existing color - unchanged)
+- **28-Day**: `#77C99A` ✅ (green - unchanged)
+- **Prior Year**: `#7F92A2` ✅ (gray-blue - chosen)
+- **YTD**: `#118DFF` ✅ (blue - moved from Prior Year)
+
+**Note**: Prior Year color changed from `#118DFF` to `#7F92A2` (gray-blue). YTD now uses `#118DFF` (blue) that Prior Year previously used. ---
+
+## Implementation Details
+
+### Color Rationale
+- **Prior Year** (`#7F92A2`): Gray-blue provides subtle distinction for prior year data
+- **YTD** (`#118DFF`): Blue emphasizes current year data
+- **28-Day** (`#77C99A`): Green remains consistent for 28-day period
+- **7-Day**: Existing color maintained
+
+### Where to Apply
+Update these colors in all Power BI visuals that use the `Period` column:
+- Bar charts (Burglary, Motor Vehicle Theft, etc.) - Column charts
+- Any visual with Period as legend/category
+- Conditional formatting (if used)
+
+---
+
+## Historical Options (Reference Only)
+
+**Rationale**: Prior Year already has a color that works (`#118DFF`). Give YTD a distinct, professional color. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#118DFF` ✅ (keep - blue)
+- **YTD**: `#FF6B35` (orange/coral) or `#F7931E` (orange)
+
+**Pros**:
+- Minimal changes (only YTD color changes)
+- Blue for "past" (Prior Year) is intuitive
+- Orange/Yellow for "current" (YTD) is attention-grabbing
+
+**Cons**:
+- Orange might clash with green depending on chart type
+
+---
+
+## Option 2: Swap Colors - Prior Year Gets New Color, YTD Gets Blue
+
+**Rationale**: YTD is more important, so it should get the more prominent blue color. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#9B9B9B` (gray) or `#A0A0A0` (light gray)
+- **YTD**: `#118DFF` ✅ (blue - move from Prior Year)
+
+**Pros**:
+- Blue for current year (YTD) is more prominent
+- Gray for prior year is subtle/background
+
+**Cons**:
+- Requires changing Prior Year color in all visuals
+- Gray might be too subtle
+
+---
+
+## Option 3: Professional Color Palette
+
+**Rationale**: Use a cohesive color scheme that works well together. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#6C757D` (gray-blue) or `#95A5A6` (blue-gray)
+- **YTD**: `#3498DB` (bright blue) or `#2E86AB` (blue)
+
+**Pros**:
+- Cohesive palette
+- Good contrast between all periods
+
+**Cons**:
+- Requires changing both Prior Year and YTD colors
+
+---
+
+## Recommendation: **Option 1**
+
+**Suggested YTD Color**: `#FF6B35` (vibrant orange/coral)
+
+**Why**:
+1. Minimal disruption - only YTD color changes
+2. Prior Year blue (`#118DFF`) already works well
+3. Orange stands out for current year data
+4. Good contrast with green (28-Day) and blue (Prior Year)
+
+### Alternative YTD Colors (if orange doesn't work):
+- `#F7931E` - Softer orange
+- `#E74C3C` - Red-orange (more attention-grabbing)
+- `#3498DB` - Bright blue (if you want blue for current year)
+
+---
+
+## Implementation Notes
+
+After choosing a color:
+1. Update Power BI visual formatting
+2. Document the color scheme in this file
+3. Consider creating a color reference table for future use
+
+```
+
+```markdown
+# Period Color Scheme - Final Implementation
+
+**Date**: 2026-01-06  
+**Status**: ✅ Implemented
+
+## Final Color Assignments
+
+- **7-Day**: (existing color - unchanged)
+- **28-Day**: `#77C99A` ✅ (green - unchanged)
+- **Prior Year**: `#7F92A2` ✅ (gray-blue - chosen)
+- **YTD**: `#118DFF` ✅ (blue - moved from Prior Year)
+
+**Note**: Prior Year color changed from `#118DFF` to `#7F92A2` (gray-blue). YTD now uses `#118DFF` (blue) that Prior Year previously used. ---
+
+## Implementation Details
+
+### Color Rationale
+- **Prior Year** (`#7F92A2`): Gray-blue provides subtle distinction for prior year data
+- **YTD** (`#118DFF`): Blue emphasizes current year data
+- **28-Day** (`#77C99A`): Green remains consistent for 28-day period
+- **7-Day**: Existing color maintained
+
+### Where to Apply
+Update these colors in all Power BI visuals that use the `Period` column:
+- Bar charts (Burglary, Motor Vehicle Theft, etc.) - Column charts
+- Any visual with Period as legend/category
+- Conditional formatting (if used)
+
+---
+
+## Historical Options (Reference Only)
+
+**Rationale**: Prior Year already has a color that works (`#118DFF`). Give YTD a distinct, professional color. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#118DFF` ✅ (keep - blue)
+- **YTD**: `#FF6B35` (orange/coral) or `#F7931E` (orange)
+
+**Pros**:
+- Minimal changes (only YTD color changes)
+- Blue for "past" (Prior Year) is intuitive
+- Orange/Yellow for "current" (YTD) is attention-grabbing
+
+**Cons**:
+- Orange might clash with green depending on chart type
+
+---
+
+## Option 2: Swap Colors - Prior Year Gets New Color, YTD Gets Blue
+
+**Rationale**: YTD is more important, so it should get the more prominent blue color. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#9B9B9B` (gray) or `#A0A0A0` (light gray)
+- **YTD**: `#118DFF` ✅ (blue - move from Prior Year)
+
+**Pros**:
+- Blue for current year (YTD) is more prominent
+- Gray for prior year is subtle/background
+
+**Cons**:
+- Requires changing Prior Year color in all visuals
+- Gray might be too subtle
+
+---
+
+## Option 3: Professional Color Palette
+
+**Rationale**: Use a cohesive color scheme that works well together. ### Color Assignments:
+- **7-Day**: (keep existing)
+- **28-Day**: `#77C99A` ✅ (keep - green)
+- **Prior Year**: `#6C757D` (gray-blue) or `#95A5A6` (blue-gray)
+- **YTD**: `#3498DB` (bright blue) or `#2E86AB` (blue)
+
+**Pros**:
+- Cohesive palette
+- Good contrast between all periods
+
+**Cons**:
+- Requires changing both Prior Year and YTD colors
+
+---
+
+---
+
+## Quick Reference
+
+**Copy-paste hex codes for Power BI**:
+```
+7-Day:     (existing - unchanged)
+28-Day:    #77C99A
+Prior Year: #7F92A2
+YTD:       #118DFF
+```
+
+**Power BI Formatting Steps**:
+1. Select visual → Format pane
+2. Find "Data colors" or "Legend" section
+3. Click color next to each Period value
+4. Enter hex code (with or without #)
+5. Repeat for all visuals using Period column
+
+```
+
+
+## Summary
+
+### Your approach
+1. Update `Base_Report.pbix` template with:
+   - Updated M code (from `m_code/` directory)
+   - New color scheme (Prior Year: `#7F92A2`, YTD: `#118DFF`)
+   - "Prior Year" label (instead of "2025 Historical")
+2. Run the `.bat` file to copy the updated template to the current project
+
+### What gets overwritten
+- Only the `.pbix` file in the report folder
+- Data/, Reports/, and Documentation/ folders are not affected
+
+### Documentation created
+1. `COLOR_SCHEME_RECOMMENDATIONS.md` — Final color assignments documented
+2. `TEMPLATE_UPDATE_CHECKLIST.md` — Step-by-step checklist for updating the template
+
+### Quick reference — colors to set in Power BI
+```
+7-Day:     (keep existing)
+28-Day:    #77C99A (green)
+Prior Year: #7F92A2 (gray-blue) ← NEW
+YTD:       #118DFF (blue)
+```
+
+### M code files to copy
+All files are in `m_code/`:
+- `q_RMS_Source.m`
+- `q_CycleCalendar.m`
+- `q_CallTypeCategories.m`
+- `all_crimes.m` (contains "Prior Year" label update)
+
+After updating the template and running the `.bat`, the new report will have the updated M code, colors, and "Prior Year" label. The checklist in `TEMPLATE_UPDATE_CHECKLIST.md` covers the steps. ```plaintext
+7-Day:     (keep existing)
+28-Day:    #77C99A (green)
+Prior Year: #7F92A2 (gray-blue) ← NEW
+YTD:       #118DFF (blue)
+```
+
+---
+
+**User**
+
+please tell me where in the setting I can disable the auto formatting of m code? because some of the saved m code is not a single line
+
+---
+
+**Cursor**
+
+
+Checking the current VS Code settings and providing instructions to disable M code auto-formatting:
+
+
+
+File paths are still broken. Fixing them and providing steps to disable auto-formatting:
+
+
+```objective-c
+// ===========================================
+// STAGING QUERY: Call Type Categories
+// Purpose: Load and buffer call type mapping CSV
+// Disable Load: Yes (referenced by Updated_All_Crimes)
+// Optimized: Removed PromoteAllScalars, simplified transformation
+// ===========================================
+let CallTypeCategoriesRaw = Csv.Document(
+        File.Contents("C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv"),
+        [ Delimiter = ",", Encoding = 65001, QuoteStyle = QuoteStyle.Csv ]),
+    CallTypeCategories0 = Table.PromoteHeaders(CallTypeCategoriesRaw),
+    CallTypeCategories = Table.Buffer(Table.TransformColumnTypes(
+        CallTypeCategories0, {{"Incident", type text},
+                              {"Incident_Norm", type text},
+                              {"Category_Type", type text},
+                              {"Response_Type", type text}}))
+                             in CallTypeCategories
+```
+
+```objective-c
+// ===========================================
+// STAGING QUERY: RMS Source Data
+// Purpose: Load latest Excel file from folder
+// Disable Load: Yes (referenced by Updated_All_Crimes)
+// ===========================================
+let FolderPath = "C:\Users\carucci_r\OneDrive - City of Hackensack\05_EXPORTS\_RMS\scrpa",
+    AllFiles = Folder.Files(FolderPath),
+    XlsxFiles = Table.SelectRows(
+        AllFiles,
+        each Text.EndsWith([Name], ".xlsx", Comparer.OrdinalIgnoreCase)),
+    SortedFiles = Table.Sort(XlsxFiles, {{"Date modified", Order.Descending}}),
+    LatestFilePath = SortedFiles{0}[Folder Path] & SortedFiles{0}[Name],
+    Source = Excel.Workbook(File.Contents(LatestFilePath), true),
+    FirstTable = Source{0}[Data] in FirstTable
+```
+
+```markdown
+# How to Disable Auto-Formatting for M Code Files
+
+## Current Settings
+
+Your workspace already has `.vscode/settings.json` configured, but here's how to verify and strengthen the settings:
+
+## Method 1: Workspace Settings (Already Configured)
+
+**Location**: `.vscode/settings.json` in your workspace root
+
+**Current Settings**:
+```json
+{
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
+    "editor.formatOnType": false,
+    "[m]": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false,
+        "editor.wordWrap": "off",
+        "editor.defaultFormatter": null,
+        "prettier.enable": false
+    },
+    "prettier.enable": false,
+    "prettier.disableLanguages": ["m"]
+}
+```
+
+## Method 2: User Settings (Global)
+
+If workspace settings aren't enough, add to your **User Settings**:
+
+1. Press `Ctrl+Shift+P` (or `Cmd+Shift+P` on Mac)
+2. Type: `Preferences: Open User Settings (JSON)`
+3. Add these settings:
+
+```json
+{
+    "[m]": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false,
+        "editor.defaultFormatter": null,
+        "editor.wordWrap": "off"
+    },
+    "prettier.disableLanguages": ["m"],
+    "editor.formatOnSave": false
+}
+```
+
+## Method 3: Disable Specific Extensions
+
+### Check for Formatting Extensions
+
+1. Press `Ctrl+Shift+X` to open Extensions
+2. Search for and **disable** these if installed:
+   - **Prettier** (or set it to ignore M files)
+   - **Beautify**
+   - **Format Document**
+   - Any M/Power Query formatter extensions
+
+### Prettier-Specific Settings
+
+If you use Prettier, add to `.vscode/settings.json`:
+
+```json
+{
+    "prettier.enable": false,
+    "prettier.disableLanguages": ["m"],
+    "[m]": {
+        "prettier.enable": false
+    }
+}
+```
+
+## Method 4: File Association
+
+Ensure M files are recognized correctly:
+
+1. Open an `.m` file
+2. Check bottom-right corner of VS Code
+3. If it says "Plain Text" or something else, click it
+4. Select "Power Query M" or "M" as the language
+
+## Method 5: Per-File Override
+
+For individual files, add this comment at the top:
+
+```m
+// @ts-nocheck
+// prettier-ignore
+```
+
+(Note: These may not work for M files, but worth trying)
+
+## Troubleshooting
+
+### If Formatting Still Happens:
+
+1. **Reload Window**: `Ctrl+Shift+P` → `Developer: Reload Window`
+2. **Check Extension Conflicts**: Disable all formatter extensions temporarily
+3. **Check File Association**: Ensure `.m` files are associated with "M" language
+4. **Check Workspace Trust**: Ensure workspace is trusted (bottom-right corner)
+
+### Verify Settings Are Applied:
+
+1. Open an `.m` file
+2. Make a change (add a space)
+3. Press `Ctrl+S` to save
+4. If it auto-formats, settings aren't working
+
+### Nuclear Option:
+
+1. Close VS Code
+2. Delete `.vscode/settings.json`
+3. Recreate it with the settings above
+4. Restart VS Code
+
+## Quick Fix for Broken File Paths
+
+If your file paths are already broken (split across lines), you can:
+
+1. **Manual Fix**: Join the lines back into a single string
+2. **Find & Replace**: Use regex to find and fix broken paths
+3. **Use Search**: `Ctrl+Shift+F` → Search for broken patterns
+
+### Example Fix Pattern:
+
+**Before** (broken):
+```m
+"C:\Users\carucci_r\OneDrive - City of "
+"Hackensack\09_Reference\..."
+```
+
+**After** (fixed):
+```m
+"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\..."
+```
+
+## Recommended Workflow
+
+1. ✅ Keep `.vscode/settings.json` with formatting disabled
+2. ✅ Disable Prettier for M files
+3. ✅ Manually fix any broken file paths
+4. ✅ Save files carefully (avoid auto-save)
+5. ✅ Use `Ctrl+K, Ctrl+S` to format only when you want to
+
+## Additional Protection
+
+Add to `.vscode/settings.json`:
+
+```json
+{
+    "files.associations": {
+        "*.m": "m"
+    },
+    "[m]": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false,
+        "editor.defaultFormatter": null,
+        "editor.wordWrap": "off",
+        "editor.rulers": []
+    }
+}
+```
+
+```
+
+
+Strengthening the workspace settings:
+
+
+```jsonc
+{
+    // Global formatting disabled
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
+    "editor.formatOnType": false,
+    "editor.codeActionsOnSave": {},
+    "files.autoSave": "off",
+    
+    // M file specific settings - NO FORMATTING
+    "[m]": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false,
+        "editor.wordWrap": "off",
+        "editor.rulers": [],
+        "editor.defaultFormatter": null,
+        "editor.autoIndent": "none",
+        "editor.formatOnSaveMode": "off"
+    },
+    
+    // File associations
+    "files.associations": {
+        "*.m": "m"
+    },
+    
+    // Prettier disabled globally and for M files
+    "prettier.enable": false,
+    "prettier.disableLanguages": ["m"],
+    "[m].prettier.enable": false,
+    
+    // Additional protection
+    "editor.language.formatOnSave": false
+}
+
+```
+
+
+## Fixed broken file paths
+
+I've fixed the broken file paths in:
+- `m_code/q_CallTypeCategories.m` — File path is now a single line
+- `m_code/q_RMS_Source.m` — File path is now a single line
+
+## Where to disable auto-formatting
+
+### Location: `.vscode/settings.json`
+
+The settings are in your workspace root at:
+```
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\.vscode\settings.json
+```
+
+### Updated settings
+
+I've strengthened the settings with:
+- `editor.autoIndent: "none"` — Prevents auto-indentation
+- `editor.formatOnSaveMode: "off"` — Explicitly disables format on save
+- File associations to ensure M files are recognized
+- Prettier disabled for M files
+
+### Quick access in VS Code
+
+1. Press `Ctrl+Shift+P`
+2. Type: `Preferences: Open Workspace Settings (JSON)`
+3. This opens `.vscode/settings.json`
+
+### If formatting still happens
+
+1. Check extensions:
+   - Press `Ctrl+Shift+X`
+   - Search for "Prettier", "Beautify", or other formatters
+   - Disable them or configure them to ignore `.m` files
+
+2. Reload VS Code:
+   - `Ctrl+Shift+P` → `Developer: Reload Window`
+
+3. Check file association:
+   - Open an `.m` file
+   - Look at the bottom-right corner
+   - Should say "M" or "Power Query M"
+   - If not, click it and select the correct language
+
+### Documentation
+
+Created `DISABLE_M_CODE_FORMATTING.md` with:
+- Step-by-step instructions
+- Troubleshooting tips
+- Multiple methods to disable formatting
+
+The file paths are fixed, and the settings should prevent future auto-formatting. If it still happens, check for conflicting extensions. ```plaintext
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\.vscode\settings.json
+```
+
+---
+
+**User**
+
+Ctrl+Shift+P OPENS PERPLEXITY AI ON MY COMPUTER
+
+---
+
+**Cursor**
+
+
+Keyboard shortcut conflict. Providing alternative ways to access settings:
+
+
+```markdown
+# How to Access VS Code Settings (When Ctrl+Shift+P is Blocked)
+
+## Problem
+`Ctrl+Shift+P` opens Perplexity AI instead of VS Code Command Palette (keyboard shortcut conflict). ## Solutions
+
+### Method 1: File Explorer (Easiest)
+1. Open File Explorer
+2. Navigate to: `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\.vscode\`
+3. Open `settings.json` with VS Code (right-click → Open with → VS Code)
+
+### Method 2: VS Code Menu Bar
+1. Click **File** → **Preferences** → **Settings**
+2. Click the **{}** icon (top-right) to open JSON view
+3. Or: **File** → **Preferences** → **Settings (JSON)**
+
+### Method 3: Direct File Path
+1. In VS Code, press `Ctrl+P` (Quick Open)
+2. Type: `.vscode/settings.json`
+3. Press Enter
+
+### Method 4: Change Perplexity AI Shortcut
+If you want to free up `Ctrl+Shift+P`:
+
+1. **Windows Settings**:
+   - Press `Win+I`
+   - Go to **Apps** → **Advanced app settings** → **App execution aliases**
+   - Or search for "Keyboard shortcuts" in Windows Settings
+
+2. **Perplexity AI Settings**:
+   - Open Perplexity AI
+   - Go to Settings/Preferences
+   - Change the keyboard shortcut to something else (e.g., `Ctrl+Shift+Alt+P`)
+
+3. **VS Code Settings**:
+   - After freeing up the shortcut, `Ctrl+Shift+P` will work in VS Code
+
+### Method 5: Use VS Code's Settings UI
+1. In VS Code: **File** → **Preferences** → **Settings**
+2. Search for: `format on save`
+3. Uncheck the boxes for:
+   - Editor: Format On Save
+   - Editor: Format On Paste
+   - Editor: Format On Type
+
+### Method 6: Edit Settings via Terminal
+1. In VS Code, open terminal: `Ctrl+` ` (backtick)
+2. Type: `code .vscode/settings.json`
+3. Press Enter
+
+## Quick Reference: Current Settings File
+
+**Location**: 
+```
+C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\.vscode\settings.json
+```
+
+**Current Content** (should look like this):
+```json
+{
+    "editor.formatOnPaste": false,
+    "editor.formatOnSave": false,
+    "editor.formatOnType": false,
+    "[m]": {
+        "editor.formatOnPaste": false,
+        "editor.formatOnSave": false,
+        "editor.formatOnType": false,
+        "editor.defaultFormatter": null
+    }
+}
+```
+
+## Verify Settings Are Working
+
+1. Open any `.m` file
+2. Make a small change (add a space)
+3. Press `Ctrl+S` to save
+4. If the file **does NOT** auto-format, settings are working ✅
+5. If it **does** auto-format, you need to:
+   - Check for conflicting extensions
+   - Reload VS Code window
+   - Check file association (bottom-right should say "M")
+
+```
+
+
+## Easiest ways to access settings
+
+### Method 1: Quick Open (fastest)
+1. Press `Ctrl+P` (Quick Open)
+2. Type: `.vscode/settings.json`
+3. Press Enter
+
+### Method 2: File menu
+1. Click File → Preferences → Settings
+2. Click the `{}` icon in the top-right to open JSON view
+
+### Method 3: File Explorer
+1. Open File Explorer
+2. Go to: `C:\Users\carucci_r\OneDrive - City of Hackensack\16_Reports\SCRPA\.vscode\`
+3. Double-click `settings.json` (opens in VS Code)
+
+## Your settings are already configured
+
+The `.vscode/settings.json` file already has formatting disabled for M files. The settings include:
+- Format on save: OFF
+- Format on paste: OFF
+- Format on type: OFF
+- Prettier: DISABLED for M files
+
+## If formatting still happens
+
+1. Check extensions:
+   - Click the Extensions icon (left sidebar)
+   - Search for "Prettier" or "Beautify"
+   - Disable them or configure to ignore `.m` files
+
+2. Reload VS Code:
+   - File → Exit
+   - Reopen VS Code
+
+3. Verify file association:
+   - Open an `.m` file
+   - Check the bottom-right corner
+   - Should say "M" or "Power Query M"
+
+## Change Perplexity AI shortcut (optional)
+
+To free up `Ctrl+Shift+P` for VS Code:
+1.

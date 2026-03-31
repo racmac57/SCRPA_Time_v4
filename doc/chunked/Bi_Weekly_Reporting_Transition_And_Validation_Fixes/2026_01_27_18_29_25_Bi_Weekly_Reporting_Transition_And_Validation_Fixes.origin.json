@@ -1,0 +1,37 @@
+{
+  "tags": [
+    "code",
+    "data",
+    "docs",
+    "excel",
+    "json",
+    "markdown",
+    "police",
+    "python",
+    "sql"
+  ],
+  "metadata_enrichment": {
+    "metadata": {
+      "project_name": "02_data",
+      "source_type": "documentation",
+      "language": "en",
+      "department": "admin",
+      "key_terms": [
+        "2025",
+        "2026",
+        "bi-weekly",
+        "updated",
+        "cycle",
+        "update"
+      ],
+      "enrichment_version": "1.0.0"
+    },
+    "summaries": {
+      "file_summary": "# SCRPA bi-weekly reporting cycle changes\n_Exported on 1/27/2026 at 12:49:13 EST from Cursor (2.4.21)_\n\n---\n\n**User**\n\nread \"C:\\Users\\carucci_r\\OneDrive - City of Hackensack\\16_Reports\\SCRPA\\CHANGELOG.md\"\n\"C:\\Users\\carucci_r\\OneDrive - C...",
+      "first_line": "# SCRPA bi-weekly reporting cycle changes"
+    },
+    "enrichment_version": "1.0.0"
+  },
+  "last_processed_at": "2026-01-27T18:29:25.347575",
+  "department": "admin"
+}
