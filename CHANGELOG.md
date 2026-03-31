@@ -16,6 +16,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.3] - 2026-03-31
+
+### Added
+- **`scripts/validate_cycle_quick.py`** — Post-pipeline quick validator with 3 checks:
+  1. File existence (SCRPA_7Day_Summary.json, SCRPA_All_Crimes_Enhanced.csv, SCRPA_Report_Summary.md)
+  2. Row count and Period column integrity
+  3. Lag/backfill count alignment between JSON and CSV
+- **`Run_SCRPA_Pipeline.bat` post-validation** — After a successful pipeline run, the bat file now auto-discovers the latest cycle folder and runs `validate_cycle_quick.py`. Reports PASSED/FAILED before prompting the user.
+
+### Changed
+- `README.md`, `CLAUDE.md`, `PROJECT_SUMMARY.json`, `PROJECT_SUMMARY.yaml` updated to document the new validation script and bat integration.
+
+---
+
 ## [2.0.2] - 2026-03-24
 
 ### Changed

@@ -56,6 +56,29 @@ set EXIT_CODE=!errorlevel!
 echo.
 if !EXIT_CODE! equ 0 (
     echo Pipeline completed successfully.
+    echo.
+    echo Running quick validation...
+    echo.
+    REM Discover the most recent cycle folder for this year
+    set "CYCLE_DIR="
+    for /f "delims=" %%D in ('dir /b /o-d /ad "Time_Based\2026\" 2^>nul') do (
+        set "CYCLE_DIR=%SCRPA_ROOT%\Time_Based\2026\%%D"
+        goto :found_cycle
+    )
+    :found_cycle
+    if defined CYCLE_DIR (
+        python "%SCRPA_ROOT%\scripts\validate_cycle_quick.py" "!CYCLE_DIR!"
+        set VAL_CODE=!errorlevel!
+        echo.
+        if !VAL_CODE! equ 0 (
+            echo Quick validation: PASSED — safe to open report
+        ) else (
+            echo Quick validation: FAILED — check output before submitting report
+            pause
+        )
+    ) else (
+        echo WARNING: Could not find cycle folder to validate.
+    )
 ) else (
     echo Pipeline exited with error code !EXIT_CODE!.
 )

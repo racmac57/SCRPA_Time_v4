@@ -161,7 +161,20 @@ python scripts/generate_documentation.py -o Documentation/
 
 # 4. Regenerate canonical docs (run from SCRPA root when docs change)
 python scripts/generate_documentation.py -o Documentation/
+
+# 5. Quick validation (automatic via bat, or manual)
+python scripts/validate_cycle_quick.py Time_Based/2026/<cycle_folder>
 ```
+
+## Quick Validation (validate_cycle_quick.py)
+
+Post-pipeline validator called automatically by `Run_SCRPA_Pipeline.bat` after a successful run. Can also be run manually. Performs 3 checks:
+
+1. **File Existence** — Verifies `Data/SCRPA_7Day_Summary.json`, `Data/SCRPA_All_Crimes_Enhanced.csv`, and `Documentation/SCRPA_Report_Summary.md` exist in the cycle folder.
+2. **Row Count** — Confirms row count > 0 and `Period` column exists. Notes 0 7-Day rows as expected for early-cycle runs.
+3. **Lag/Backfill Alignment** — Verifies `lag_incidents` and `backfill_7day` in JSON match computed counts from the CSV.
+
+Exit code 0 = all passed, exit code 1 = one or more failed.
 
 ## Validation Checks
 

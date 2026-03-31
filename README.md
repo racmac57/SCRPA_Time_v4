@@ -248,7 +248,11 @@ For issues or questions:
 
 ## Recent Updates
 
-### v2.0.0 (Latest - 2026-02-10)
+### v2.0.3 (Latest - 2026-03-31)
+- ✅ **Post-Pipeline Quick Validation**: New `validate_cycle_quick.py` runs 3 checks (file existence, row count, lag/backfill alignment) after each pipeline run
+- ✅ **Bat Integration**: `Run_SCRPA_Pipeline.bat` now auto-runs validation after successful pipeline completion
+
+### v2.0.0 (2026-02-10)
 - ✅ **HTML Auto-Generation**: Pipeline now automatically calls SCRPA_ArcPy to generate fresh HTML reports
 - ✅ **Dynamic M Code**: Power BI template automatically finds latest cycle data (no manual editing)
 - ✅ **YAML → JSON**: Replaced YAML with JSON for better compatibility and performance
@@ -388,11 +392,11 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 2.0.0  
-**Last Updated**: 2026-02-10  
+**Current Version**: 2.0.3  
+**Last Updated**: 2026-03-31  
 **Maintained By**: R. A. Carucci
 
-**What changed in v2.0.0**: HTML auto-generation integration, dynamic M code (no manual path editing), YAML→JSON migration, 7-day counting bug fixed. See [CHANGELOG.md](CHANGELOG.md#200---2026-02-10).
+**What changed in v2.0.3**: Added `validate_cycle_quick.py` (3-check post-pipeline validator) and integrated it into `Run_SCRPA_Pipeline.bat`. See [CHANGELOG.md](CHANGELOG.md#203---2026-03-31).
 
 ---
 

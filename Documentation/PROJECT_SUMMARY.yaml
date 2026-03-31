@@ -1,7 +1,7 @@
 metadata:
   title: SCRPA Crime Reporting System - Project Summary
-  version: 2.0.0 (Python-First)
-  last_updated: '2026-03-24T18:30:00.000000'
+  version: 2.0.3 (Python-First)
+  last_updated: '2026-03-31T12:00:00.000000'
   description: Python-first crime data transformation system for bi-weekly SCRPA reporting
 architecture:
   overview: Python-first processing where all data transformations occur in Python
@@ -146,6 +146,17 @@ scripts:
     - LagDays calculation
     - Period classification
     - Backfill_7Day logic
+  validate_cycle_quick.py:
+    purpose: Post-pipeline quick validation (3 checks)
+    inputs:
+    - Cycle folder path (sys.argv[1])
+    outputs:
+    - Console PASS/FAIL per check, exit code 0 or 1
+    checks:
+    - File existence (SCRPA_7Day_Summary.json, SCRPA_All_Crimes_Enhanced.csv, SCRPA_Report_Summary.md)
+    - Row count > 0 and Period column exists
+    - Lag/backfill JSON counts match CSV computed counts
+    entry_point: Run_SCRPA_Pipeline.bat (auto-called after successful pipeline run)
 output_structure:
   description: Folder structure for each reporting cycle
   template: "\nTime_Based/YYYY/{CYCLE_NAME}_{YY_MM_DD}/\n├── {CYCLE_NAME}_{YY_MM_DD}.pbix\
