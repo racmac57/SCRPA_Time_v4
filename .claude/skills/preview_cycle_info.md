@@ -37,7 +37,7 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
    eligible = calendar[calendar.7_Day_End <= target_date]
    match = eligible.sort_values('7_Day_End').iloc[-1]
    ```
-   Note: "Matched via Tier 3 (most recent completed cycle)."
+   Note: "Matched via Tier 3 (most recent completed cycle)." For bi-weekly cadence (2026+), Tier 3 fires on off-weeks (the 7-day gap between active cycles) — label this as "Off-week gap — date falls between active cycles" in the output.
 
 4. **Extract bi-weekly info.** If the matched row has a non-empty `BiWeekly_Report_Name`:
    - Bi-Weekly name = `BiWeekly_Report_Name` value

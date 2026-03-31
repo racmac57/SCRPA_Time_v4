@@ -33,7 +33,7 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
 3. **Check 3 — claude.md drift.** Compare `CLAUDE_MD_CONTENT` string in `generate_documentation.py` against both:
    - `Documentation/claude.md` (canonical)
    - `CLAUDE.md` (repo root)
-   All three should be consistent. Note any differences in critical logic rules, file tables, or workflow descriptions.
+   The repo root `CLAUDE.md` may contain additional project-level context (e.g., ChatGPT workflow, HTML/PDF notes, bi-weekly tables) not present in the generated version — this is expected and not drift. Flag only differences in **critical logic rules**, **key data files table**, and **validation checks** as actual drift.
 
 4. **Check 4 — Per-cycle doc freshness.** If a latest cycle folder exists:
    - Check `SCRPA_Report_Summary.md` — are counts populated (not "-" placeholders)?

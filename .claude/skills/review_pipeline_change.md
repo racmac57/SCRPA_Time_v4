@@ -15,7 +15,7 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
 
 ## Steps
 
-1. **Get the diff.** Run `git diff scripts/` and `git diff --staged scripts/` to see all pending changes. If both commands return empty output, report:
+1. **Get the diff.** Run `git diff scripts/`, `git diff --staged scripts/`, and `git status --short scripts/` to see all pending and untracked changes. If all three commands return empty output, report:
    ```
    ## SCRPA Pipeline Change Review
    No changes detected in scripts/. Nothing to review.

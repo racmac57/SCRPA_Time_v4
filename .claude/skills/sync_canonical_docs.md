@@ -24,11 +24,11 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
    - `Documentation/claude.md`
    - `Documentation/SCRPA_Report_Summary.md` (template version)
 
-2. **Run the documentation generator.**
+2. **Run the documentation generator.** Verify the working directory is the SCRPA project root (contains `scripts/` and `Documentation/` folders) before executing:
    ```
    python scripts/generate_documentation.py -o Documentation/
    ```
-   This regenerates all canonical docs from the template definitions in the script.
+   This regenerates all canonical docs from the template definitions in the script. If the working directory is wrong, the script will fail or write to the wrong location.
 
 3. **Diff the results.** For each file, compare the new content against the snapshot from Step 1. Show a summary diff:
    - Files unchanged

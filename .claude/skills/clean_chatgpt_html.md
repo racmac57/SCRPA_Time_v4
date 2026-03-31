@@ -35,7 +35,7 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
 
 ## Guardrails
 
-- **Show a diff before writing. Create a `.bak` backup before overwriting.** (The script itself writes in-place; recommend the user keep a backup or use the `.bak` the script does not create.)
+- **The script writes in-place without creating backups.** Recommend the user make a manual copy before cleaning, or use version control to recover if needed.
 - Do NOT rewrite or duplicate the logic in `clean_chatgpt_html.py` — always delegate to the existing script.
 - Never modify the HTML structure, content, CSS, or data — only strip ChatGPT artifacts.
 - Never clean files that are not HTML (skip `.csv`, `.json`, `.md` even if in the same folder).

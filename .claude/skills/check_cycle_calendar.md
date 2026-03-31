@@ -52,7 +52,7 @@ The calendar supports two cadences:
 
 5. **Check 3 — No overlapping 7-Day windows.** For each pair of rows in the target year, verify that no date belongs to more than one 7-day window (`7_Day_Start` to `7_Day_End`). Report overlaps.
 
-6. **Check 4 — 28-Day window consistency.** Verify that each row's `28_Day_End` == `7_Day_End` and `28_Day_Start` == `7_Day_Start - 21 days` (i.e., 28-day window = 7-day window + 21 preceding days). Report any rows that don't follow this pattern.
+6. **Check 4 — 28-Day window consistency.** Verify that each row's `28_Day_End` == `7_Day_End` and `28_Day_Start` == `7_Day_Start - 21 days` (i.e., 28-day window = 7-day window + 21 preceding days). **Note:** For bi-weekly cadence (2026+), the 28-day window still anchors to each row's own `7_Day_Start`, even though the off-week has no row — so the 28-day formula is the same for both weekly and bi-weekly calendars. Report any rows that don't follow this pattern.
 
 7. **Check 5 — BiWeekly_Report_Name completeness.** For the target year:
    - Count non-empty `BiWeekly_Report_Name` values. Expect 26 for a full year.

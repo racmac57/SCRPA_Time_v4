@@ -138,6 +138,7 @@ Check for known regressions from CHANGELOG v2.0.0:
 - In `prepare_7day_outputs.py`, verify lag statistics do NOT reference `LagDays` column
 - Grep `prepare_7day_outputs.py` for `\['LagDays'\]` — should return 0 matches in summary/distribution logic
 - Verify all lag metric computations use `IncidentToReportDays`
+- Verify `LagDays` does NOT appear in the summary/distribution section of `prepare_7day_outputs.py` (grep: `lagdays_distribution.*LagDays` or `LagDays.*mean|median|max`). The distribution must use `IncidentToReportDays` values, not `LagDays`.
 
 **7b. Backfill leak into 7-Day category counts (v2.0.0 bug):**
 - In `prepare_7day_outputs.py`, verify crime category breakdown filters on `Period == '7-Day'`

@@ -24,6 +24,8 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
    - Report Due Date
    - 7-Day Window (start - end)
    - Bi-Weekly Period (start - end)
+   
+   **Fallback:** If `Bi-Weekly Period` is blank or missing in the report summary, compute it from the cycle calendar: `7_Day_Start - 7 days` through `7_Day_End`. If the cycle calendar is also unavailable, leave as `[Bi-Weekly Period not available]` and warn the user.
 
 3. **Build the email template** using the same format as `create_email_template()` in `run_scrpa_pipeline.py`:
    ```

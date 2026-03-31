@@ -67,7 +67,7 @@ The exports path `05_EXPORTS\_RMS\SCRPA\` (uppercase) was used in early versions
 
 7. **Check 6 -- Path separators.** Grep for doubled backslash patterns in path construction (regex: `\\\\\\\\` in source). Flag any `\\\\` (literal doubled) or missing separators between path segments. PASS=1 if 0 issues, FAIL=0 otherwise.
 
-8. **Check 7 -- File existence assumptions.** Search for `open(`, `pd.read_csv(`, `pd.read_excel(`, `pd.read_json(` calls and check whether the path argument has a preceding `.exists()` check or surrounding `try/except`. Report as INFO with file:line for paths without guards. Note: output files (write mode) do not need existence checks.
+8. **Check 7 -- File existence guards (PASS=1 / FAIL=0).** Search for `pd.read_csv(`, `pd.read_excel(`, `pd.read_json(`, and `open(` calls in read mode. For each, check whether the path argument has a preceding `.exists()` check or surrounding `try/except`. PASS=1 if all input-file reads have at least one guard; FAIL=0 if any `pd.read_csv`/`pd.read_excel`/`pd.read_json`/`open(…, 'r')` call lacks both `.exists()` and `try/except`. Report file:line for each unguarded read. Note: output files (write mode) do not need existence checks.
 
 9. **Check for `get_onedrive_root()` usage.** Grep for `get_onedrive_root` across all scanned files. Note if zero scripts import or call it -- this is informational (not a failure), but indicates all paths are currently hardcoded constants.
 
@@ -100,7 +100,7 @@ Files scanned: [N Python files, N batch files]
 | 4 | Case sensitivity (scrpa vs SCRPA) | PASS=1 / FAIL=0 | [N uppercase exports matches] |
 | 5 | Hardcoded inline paths | INFO | [N inline paths in function bodies] |
 | 6 | Path separators | PASS=1 / FAIL=0 | [N doubled-backslash issues] |
-| 7 | File existence guards | INFO | [N unguarded file reads] |
+| 7 | File existence guards | PASS=1 / FAIL=0 | [N unguarded input-file reads] |
 
 ### Additional Notes
 - get_onedrive_root() usage: [found in N files / not used]

@@ -68,8 +68,9 @@ Also contains: key data files table, validation checks, bi-weekly cycle table, C
 - v2.0.0: Stale HTML data mismatch
 - v1.9.2: Scripts blocking on stdin in batch mode
 - v1.9.1: Cycle calendar date gap (missing 01/06/2026)
+- v1.2.0: Path case sensitivity (`SCRPA` vs `scrpa` in export paths)
 
-**Read instruction:** Read the `[2.0.0]` and `[1.9.x]` sections for regression patterns when reviewing code changes.
+**Read instruction:** Read the `[2.0.0]`, `[1.9.x]`, and `[1.2.0]` sections for regression patterns when reviewing code changes.
 
 ## Column Name Reference (Quick Lookup)
 

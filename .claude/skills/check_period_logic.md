@@ -56,6 +56,8 @@ If a cycle folder or `SCRPA_All_Crimes_Enhanced.csv` is available, run a Python 
 
 **9. 28-Day Year Check** — Verify no `Period == '28-Day'` rows have `Incident_Date_Date.year` in the previous calendar year. If any exist, Prior Year priority is broken.
 
+**9b. 28-Day/YTD Boundary Check** — Count rows where `Period == '28-Day' AND Incident_Date_Date < 28_Day_Start` (from the cycle calendar). If any exist, these incidents fall outside the 28-day window and should be `YTD` instead. Report count and sample `Case Number` values.
+
 **10. _Period_Debug Inspection** — Check if `_Period_Debug` column exists. If present, report 2-3 sample values. This column is diagnostic and may not be in all outputs.
 
 ### Part C: Report

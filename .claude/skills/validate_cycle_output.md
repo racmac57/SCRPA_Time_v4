@@ -85,9 +85,9 @@ From `Documentation/data_dictionary.json` — use these exact names in all check
 
 8. **Check 6 — JSON/CSV alignment (PASS=1 / FAIL=0).** Compare `SCRPA_7Day_Summary.json` counts against the CSV:
    - `counts.total_7day_window` == number of rows in `SCRPA_7Day_With_LagFlags.csv`
-   - `counts.lag_incidents` == count of rows where `Backfill_7Day == True` in the 7-day CSV
-   - `counts.backfill_7day` == count of `Backfill_7Day == True` in enhanced CSV
-   - `lag_analysis.lagdays_distribution.mean/median/max` are plausible (non-negative, max >= median >= 0)
+   - `counts.lag_incidents` == count of rows where `IncidentToReportDays > 0` in the 7-day CSV (reporting delay > 0 days). **Note:** `lag_incidents` measures reporting delay, NOT the `Backfill_7Day` flag — these are distinct concepts.
+   - `counts.backfill_7day` == count of `Backfill_7Day == True` in enhanced CSV (incident before cycle start, reported during current 7-day window)
+   - `lag_analysis.lagdays_distribution.mean/median/max` are plausible (non-negative, max >= median >= 0). **Note:** These statistics are computed from `IncidentToReportDays` values (days between incident and report), not `LagDays` (cycle-relative).
 
 9. **Check 7 — Report Summary alignment (PASS=1 / FAIL=0).** Verify that `SCRPA_Report_Summary.md`:
    - "Lag Incidents" matches `counts.lag_incidents` from JSON

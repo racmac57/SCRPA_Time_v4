@@ -41,7 +41,9 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
    - `.footer`
    Report any missing rules.
 
-7. **Report findings.**
+7. **v2.0.0 Regression anchor.** Verify the per-cycle HTML report uses data from the current cycle's JSON/CSV, not stale or cached data. Check that `SCRPA_7Day_Summary.json` `cycle.name` matches the cycle folder name prefix. This catches the v2.0.0 stale HTML data mismatch regression.
+
+8. **Report findings.**
 
 ## Guardrails
 

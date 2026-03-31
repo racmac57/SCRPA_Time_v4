@@ -26,16 +26,21 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
    - Cycle Name, Bi-Weekly Cycle, Report Due Date
    - 7-Day Window, Bi-Weekly Period
 
-4. **Compute summary data** from the CSV and JSON:
-   - `total`: row count of enhanced CSV
-   - `period_7`: count of `Period == '7-Day'`
-   - `period_28`: count of `Period == '28-Day'`
-   - `ytd`: count of `Period == 'YTD'`
-   - `prior_year`: count of `Period == 'Prior Year'`
-   - `lag_count`: `counts.lag_incidents` from JSON (7-day scope)
-   - `backfill_count`: count of `Backfill_7Day == True` in enhanced CSV
-   - `lag_mean`, `lag_median`, `lag_max`: from `lag_analysis.lagdays_distribution` in JSON
-   - `category_breakdown`: cross-tab of `Crime_Category` x `Period` for 7-Day/28-Day/YTD columns, ordered: Motor Vehicle Theft, Burglary Auto, Burglary - Comm & Res, Robbery, Sexual Offenses, Other
+4. **Compute summary data** from the CSV and JSON. Each field has an explicit source:
+
+   | Field | Source | Filter / Key |
+   |-------|--------|-------------|
+   | `total` | Enhanced CSV | Row count (all rows) |
+   | `period_7` | Enhanced CSV | `Period == '7-Day'` row count |
+   | `period_28` | Enhanced CSV | `Period == '28-Day'` row count |
+   | `ytd` | Enhanced CSV | `Period == 'YTD'` row count |
+   | `prior_year` | Enhanced CSV | `Period == 'Prior Year'` row count |
+   | `lag_count` | JSON `counts.lag_incidents` | Rows where `IncidentToReportDays > 0` in 7-day window. **Not** the same as `Backfill_7Day == True`. |
+   | `backfill_count` | Enhanced CSV | `Backfill_7Day == True` row count (incident before cycle, reported during window) |
+   | `lag_mean` | JSON `lag_analysis.lagdays_distribution.mean` | Computed from `IncidentToReportDays` values, **not** `LagDays` |
+   | `lag_median` | JSON `lag_analysis.lagdays_distribution.median` | Same basis as `lag_mean` |
+   | `lag_max` | JSON `lag_analysis.lagdays_distribution.max` | Same basis as `lag_mean` |
+   | `category_breakdown` | Enhanced CSV | Cross-tab `Crime_Category` x `Period`, filter on `Period == '7-Day'` for the 7-Day column. Order: MVT, Burglary Auto, Burglary - Comm & Res, Robbery, Sexual Offenses, Other |
 
 5. **Build the markdown** following the exact format in `get_report_summary_with_data()`:
    - Cycle Information table

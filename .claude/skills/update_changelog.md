@@ -23,13 +23,15 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
    - Which files were affected
    - The nature of the change (new feature, enhancement, bug fix, refactor, docs)
 
-3. **Determine the version.** Based on the change type:
+3. **Check [Unreleased] section.** Before drafting a new entry, check if `[Unreleased]` already has content. If it does, the new entry should either be appended to `[Unreleased]` or the existing `[Unreleased]` items should be rolled into the new version — ask the user which approach they prefer.
+
+4. **Determine the version.** Based on the change type:
    - Bug fix or minor docs update: patch bump (e.g., 2.0.2 -> 2.0.3)
    - New feature or significant enhancement: minor bump (e.g., 2.0.x -> 2.1.0)
    - Breaking change: major bump (e.g., 2.x.x -> 3.0.0)
    - If unsure, add to `[Unreleased]` and let the user decide the version.
 
-4. **Draft the changelog entry** following the project's format:
+5. **Draft the changelog entry** following the project's format:
    ```markdown
    ## [X.Y.Z] - YYYY-MM-DD
 
@@ -47,9 +49,9 @@ Read the files listed in `.claude/skills/_shared_context.md` before acting. Addi
    - What docs were updated
    ```
 
-5. **Show the draft** to the user for review.
+6. **Show the draft** to the user for review.
 
-6. **If confirmed**, insert the new entry after the `[Unreleased]` section and before the previous version entry. Add the comparison link at the bottom of the file following the existing pattern:
+7. **If confirmed**, insert the new entry after the `[Unreleased]` section and before the previous version entry. Add the comparison link at the bottom of the file following the existing pattern:
    ```markdown
    [X.Y.Z]: https://github.com/racmac57/SCRPA_Time_v4/compare/vPREVIOUS...vX.Y.Z
    ```
