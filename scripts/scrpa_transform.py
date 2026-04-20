@@ -1,9 +1,13 @@
-# 2026_01_28
+# 🕒 2026-04-20-11-50-27
 # Project: scripts/scrpa_transform.py
 # Author: R. A. Carucci
 # Purpose: Core Python transformation engine matching All_Crimes.m logic exactly.
 #          Converts RMS export data to enriched SCRPA format with cycle detection,
 #          lag days calculation, period classification, and crime categorization.
+#          Now ingests RAW RMS exports and applies the SCRPA-specific LawSoft IR
+#          filter natively (replaces the legacy pre-filtered extract workflow).
+#          Supports multi-file ingestion: filter per-file, concat, dedupe by
+#          Case Number -- spans yearly + monthly + partial exports in one run.
 
 """
 SCRPA Transform - Python-First Data Transformation Engine
@@ -24,7 +28,7 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from datetime import datetime, date, time, timedelta
-from typing import Optional, Tuple, Dict, Any, Union
+from typing import Optional, Tuple, Dict, Any, Union, Iterable, List
 import warnings
 import re
 
@@ -47,6 +51,46 @@ CYCLE_CALENDAR_PATH = Path(
 CALLTYPE_CATEGORIES_PATH = Path(
     r"C:\Users\carucci_r\OneDrive - City of Hackensack\09_Reference\Classifications\CallTypes\CallType_Categories.csv"
 )
+
+# =============================================================================
+# SCRPA RMS FILTER CONFIG
+# Native port of "SCRPA RMS Filter.txt" (LawSoft IR Find/Omit Records criteria).
+# Applied in apply_scrpa_filter() before any cycle / LagDays / Period logic so
+# that 7-day and 28-day window counts only see SCRPA-eligible incidents.
+# Matching is case-insensitive and whitespace-trimmed across Incident Type 1/2/3.
+# =============================================================================
+
+# Common gating criteria (must match for both Find and Omit rules)
+SCRPA_CASE_NUMBER_PATTERN = r'^\d{2}-\d{6}$'   # LawSoft "## - ######"
+SCRPA_REPORT_DATE_FLOOR   = '2024-12-31'        # LawSoft "12/31/2024 ..." (inclusive)
+
+# All three Incident Type slots are scanned with OR semantics
+SCRPA_INCIDENT_TYPE_COLS = ['Incident Type_1', 'Incident Type_2', 'Incident Type_3']
+
+# Find Records — keep if ANY type slot matches an exact value or a prefix
+SCRPA_INCLUDE_TYPES_EXACT = frozenset({
+    'Motor Vehicle Theft - 2C:20-3',
+    'Robbery - 2C:15-1',
+    'Sexual Assault - 2C:14-2b',
+    'Criminal Sexual Contact - 2C:14-3a',
+    'Aggravated Sexual Assault - 2C:14-2a',
+})
+SCRPA_INCLUDE_TYPES_PREFIX = ('Burglary - ',)   # legacy "Burglary - *" wildcard
+
+# Omit Records — drop if ANY type slot matches one of these
+SCRPA_OMIT_TYPES_EXACT = frozenset({
+    'Domestic Violence - 2C:25-21',
+    'Violation of Court Order',
+    'Violation: TRO/ FRO - 2C:29-9b',
+    'Assist Other Agency',
+})
+
+# Omit Records — drop if Case Number is one of these regardless of type
+SCRPA_OMIT_CASE_NUMBERS = frozenset({
+    '25-070454',
+    '25-012110',
+})
+
 
 # Column mappings from RMS export to expected names
 RMS_COLUMN_MAP = {
@@ -770,15 +814,105 @@ def normalize_incident_type(incident_type: Any) -> Optional[str]:
 # MAIN TRANSFORM FUNCTION
 # =============================================================================
 
-def read_rms_export(path: Union[str, Path]) -> pd.DataFrame:
+def _scrpa_type_mask(
+    df: pd.DataFrame,
+    exact_set: frozenset,
+    prefixes: Tuple[str, ...] = (),
+) -> pd.Series:
     """
-    Load RMS export CSV/Excel file.
+    Build an OR mask across all three Incident Type slots.
+
+    Matching is case-insensitive and whitespace-trimmed so dirty source data
+    (e.g. trailing spaces, mixed casing) does not silently drop SCRPA-eligible
+    incidents. Returns a boolean Series aligned to df.index.
+    """
+    mask = pd.Series(False, index=df.index)
+    exact_norm = {s.casefold() for s in exact_set}
+    pref_norm  = tuple(p.casefold() for p in prefixes)
+    for col in SCRPA_INCIDENT_TYPE_COLS:
+        if col not in df.columns:
+            continue  # tolerate exports missing Type_2/3 slots
+        vals = df[col].astype(str).str.strip().str.casefold()
+        mask |= vals.isin(exact_norm)
+        for p in pref_norm:
+            mask |= vals.str.startswith(p, na=False)
+    return mask
+
+
+def apply_scrpa_filter(df: pd.DataFrame, verbose: bool = True) -> pd.DataFrame:
+    """
+    Apply the SCRPA RMS filter to a raw RMS export DataFrame.
+
+    Native port of "SCRPA RMS Filter.txt" (legacy LawSoft IR Find/Omit
+    criteria). MUST be called BEFORE resolve_cycle / LagDays / Period
+    classification so 7-day and 28-day window counts are computed only
+    over SCRPA-eligible incidents.
+
+    Logic (mirrors LawSoft IR semantics):
+        KEEP if  case_number matches '##-######'
+             AND report_date >= 2024-12-31
+             AND ANY incident-type slot ∈ INCLUDE_EXACT
+                 OR  ANY incident-type slot startswith INCLUDE_PREFIX
+        AND NOT (
+                 ANY incident-type slot ∈ OMIT_EXACT
+              OR case_number ∈ OMIT_CASE_NUMBERS
+        )
+    """
+    required = ['Case Number', 'Report Date'] + SCRPA_INCIDENT_TYPE_COLS[:1]
+    missing = [c for c in required if c not in df.columns]
+    if missing:
+        raise KeyError(
+            f"RMS export missing columns required by SCRPA filter: {missing}"
+        )
+
+    # ---- Common gating criteria ----------------------------------------
+    case_str = df['Case Number'].astype(str).str.strip()
+    case_ok  = case_str.str.match(SCRPA_CASE_NUMBER_PATTERN)
+
+    report_dt = pd.to_datetime(df['Report Date'], errors='coerce')
+    date_ok   = report_dt >= pd.Timestamp(SCRPA_REPORT_DATE_FLOOR)
+
+    # ---- Find Records (KEEP) -------------------------------------------
+    include_mask = _scrpa_type_mask(
+        df, SCRPA_INCLUDE_TYPES_EXACT, SCRPA_INCLUDE_TYPES_PREFIX
+    )
+
+    # ---- Omit Records (DROP) -------------------------------------------
+    omit_by_type = _scrpa_type_mask(df, SCRPA_OMIT_TYPES_EXACT, ())
+    omit_by_case = case_str.isin(SCRPA_OMIT_CASE_NUMBERS)
+    omit_mask    = omit_by_type | omit_by_case
+
+    keep = case_ok & date_ok & include_mask & ~omit_mask
+    out  = df.loc[keep].copy().reset_index(drop=True)
+
+    if verbose:
+        print(f"  SCRPA filter: {len(df)} raw -> {len(out)} kept "
+              f"(dropped {len(df) - len(out)})")
+        # Diagnostic: SCRPA-eligible rows lost only to the case-pattern gate
+        lost_to_case = (include_mask & ~omit_mask & ~case_ok).sum()
+        if lost_to_case:
+            print(f"  SCRPA filter: {lost_to_case} eligible incident(s) "
+                  f"dropped by case-number pattern '{SCRPA_CASE_NUMBER_PATTERN}' "
+                  f"-- review for non-conforming Case Numbers")
+
+    return out
+
+
+def read_rms_export(
+    path: Union[str, Path],
+    apply_filter: bool = True,
+) -> pd.DataFrame:
+    """
+    Load a raw RMS export (CSV/Excel) and optionally apply the SCRPA filter.
 
     Args:
-        path: Path to RMS export file
+        path:         Path to RMS export file
+        apply_filter: If True (default), the SCRPA filter is applied natively
+                      so downstream stages see only SCRPA-eligible incidents.
+                      Pass False for diagnostic / raw-data inspection.
 
     Returns:
-        DataFrame with RMS data
+        DataFrame with RMS data (filtered by default).
     """
     path = Path(path)
 
@@ -799,7 +933,71 @@ def read_rms_export(path: Union[str, Path]) -> pd.DataFrame:
         if df is None:
             raise last_error or ValueError(f"Could not read CSV with any supported encoding: {encodings}")
 
+    if apply_filter:
+        df = apply_scrpa_filter(df)
+
     return df
+
+
+def read_rms_exports(
+    paths: Iterable[Union[str, Path]],
+    apply_filter: bool = True,
+    dedupe_by_case: bool = True,
+) -> pd.DataFrame:
+    """
+    Load and concatenate multiple RMS exports, applying the SCRPA filter per file.
+
+    Per-file filtering keeps diagnostics clean (you see "raw -> kept" for each
+    export individually). Concat is column-tolerant (sort=False) so an older
+    export missing a newer field won't crash ingestion. Optional dedupe by
+    'Case Number' keeps the LAST occurrence across files -- designed for the
+    case where a case appears in both a yearly rollup and a monthly export.
+
+    Args:
+        paths:          Iterable of file paths (order determines dedupe "winner")
+        apply_filter:   Apply SCRPA filter per file (default True)
+        dedupe_by_case: Drop duplicate Case Numbers across files (default True)
+
+    Returns:
+        Single combined, filtered, deduped DataFrame ready for
+        build_all_crimes_enhanced().
+    """
+    paths_list: List[Path] = [Path(p) for p in paths]
+    if not paths_list:
+        raise ValueError("read_rms_exports: no input paths provided")
+
+    frames: List[pd.DataFrame] = []
+    for p in paths_list:
+        if not p.exists():
+            print(f"  WARNING: {p} does not exist -- skipping")
+            continue
+        if p.stat().st_size == 0:
+            print(f"  WARNING: {p} is empty (0 bytes) -- skipping")
+            continue
+        print(f"  Loading: {p.name}")
+        df = read_rms_export(p, apply_filter=apply_filter)
+        print(f"    -> {len(df)} rows kept from {p.name}")
+        frames.append(df)
+
+    if not frames:
+        raise ValueError("read_rms_exports: no readable input files")
+
+    # Column-tolerant concat (sort=False preserves first-seen column order)
+    combined = pd.concat(frames, ignore_index=True, sort=False)
+    print(f"  Combined: {len(combined)} rows from {len(frames)} file(s)")
+
+    if dedupe_by_case and 'Case Number' in combined.columns:
+        before = len(combined)
+        # keep='last' so a later-listed file (e.g. a partial with fresher data)
+        # wins over an earlier yearly rollup for the same Case Number
+        combined = combined.drop_duplicates(subset='Case Number', keep='last')
+        dropped = before - len(combined)
+        if dropped:
+            print(f"  Deduped: dropped {dropped} duplicate Case Number(s) "
+                  f"(kept last occurrence across files)")
+        combined = combined.reset_index(drop=True)
+
+    return combined
 
 
 def build_all_crimes_enhanced(
@@ -1323,7 +1521,10 @@ def main():
     )
     parser.add_argument(
         'input',
-        help='Path to RMS export CSV or Excel file'
+        nargs='+',
+        help='Path(s) to RMS export CSV or Excel file(s). Accepts one or many '
+             '(shell globs work, e.g. monthly/2026/*.xlsx). Multiple files are '
+             'filtered per-file, concatenated, then deduped by Case Number.'
     )
     parser.add_argument(
         '-o', '--output',
@@ -1345,13 +1546,19 @@ def main():
         help='Override today date (MM/DD/YYYY format) for testing',
         default=None
     )
+    parser.add_argument(
+        '--no-filter',
+        action='store_true',
+        help='Skip the native SCRPA RMS filter (load raw data as-is). '
+             'Use only for diagnostics; production runs should keep the filter on.'
+    )
 
     args = parser.parse_args()
 
-    # Load data
-    print(f"Loading RMS export: {args.input}")
-    rms_df = read_rms_export(args.input)
-    print(f"  {len(rms_df)} rows loaded")
+    # Load data (SCRPA filter applied natively by default)
+    print(f"Loading RMS export(s): {len(args.input)} file(s)")
+    rms_df = read_rms_exports(args.input, apply_filter=not args.no_filter)
+    print(f"  {len(rms_df)} rows loaded after filter + dedupe")
 
     print(f"Loading cycle calendar: {args.calendar}")
     calendar_df = load_cycle_calendar(Path(args.calendar))
@@ -1377,8 +1584,14 @@ def main():
         today=today
     )
 
-    # Output
-    output_path = args.output or Path(args.input).stem + '_enhanced.csv'
+    # Output: single-file run preserves legacy "<stem>_enhanced.csv" naming;
+    # multi-file run uses a date-stamped combined name to avoid ambiguity.
+    if args.output:
+        output_path = args.output
+    elif len(args.input) == 1:
+        output_path = Path(args.input[0]).stem + '_enhanced.csv'
+    else:
+        output_path = f"scrpa_combined_{date.today().strftime('%Y_%m_%d')}_enhanced.csv"
     print(f"Saving to: {output_path}")
     enhanced_df.to_csv(output_path, index=False)
 
