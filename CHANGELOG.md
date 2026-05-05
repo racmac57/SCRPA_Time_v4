@@ -10,9 +10,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Enhanced error handling
-- Improved logging
-- Config file support
+- Fix `scrpa_transform.py` filter to OR-match across Incident Type_1/2/3 and include `Attempted Burglary` variants
+- Reject `Exceptionally Cleared/Closed` and other disposition codes from offense filter
+- Patch `run_scrpa_pipeline.py` line 174 Unicode crash (replace emoji with `[WARN]` or set `PYTHONIOENCODING=utf-8`)
+- Restore OneDrive paths and revert .pbix Power Query DEADLINE PATH EDITs
+- Restore SCRPA Combined Executive Summary generation script
+- Add regression test against `SCRPA_RMS_Export.xlsx` authoritative source
+- Restore `Export_File_Watchdog` repo at `02_ETL_Scripts/Export_File_Watchdog`
+- Enhanced error handling, improved logging, config file support
+
+---
+
+## [2.0.4] - 2026-05-05
+
+### Added
+- **Authoritative validation source** documented: `SCRPA_RMS_Export.xlsx` (Desktop, RMS-side SCRPA-filtered export, 12/31/2024 forward) is the ground-truth reference for pipeline reconciliation. Used to identify and quantify filter-bug undercounts.
+- **Reconciliation note pattern** for cycle reports - embedded inline in the tactical briefing HTML when pipeline output diverges from authoritative source. Documents variance, root cause, and queued fix.
+- **Power BI Power Query path-override workflow** via `powerbi-modeling-mcp` (partition_operations Update + Refresh) - used during cycle 26C05W18 to redirect All_Crimes and q_CallTypeCategories M code to recovered/Dropbox archive paths without editing the .pbix on disk. Edits flagged with inline `// 2026-05-05 DEADLINE PATH EDIT` headers for revert tracking.
+- **html-report user-level skill alignment** - Tactical Briefing HTML now generated against the canonical exemplar at `~/.claude/skills/html-report/reference_example.html` and `SKILL.md` design tokens.
+
+### Changed
+- **Cycle 26C05W18 (26BW09) submission** generated from recovered repo at `C:\RECOVERED_2026-05-05\SCRPA_Time_v4\` rather than the live OneDrive workspace, due to the OneDrive bulk-deletion event of 04/27 - 04/28/2026.
+- **SCRPA Combined Executive Summary** omitted from cycle 26C05W18 - generation script in a missing directory pending OneDrive restoration. Tactical Briefing HTML attached in lieu.
+- **Tactical Briefing HTML format** - Crime Category Breakdown table aligned to Power BI visual numbers (live DAX-queried from .pbix) using Incident-Date period assignment per SCRPA framework. Resolves visual/text inconsistency where ad-hoc Report-Date date-math diverged from pipeline period logic.
+
+### Known Issues (queued for next cycle)
+- **`scripts/scrpa_transform.py` filter undercount (~13 incidents)** - INCLUDE-list logic does not OR-match across `Incident Type_1`, `Incident Type_2`, `Incident Type_3`. Cases where the SCRPA-eligible offense is in Type_2/3 with a generic Type_1 (Assist Other Agency, Suspicious Incident, Juvenile Investigation, Investigation - Follow-Up) are dropped. Affects ~12 Prior Year cases and ~1 YTD case at cycle 26C05W18 cut.
+- **`scripts/scrpa_transform.py` missing INCLUDE patterns** - `Attempted Burglary` variants (Commercial, Residence, generic, Auto) are not matched by the `Burglary - *` pattern in the INCLUDE list. SCRPA-eligible per the authoritative source.
+- **`scripts/scrpa_transform.py` false positive** - A Case Number with `Exceptionally Cleared/Closed` as Incident Type_1 (a disposition code, not an offense) leaks through the filter. One occurrence at cycle 26C05W18 cut (case 25-013527).
+- **`scripts/run_scrpa_pipeline.py:174` cosmetic Unicode crash** - `print()` with `\u26a0\ufe0f` (warning emoji) raises `UnicodeEncodeError` under Windows cp1252 console encoding. Crashes pipeline at Step 6a after all data and documentation files are written. Workaround: pipeline outputs are recoverable; use `setx PYTHONIOENCODING utf-8` or replace emoji with `[WARN]`.
+- **OneDrive sync state detection** - Current preflight checks for OneDrive pause via specific registry keys; tray-paused state may not always be visible in the same key path across OneDrive builds. Refine for cross-build reliability before next sync-sensitive operation.
+- **Power BI .pbix Power Query path overrides** for cycle 26C05W18 must be reverted to OneDrive paths once the live `16_Reports/SCRPA/Time_Based/` and `09_Reference/Classifications/CallTypes/` paths are restored. Both edits carry inline `// 2026-05-05 DEADLINE PATH EDIT` headers for traceability.
+
+### Operational Notes
+- The OneDrive bulk-deletion event of 04/27 - 04/28/2026 removed `08_Templates/`, `16_Reports/SCRPA/Time_Based/2026/`, the SCRPA_ArcPy/Combined Executive Summary scripts directory, and other working-set folders. Root cause traced via PSReadLine history to a `Remove-Item -Recurse -Force` invocation in a KB_Shared dedup script. Recovery sourced from a 105.89 GB byte-exact F: clone backup imaged 2026-05-04. The `Base_Report.pbix` template (Feb 10, 2026) and the cloned `SCRPA_Time_v4` repo were the critical recoveries for cycle 26C05W18 submission.
 
 ---
 

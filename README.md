@@ -12,6 +12,24 @@ The SCRPA Reporting System automates the generation of bi-weekly crime analysis 
 
 ---
 
+
+---
+
+## Recovery State (May 2026)
+
+**Active operational note** - between 04/27/2026 and 04/28/2026 a bulk-deletion event removed several OneDrive working-set folders including `08_Templates/`, `16_Reports/SCRPA/Time_Based/2026/`, the SCRPA Combined Executive Summary generation script, and others. Root cause: a `Remove-Item -Recurse -Force` invocation in an unrelated KB_Shared dedup script. Recovery is in progress from a 105.89 GB byte-exact F: clone backup imaged 2026-05-04.
+
+**Until OneDrive paths are restored:**
+- Working repo lives at `C:\RECOVERED_2026-05-05\SCRPA_Time_v4\` (cloned from the GitHub remote, populated with recovered `08_Templates/Base_Report.pbix`).
+- Cycle 26C05W18 (26BW09) was submitted from this recovered location with two Power BI Power Query DEADLINE PATH EDITs:
+  - `All_Crimes` BaseDir redirected from `OneDrive\16_Reports\SCRPA\Time_Based` to `C:\RECOVERED_2026-05-05\SCRPA_Time_v4\Time_Based`.
+  - `q_CallTypeCategories` source redirected from `OneDrive\09_Reference\Classifications\CallTypes\CallType_Categories.csv` to `C:\Users\carucci_r\Dropbox\GitHub\CAD_Data_Cleaning_Engine\ref\call_types\archive\CallType_Categories.csv`.
+- Both edits carry inline `// 2026-05-05 DEADLINE PATH EDIT` headers and are tracked for revert in `CHANGELOG.md` [2.0.4].
+- The SCRPA Combined Executive Summary is **omitted** from cycle 26C05W18 (script in missing directory). Tactical Briefing HTML attached in lieu.
+- OneDrive sync was paused throughout the cycle to prevent further damage from any in-flight automation.
+
+**See `CHANGELOG.md` [2.0.4] for the full known-issues list and queued fixes.**
+
 ## Project Structure
 
 ### Directory Organization
@@ -232,6 +250,33 @@ For issues or questions:
 
 ## Known Issues
 
+### ⚠️ Active Issues (cycle 26C05W18, queued for next-cycle fix)
+
+#### `scripts/scrpa_transform.py` filter undercount
+- **Status**: Active
+- **Severity**: Moderate (historical totals only; current-cycle 7-Day data unaffected)
+- **Symptom**: Pipeline output undercounts authoritative SCRPA RMS export by ~13 incidents at cycle 26C05W18 cut.
+- **Root cause**: INCLUDE-list logic does not OR-match across `Incident Type_1/2/3`. Cases with SCRPA-eligible offense in Type_2 or Type_3 (with generic Type_1 such as Assist Other Agency, Suspicious Incident, Juvenile Investigation, Investigation - Follow-Up) are dropped. Additionally, `Attempted Burglary` variants are not covered by the `Burglary - *` pattern.
+- **Workaround**: Manual reconciliation against `SCRPA_RMS_Export.xlsx` (authoritative). Variance documented in cycle reconciliation note.
+- **Fix queued**: see `CHANGELOG.md` [Unreleased] - filter OR-logic + Attempted-Burglary patterns + disposition-code reject.
+
+#### `scripts/scrpa_transform.py` false positive on disposition codes
+- **Status**: Active
+- **Severity**: Low (1 case observed at cycle 26C05W18)
+- **Symptom**: Cases with `Incident Type_1` = `Exceptionally Cleared/Closed` (a disposition, not an offense) pass the filter.
+- **Fix queued**: filter must reject disposition codes alongside the existing OMIT list.
+
+#### `scripts/run_scrpa_pipeline.py` line 174 Unicode crash
+- **Status**: Active
+- **Severity**: Cosmetic - all data and documentation outputs are written before the crash; HTML generation step is the only thing skipped.
+- **Symptom**: `UnicodeEncodeError` raised by `print(f"  \u26a0\ufe0f  SCRPA_ArcPy script not found: ...")` when the SCRPA_ArcPy script path is missing and the host console is cp1252 (default Windows).
+- **Workarounds**: `setx PYTHONIOENCODING utf-8` (persistent) or replace the emoji literal with `[WARN]` in the source.
+
+#### Power BI .pbix path overrides (cycle 26C05W18 only)
+- **Status**: Active until OneDrive paths restored
+- **Symptom**: `All_Crimes` and `q_CallTypeCategories` Power Query M code temporarily points to recovered/archive paths.
+- **Tracking**: Both edits flagged with inline `// 2026-05-05 DEADLINE PATH EDIT` headers. Revert when `OneDrive\16_Reports\SCRPA\Time_Based\` and `OneDrive\09_Reference\Classifications\CallTypes\CallType_Categories.csv` are restored.
+
 ### ✅ Resolved Issues
 
 #### Report Folder Empty (Fixed in v1.9.2)
@@ -392,9 +437,11 @@ For detailed instructions, see `CHATGPT_USAGE_INSTRUCTIONS.md` in the Documentat
 
 ## Version
 
-**Current Version**: 2.0.3  
-**Last Updated**: 2026-03-31  
+**Current Version**: 2.0.4  
+**Last Updated**: 2026-05-05  
 **Maintained By**: R. A. Carucci
+
+**What changed in v2.0.4**: Cycle 26C05W18 (26BW09) emergency handling - submission from recovered repo with .pbix Power Query path overrides; pipeline filter undercount documented; `SCRPA_RMS_Export.xlsx` established as authoritative validation source. See [CHANGELOG.md](CHANGELOG.md#204---2026-05-05) for full details.
 
 **What changed in v2.0.3**: Added `validate_cycle_quick.py` (3-check post-pipeline validator) and integrated it into `Run_SCRPA_Pipeline.bat`. See [CHANGELOG.md](CHANGELOG.md#203---2026-03-31).
 

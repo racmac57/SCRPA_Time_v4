@@ -184,3 +184,38 @@ When validating Python output:
 3. LagDays: Verify `(CycleStart_7Day - Incident_Date).days == LagDays`
 4. Backfill_7Day=TRUE rows must also have IsLagDay=TRUE
 5. All IsCurrent7DayCycle=TRUE rows appear in SCRPA_7Day_With_LagFlags.csv
+
+## Authoritative Validation Source
+
+When pipeline output is suspect or a reconciliation reference is needed, the authoritative ground truth is:
+
+```
+C:\Users\carucci_r\OneDrive - City of Hackensack\Desktop\SCRPA_RMS_Export.xlsx
+```
+
+This is an RMS-side SCRPA-filtered export covering 12/31/2024 forward, refreshed manually. Use it to:
+- Validate `SCRPA_All_Crimes_Enhanced.csv` row counts and category distribution.
+- Reconcile any cycle's Crime Category Breakdown table when pipeline-output figures look low or odd.
+- Build regression-test fixtures for `scripts/scrpa_transform.py` filter changes.
+
+When divergence is observed between pipeline and authoritative output, document it inline in the cycle's tactical briefing HTML as a `<div class="recon-note">` block. Do not silently substitute one for the other.
+
+## Known Issues (as of 2026-05-05)
+
+The following are documented bugs in the current pipeline. All are queued for next-cycle fix; see `CHANGELOG.md` [Unreleased] and [2.0.4].
+
+### `scripts/scrpa_transform.py` - filter logic gaps
+- INCLUDE-list match operates only against `Incident Type_1`. Cases with SCRPA-eligible offense in `Incident Type_2` or `Type_3` (with generic Type_1 such as `Assist Other Agency`, `Suspicious Incident`, `Juvenile Investigation`, `Investigation - Follow-Up`) are dropped.
+- `Attempted Burglary` variants (`Attempted Burglary - Commercial`, `Attempted Burglary - Residence`, generic `Attempted Burglary`) are not matched by the `Burglary - *` pattern.
+- Disposition codes such as `Exceptionally Cleared/Closed` are not in the OMIT list; they leak through as false positives.
+- Net effect at cycle 26C05W18 cut: ~13 cases undercounted (12 Prior Year, 1 YTD), 1 false positive (case 25-013527).
+
+### `scripts/run_scrpa_pipeline.py:174` - cosmetic Unicode crash
+- `print(f"  \u26a0\ufe0f  SCRPA_ArcPy script not found: ...")` raises `UnicodeEncodeError` under Windows cp1252 console encoding. The crash occurs in Step 6a after all data and documentation outputs are written.
+- Workaround: `setx PYTHONIOENCODING utf-8` (persistent) or replace the emoji literal with `[WARN]` in the source.
+
+### Cycle 26C05W18 (26BW09) - environmental adaptations
+- Submission generated from `C:\RECOVERED_2026-05-05\SCRPA_Time_v4\` rather than the live OneDrive workspace.
+- `All_Crimes` Power Query `BaseDir` and `q_CallTypeCategories` source paths edited via `powerbi-modeling-mcp` partition_operations (in-memory, then saved to .pbix). Both flagged with inline `// 2026-05-05 DEADLINE PATH EDIT` headers. Revert these to OneDrive paths once the live tenant is restored.
+- SCRPA Combined Executive Summary omitted - generation script in missing directory.
+- See `CHANGELOG.md` [2.0.4] for the full set of recovery actions.

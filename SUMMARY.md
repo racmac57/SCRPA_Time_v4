@@ -235,6 +235,17 @@ Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports
 
 ## Known Issues
 
+### ⚠️ Active Issues (queued for next-cycle fix)
+
+- **`scripts/scrpa_transform.py` filter undercount** - SCRPA-eligible cases with offense in `Incident Type_2` or `Type_3` (and `Attempted Burglary` variants) are dropped. ~13-case undercount at cycle 26C05W18 cut. Reconciled against authoritative `SCRPA_RMS_Export.xlsx`. Fix queued.
+- **`scripts/scrpa_transform.py` false positive** - `Exceptionally Cleared/Closed` disposition codes leak through the filter. 1 case at cycle 26C05W18.
+- **`scripts/run_scrpa_pipeline.py:174` Unicode crash** - `UnicodeEncodeError` on cp1252 console when emoji-containing warning prints. Cosmetic - all data/docs outputs are written first.
+- **Power BI .pbix Power Query DEADLINE PATH EDITs** - `All_Crimes` and `q_CallTypeCategories` temporarily redirected to recovered and archive paths. Revert when OneDrive paths are restored.
+- **SCRPA Combined Executive Summary** - generation script in a missing directory; omitted from cycle 26C05W18.
+- **OneDrive bulk-deletion event (04/27 - 04/28/2026)** - working-set folders restored from F: clone backup; full reconciliation against the live tenant pending.
+
+See `CHANGELOG.md` [2.0.4] - 2026-05-05 for the complete list, root causes, and queued fixes.
+
 ### ✅ Resolved Issues
 
 #### Report Folder Empty (Fixed in v1.9.2)
@@ -421,11 +432,11 @@ Canonical docs (data_dictionary, PROJECT_SUMMARY, claude.md) live in `16_Reports
 
 **System Owner**: R. A. Carucci  
 **Department**: City of Hackensack Police Department  
-**Last Updated**: February 10, 2026
+**Last Updated**: 2026-05-05
 
 ---
 
-**Version**: 2.0.0  
+**Version**: 2.0.4  
 **Status**: Production  
 **License**: Internal Use Only
 
